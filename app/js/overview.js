@@ -209,13 +209,21 @@ async function renderOverview() {
     html += '</div>';
   }
   html += '</div></div>';
-  html += '<select id="regime-override" onchange="saveRegimeOverride(this.value)" style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:10px;font-weight:600;color:var(--text-secondary);font-family:\'Inter\',sans-serif;cursor:pointer;flex-shrink:0;">';
-  html += '<option value="auto"'+(manualRegime===null||manualRegime==='auto'?' selected':'')+'>Auto</option>';
-  html += '<option value="risk-on"'+(manualRegime==='risk-on'?' selected':'')+'>Risk On</option>';
-  html += '<option value="risk-off"'+(manualRegime==='risk-off'?' selected':'')+'>Risk Off</option>';
-  html += '<option value="choppy"'+(manualRegime==='choppy'?' selected':'')+'>Choppy</option>';
-  html += '<option value="wait"'+(manualRegime==='wait'?' selected':'')+'>Wait</option>';
-  html += '</select></div>';
+  var hasOverride = manualRegime && manualRegime!=='auto';
+  if(hasOverride){
+    html += '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">';
+    html += '<select id="regime-override" onchange="saveRegimeOverride(this.value)" style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:10px;font-weight:600;color:var(--text-secondary);font-family:\'Inter\',sans-serif;cursor:pointer;">';
+    html += '<option value="risk-on"'+(manualRegime==='risk-on'?' selected':'')+'>Risk On</option>';
+    html += '<option value="risk-off"'+(manualRegime==='risk-off'?' selected':'')+'>Risk Off</option>';
+    html += '<option value="choppy"'+(manualRegime==='choppy'?' selected':'')+'>Choppy</option>';
+    html += '<option value="wait"'+(manualRegime==='wait'?' selected':'')+'>Wait</option>';
+    html += '</select>';
+    html += '<button onclick="saveRegimeOverride(\'auto\')" style="background:none;border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:8px;font-weight:700;color:var(--text-muted);cursor:pointer;font-family:\'Inter\',sans-serif;" title="Remove override">✕ Reset</button>';
+    html += '</div>';
+  } else {
+    html += '<button onclick="promptRegimeOverride()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:9px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:\'Inter\',sans-serif;flex-shrink:0;" title="Override auto regime">Override</button>';
+  }
+  html += '</div>';
 
   // ════ 3. MARKET SNAPSHOT (tight row: SPY QQQ IWM DIA VIX DXY) ════
   html += '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px;">';
@@ -425,6 +433,10 @@ async function loadWatchlistPrices() {
 function saveRegimeOverride(val) {
   try{localStorage.setItem('mac_regime_override',val);}catch(e){}
   renderOverview();
+}
+function promptRegimeOverride() {
+  // Quick-set to choppy as a starting override, user can then change via dropdown
+  saveRegimeOverride('risk-on');
 }
 
 // ==================== TOGGLES ====================
