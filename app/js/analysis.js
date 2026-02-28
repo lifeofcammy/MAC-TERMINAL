@@ -383,8 +383,7 @@ async function autoGenerateAnalysis(dateStr) {
   var status = document.getElementById('auto-gen-status');
   if(btn){btn.disabled=true;btn.textContent='Generating...';}
 
-  var anthropicKey='';
-  try{anthropicKey=localStorage.getItem('mtp_anthropic_key')||'';}catch(e){}
+  var anthropicKey=getAnthropicKey();
   if(!anthropicKey){
     if(status)status.innerHTML='<span style="color:var(--amber);">Anthropic API key required. Go to Settings (gear icon) to add it.</span>';
     if(btn){btn.disabled=false;btn.textContent='Generate Analysis';}
@@ -557,8 +556,7 @@ async function autoGenerateAnalysis(dateStr) {
 
 // ==================== SILENT AUTO-GENERATE (for backfill, no DOM updates) ====================
 async function autoGenerateAnalysisSilent(dateStr) {
-  var anthropicKey='';
-  try{anthropicKey=localStorage.getItem('mtp_anthropic_key')||'';}catch(e){}
+  var anthropicKey=getAnthropicKey();
   if(!anthropicKey) throw new Error('Anthropic API key required');
 
   var universe=['SPY','QQQ','IWM','DIA','AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AMD','AVGO','CRM','NFLX','COIN','SNOW','PLTR','DKNG','UBER','SQ','SHOP','NET','CRWD','MU','MRVL','ANET','PANW','NOW','ADBE','ORCL','LLY','UNH','JPM','GS','V','MA','BAC','XOM','CVX','CAT','DE','LMT','BA','MSTR','SOFI','HOOD','RKLB','APP','HIMS','ARM','SMCI','TSM','ASML','WMT','COST','TGT','DIS','PYPL','INTC','DELL','PARA','DUOL','ZS','AXP','RIVN','NIO','BABA','SPOT','RBLX','ABNB','DASH','TTD','ROKU','PINS','SNAP'];
@@ -732,7 +730,7 @@ function loadAnalysisApiKey() {
 }
 
 function getAnalysisApiKey() {
-  try { return localStorage.getItem('mtp_anthropic_key') || ''; } catch(e) { return ''; }
+  return getAnthropicKey();
 }
 
 function addChatMessage(role, text) {

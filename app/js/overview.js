@@ -678,7 +678,7 @@ async function generateThemes() {
   if(!el)return;if(btn){btn.textContent='Scanning...';btn.disabled=true;}
   el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:10px;"><span id="theme-progress">Finding biggest movers...</span></div>';
 
-  var anthropicKey='';try{anthropicKey=localStorage.getItem('mtp_anthropic_key')||'';}catch(e){}
+  var anthropicKey=getAnthropicKey();
   if(!anthropicKey){el.innerHTML='<div style="padding:12px;text-align:center;color:var(--amber);font-size:11px;">Anthropic API key required. Click gear icon to add.</div>';if(btn){btn.textContent='Generate';btn.disabled=false;}return;}
 
   try{
