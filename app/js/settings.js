@@ -108,14 +108,8 @@ function updateKeyStatus(type, val) {
 }
 
 // ==================== FIRST-RUN SETUP CHECK ====================
-function checkFirstRun() {
-  try {
-    var hasPolygon = !!localStorage.getItem('mac_polygon_key');
-    if (!hasPolygon) {
-      // Show setup prompt
-      setTimeout(function() { toggleSettings(); }, 500);
-    }
-  } catch(e) {}
-}
+// Disabled — Polygon key now has a built-in default in config.js
+// Users can still manually open settings via the gear icon if they want to use their own key.
+function checkFirstRun() { /* no-op */ }
 
 // ==================== INITIAL LOAD ====================
