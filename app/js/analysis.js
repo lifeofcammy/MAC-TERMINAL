@@ -101,7 +101,7 @@ function renderAnalysis() {
   html += '<div id="an-overview" class="an-panel">';
 
   if (analysis.marketContext) {
-    html += '<div class="card" style="padding:14px 16px;margin-bottom:14px;border-left:4px solid var(--blue);">';
+    html += '<div class="card" style="padding:16px 20px;margin-bottom:14px;border-left:4px solid var(--blue);">';
     html += '<div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">MARKET CONTEXT</div>';
     html += '<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">' + analysis.marketContext + '</div>';
     html += '</div>';
@@ -113,22 +113,22 @@ function renderAnalysis() {
     var topLoser = analysis.movers.reduce(function(a, b) { return b.changePct < a.changePct ? b : a; });
 
     html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">';
-    html += '<div class="card" style="padding:12px;text-align:center;"><div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Movers</div><div style="font-size:24px;font-weight:800;color:var(--text-primary);">' + analysis.movers.length + '</div></div>';
-    html += '<div class="card" style="padding:12px;text-align:center;"><div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Catchable</div><div style="font-size:24px;font-weight:800;color:var(--green);">' + catchableCount + '</div></div>';
-    html += '<div class="card" style="padding:12px;text-align:center;"><div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Gainer</div><div style="font-size:14px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">' + topGainer.ticker + ' +' + topGainer.changePct.toFixed(1) + '%</div></div>';
-    html += '<div class="card" style="padding:12px;text-align:center;"><div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Loser</div><div style="font-size:14px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + topLoser.ticker + ' ' + topLoser.changePct.toFixed(1) + '%</div></div>';
+    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Movers</div><div style="font-size:24px;font-weight:800;color:var(--text-primary);">' + analysis.movers.length + '</div></div>';
+    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Catchable</div><div style="font-size:24px;font-weight:800;color:var(--green);">' + catchableCount + '</div></div>';
+    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Gainer</div><div style="font-size:14px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">' + topGainer.ticker + ' +' + topGainer.changePct.toFixed(1) + '%</div></div>';
+    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Loser</div><div style="font-size:14px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + topLoser.ticker + ' ' + topLoser.changePct.toFixed(1) + '%</div></div>';
     html += '</div>';
   }
 
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
   if (analysis.sectorRotation) {
-    html += '<div class="card" style="padding:14px;border-left:3px solid var(--amber);">';
+    html += '<div class="card" style="padding:16px;border-left:3px solid var(--amber);">';
     html += '<div style="font-size:10px;font-weight:800;color:var(--amber);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u{1F504} Sector Rotation</div>';
     html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.65;white-space:pre-wrap;">' + analysis.sectorRotation + '</div>';
     html += '</div>';
   }
   if (analysis.patterns) {
-    html += '<div class="card" style="padding:14px;border-left:3px solid var(--green);">';
+    html += '<div class="card" style="padding:16px;border-left:3px solid var(--green);">';
     html += '<div style="font-size:10px;font-weight:800;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u{1F4C8} Developing Patterns</div>';
     html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.65;white-space:pre-wrap;">' + analysis.patterns + '</div>';
     html += '</div>';
@@ -137,7 +137,7 @@ function renderAnalysis() {
 
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
   if (analysis.missed) {
-    html += '<div class="card" style="padding:14px;border-left:3px solid var(--red);">';
+    html += '<div class="card" style="padding:16px;border-left:3px solid var(--red);">';
     html += '<div style="font-size:10px;font-weight:800;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u{274C} Missed Opportunities</div>';
     html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.65;white-space:pre-wrap;">' + analysis.missed + '</div>';
     html += '</div>';
@@ -145,7 +145,7 @@ function renderAnalysis() {
   if (analysis.mindset) {
     var mso = analysis.mindset;
     var sco = mso.score >= 8 ? 'var(--green)' : mso.score >= 5 ? 'var(--amber)' : 'var(--red)';
-    html += '<div class="card" style="padding:14px;border-left:3px solid ' + sco + ';">';
+    html += '<div class="card" style="padding:16px;border-left:3px solid ' + sco + '">';
     html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">';
     html += '<div style="width:44px;height:44px;border-radius:50%;background:' + sco + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-weight:900;font-size:20px;color:#fff;">' + mso.score + '</span></div>';
     html += '<div><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-primary);">Discipline ' + mso.score + '/10</div>';
@@ -179,7 +179,7 @@ function renderAnalysis() {
       var cb = m.catchable === 'yes' ? '<span style="font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);">CATCHABLE</span>'
         : m.catchable === 'partial' ? '<span style="font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--amber-bg);color:var(--amber);">PARTIALLY</span>'
         : '<span style="font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.12);color:var(--text-muted);">NEWS-DRIVEN</span>';
-      html += '<div class="card" style="padding:14px;">';
+      html += '<div class="card" style="padding:16px;">';
       html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">';
       html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:15px;">' + m.ticker + '</span>';
       html += '<span style="font-weight:800;color:' + mc + ';font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + (m.changePct >= 0 ? '+' : '') + m.changePct.toFixed(1) + '%</span>';
@@ -208,7 +208,7 @@ function renderAnalysis() {
         : '<span style="font-size:7px;font-weight:800;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.1);color:var(--text-muted);">W</span>';
       var di = p.direction === 'long' ? '\u2191' : p.direction === 'short' ? '\u2193' : '\u2195';
       var dc = p.direction === 'long' ? 'var(--green)' : p.direction === 'short' ? 'var(--red)' : 'var(--amber)';
-      html += '<div class="card" style="padding:14px;position:relative;overflow:hidden;">';
+      html += '<div class="card" style="padding:16px;position:relative;overflow:hidden;">';
       html += '<div style="position:absolute;bottom:0;left:0;height:3px;width:' + p.probability + '%;background:' + pc + ';border-radius:0 2px 0 0;"></div>';
       html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">';
       html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:15px;">' + p.ticker + '</span>';
@@ -235,7 +235,7 @@ function renderAnalysis() {
     analysis.watchlist.forEach(function(w) {
       var sc2 = w.status === 'active' ? 'var(--green)' : w.status === 'watch' ? 'var(--amber)' : 'var(--text-muted)';
       var sd = w.status === 'active' ? '\u25CF' : w.status === 'watch' ? '\u25D0' : '\u25CB';
-      html += '<div class="card" style="padding:14px;">';
+      html += '<div class="card" style="padding:16px;">';
       html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
       html += '<span style="color:' + sc2 + ';font-size:10px;">' + sd + '</span>';
       html += '<span style="font-weight:800;font-size:12px;color:var(--text-primary);">' + w.theme + '</span>';
@@ -278,7 +278,7 @@ function renderAnalysis() {
     if (ms.scoreNote) html += '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6;">' + ms.scoreNote + '</div>';
     html += '</div>';
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
-    html += '<div class="card" style="padding:14px;border-left:3px solid var(--red);">';
+    html += '<div class="card" style="padding:16px;border-left:3px solid var(--red);">';
     html += '<div style="font-size:10px;font-weight:800;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u26A0\uFE0F Violations</div>';
     if (ms.violations && ms.violations.length > 0) {
       ms.violations.forEach(function(v) {
@@ -288,7 +288,7 @@ function renderAnalysis() {
       html += '<div style="font-size:10px;color:var(--green);padding:8px 0;">\u2713 Clean session</div>';
     }
     html += '</div>';
-    html += '<div class="card" style="padding:14px;border-left:3px solid var(--green);">';
+    html += '<div class="card" style="padding:16px;border-left:3px solid var(--green);">';
     html += '<div style="font-size:10px;font-weight:800;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u2713 What Worked</div>';
     if (ms.wins && ms.wins.length > 0) {
       ms.wins.forEach(function(w) {

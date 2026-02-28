@@ -392,7 +392,7 @@ function renderScanner() {
   if (scanResults && scanResults.setups && scanResults.setups.length > 0) {
     html += renderScanResults(scanResults);
   } else if (cache && cache.tickers) {
-    html += '<div class="card" style="padding:20px;text-align:center;color:var(--text-muted);font-size:11px;">Top 100 loaded. Click <strong>Scan for Setups</strong> to find breakout candidates.</div>';
+    html += '<div class="card" style="padding:24px;text-align:center;color:var(--text-muted);font-size:11px;">Top 100 loaded. Click <strong>Scan for Setups</strong> to find breakout candidates.</div>';
   }
   html += '</div>';
 
@@ -407,7 +407,7 @@ function renderScanner() {
   if (cache && cache.tickers && cache.tickers.length > 0) {
     html += renderTop100List(cache.tickers);
   } else {
-    html += '<div class="card" style="padding:16px;text-align:center;color:var(--text-muted);font-size:10px;">No data yet. Click "Update Top 100" above.</div>';
+    html += '<div class="card" style="padding:20px;text-align:center;color:var(--text-muted);font-size:11px;">No data yet. Click "Update Top 100" above.</div>';
   }
   html += '</div></div>';
 
@@ -426,7 +426,7 @@ function renderScanResults(data) {
     var scoreColor = s.score >= 75 ? 'var(--green)' : s.score >= 55 ? 'var(--blue)' : 'var(--amber)';
     var scoreBg = s.score >= 75 ? 'rgba(16,185,129,0.06)' : s.score >= 55 ? 'rgba(37,99,235,0.04)' : 'rgba(245,158,11,0.04)';
 
-    html += '<div style="background:' + scoreBg + ';border:1px solid var(--border);border-radius:10px;padding:14px 16px;border-left:3px solid ' + scoreColor + ';">';
+    html += '<div style="background:' + scoreBg + ';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:14px;padding:16px 18px;border-left:3px solid ' + scoreColor + '">';
 
     // Header: ticker + price + score
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';

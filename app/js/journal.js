@@ -380,7 +380,7 @@ function renderRecapCalendar() {
 
     week.forEach(function(day) {
       if (!day) {
-        rowHTML += '<div style="background:var(--bg-card);border-radius:8px;min-height:80px;opacity:0.15;border:1px solid var(--border);"></div>';
+        rowHTML += '<div style="background:var(--bg-card);border-radius:10px;min-height:80px;opacity:0.15;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);"></div>';
         return;
       }
       var dateKey = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
@@ -395,7 +395,7 @@ function renderRecapCalendar() {
       var borderColor = isToday ? 'var(--blue)' : hasTrades ? (pnl >= 0 ? 'rgba(0,135,90,0.3)' : 'rgba(217,48,37,0.3)') : 'var(--border)';
       var dayLabel = MONTHS_SHORT[calMonth] + ' ' + day + ', ' + calYear;
 
-      rowHTML += '<div onclick="calOpenDay(\'' + dateKey + '\',\'' + dayLabel + '\')" style="background:' + cellBg + ';border:1px solid ' + borderColor + ';border-radius:8px;min-height:80px;padding:10px 12px;cursor:pointer;transition:border-color .15s;display:flex;flex-direction:column;justify-content:space-between;" onmouseover="this.style.borderColor=\'var(--blue)\'" onmouseout="this.style.borderColor=\'' + borderColor + '\'">';
+      rowHTML += '<div onclick="calOpenDay(\''  + dateKey + '\',\'' + dayLabel + '\')" style="background:' + cellBg + ';border:1px solid ' + borderColor + ';border-radius:10px;min-height:80px;padding:10px 12px;cursor:pointer;transition:border-color .15s;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);" onmouseover="this.style.borderColor=\'var(--blue)\'" onmouseout="this.style.borderColor=\'' + borderColor + '\'">';
       rowHTML += '<div style="display:flex;align-items:flex-start;justify-content:space-between;">';
       rowHTML += '<div style="font-weight:700;font-size:14px;color:var(--text-primary);">' + day + '</div>';
       if (isToday) rowHTML += '<div style="width:6px;height:6px;border-radius:50%;background:var(--blue);"></div>';
@@ -408,7 +408,7 @@ function renderRecapCalendar() {
     if (weekHasTrades) weeklyPnLs.push(weekPnL);
     var wc = !weekHasTrades ? 'var(--text-muted)' : weekPnL >= 0 ? 'var(--green)' : 'var(--red)';
     var wb = !weekHasTrades ? 'var(--bg-card)' : weekPnL >= 0 ? 'rgba(0,135,90,0.07)' : 'rgba(217,48,37,0.07)';
-    rowHTML += '<div style="background:' + wb + ';border:1px solid var(--border);border-radius:8px;min-height:80px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;">';
+    rowHTML += '<div style="background:' + wb + ';border:1px solid var(--border);border-radius:10px;min-height:80px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);">';
     rowHTML += '<div style="font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--text-muted);text-transform:uppercase;">Week</div>';
     rowHTML += '<div style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:13px;color:' + wc + ';">' + (weekHasTrades ? fmtD(weekPnL) : '—') + '</div>';
     rowHTML += '</div></div>';
@@ -491,7 +491,7 @@ function renderRecapSummary(tradingDays, monthPnL, greenDays, redDays, weeklyPnL
       if (t.pl > 0) timeStats[bucket].w++; else timeStats[bucket].l++;
     });
     if (Object.values(timeStats).some(function(s){return s.t>0;})) {
-      html += '<div class="card" style="padding:12px;margin-bottom:12px;">';
+      html += '<div class="card" style="padding:16px;margin-bottom:12px;">';
       html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">P&L by Entry Time</div>';
       html += '<div style="display:flex;gap:8px;">';
       ['Pre-10am','10am-12pm','12pm-2pm','2pm-Close'].forEach(function(bucket) {
@@ -513,7 +513,7 @@ function renderRecapSummary(tradingDays, monthPnL, greenDays, redDays, weeklyPnL
 
   // Weekly trend bars
   if (weeklyPnLs.length > 1) {
-    html += '<div class="card" style="padding:12px;margin-bottom:12px;">';
+    html += '<div class="card" style="padding:16px;margin-bottom:12px;">';
     html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Weekly P&L Trend</div>';
     html += '<div style="display:flex;gap:8px;align-items:flex-end;height:60px;">';
     var maxAbs = Math.max.apply(null, weeklyPnLs.map(function(v){return Math.abs(v);})) || 1;
@@ -532,7 +532,7 @@ function renderRecapSummary(tradingDays, monthPnL, greenDays, redDays, weeklyPnL
   try {
     var patterns = runPatternEngine();
     if (!patterns.insufficient && patterns.edges && patterns.edges.length > 0) {
-      html += '<div class="card" style="padding:14px;border-left:3px solid var(--blue);">';
+      html += '<div class="card" style="padding:16px;border-left:3px solid var(--blue);">';
       html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Pattern Engine — Edges Found</div>';
       patterns.edges.forEach(function(edge) {
         html += '<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:4px;">' + edge + '</div>';
@@ -851,7 +851,7 @@ function recapAnalyze() {
     const sevColor = { high: 'var(--red)', medium: 'var(--amber)', good: 'var(--green)' };
 
     let html = `
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;">
+    <div style="background:var(--bg-card);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:14px;overflow:hidden;margin-bottom:16px;">
       <div style="padding:20px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;border-bottom:1px solid var(--border);">
         <div style="width:64px;height:64px;border-radius:50%;background:${gradeColor};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
           <span style="font-weight:800;font-size:32px;color:#fff;">${grade}</span>
