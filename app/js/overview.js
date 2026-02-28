@@ -56,15 +56,40 @@ async function renderOverview() {
   function getSnap(ticker) {
     var s = snap[ticker];
     if (!s) return {price:0,change:0,pct:0,vol:0,prevClose:0,high:0,low:0,vwap:0};
-    var p = s.day&&s.day.c ? s.day.c : (s.lastTrade?s.lastTrade.p:0);
+    var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : (s.prevDay&&s.prevDay.c ? s.prevDay.c : (s.lastTrade?s.lastTrade.p:0));
     var prev = s.prevDay ? s.prevDay.c : p;
+    // On weekends/holidays: day.c and prevDay.c may be the same (both = Friday close)
+    // Use spyBars (daily bars) for SPY to get proper last-day change if available
+    if(!live && ticker==='SPY' && spyBars.length>=2){
+      p = spyBars[spyBars.length-1].c;
+      prev = spyBars[spyBars.length-2].c;
+    }
     var chg = p - prev;
     var pctVal = prev>0 ? (chg/prev)*100 : 0;
     return {price:p, change:chg, pct:pctVal, vol:s.day?s.day.v:0, prevClose:prev, high:s.day?s.day.h:0, low:s.day?s.day.l:0, vwap:s.day?s.day.vw:0};
   }
+  // For non-SPY indexes on weekends, also fix using bars
+  async function getSnapWithBars(ticker) {
+    var base = getSnap(ticker);
+    if(!live && base.pct===0){
+      try{
+        var bars = await getDailyBars(ticker, 5);
+        if(bars.length>=2){
+          base.price = bars[bars.length-1].c;
+          base.prevClose = bars[bars.length-2].c;
+          base.change = base.price - base.prevClose;
+          base.pct = base.prevClose>0 ? (base.change/base.prevClose)*100 : 0;
+        }
+      }catch(e){}
+    }
+    return base;
+  }
 
-  var spyData = getSnap('SPY'), qqqData = getSnap('QQQ'), iwmData = getSnap('IWM'), diaData = getSnap('DIA');
-  var vixyData = getSnap('VIXY');
+  var spyData = getSnap('SPY');
+  var qqqData = await getSnapWithBars('QQQ');
+  var iwmData = await getSnapWithBars('IWM');
+  var diaData = await getSnapWithBars('DIA');
+  var vixyData = await getSnapWithBars('VIXY');
 
   // ── SPY 10 & 20 SMA ──
   var spySma10=null, spySma20=null;
@@ -82,8 +107,24 @@ async function renderOverview() {
   var sectorData = sectorETFs.map(function(sec) {
     var s=sectorSnap[sec.etf]; var bars=sectorBars[sec.etf]||[];
     var p=0,prev=0,dayChg=0,weekPerf=0;
-    if(s){p=s.day&&s.day.c?s.day.c:(s.lastTrade?s.lastTrade.p:0);prev=s.prevDay?s.prevDay.c:p;dayChg=prev>0?((p-prev)/prev)*100:0;}
-    if(bars.length>=5){var w5=bars[bars.length-5].c;weekPerf=w5>0?((p-w5)/w5)*100:0;}
+    if(s){
+      // Use day.c if available (market open), otherwise use prevDay.c (last trading day close)
+      p=s.day&&s.day.c&&s.day.c>0 ? s.day.c : (s.prevDay&&s.prevDay.c ? s.prevDay.c : (s.lastTrade?s.lastTrade.p:0));
+      // For prev close: if market is open, prevDay.c is yesterday. If closed, use bars for prior day.
+      if(live && s.prevDay && s.prevDay.c){
+        prev = s.prevDay.c;
+      } else if(bars.length>=2){
+        // Market closed: compare last bar close to second-to-last bar close
+        prev = bars[bars.length-2].c;
+        p = bars[bars.length-1].c;
+      } else if(s.prevDay && s.prevDay.c){
+        prev = s.prevDay.c;
+      } else {
+        prev = p;
+      }
+      dayChg = prev>0 ? ((p-prev)/prev)*100 : 0;
+    }
+    if(bars.length>=5){var w5=bars[bars.length-5].c;var latest=bars[bars.length-1].c;weekPerf=w5>0?((latest-w5)/w5)*100:0;}
     return {etf:sec.etf,name:sec.name,price:p,dayChg:dayChg,weekPerf:weekPerf};
   });
   sectorData.sort(function(a,b){return b.dayChg-a.dayChg;});
@@ -267,7 +308,7 @@ async function renderOverview() {
   html += '</div>';
   html += '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:8px;color:var(--text-muted);">';
   html += '<span>Breadth: '+breadthPct+'%</span>';
-  html += '<span>'+(live?'● Live':'○ Last close')+'</span>';
+  html += '<span>'+(live?'● Live':'○ Last trading day')+'</span>';
   html += '</div></div>';
 
   // ════ 5. TODAY'S CATALYSTS (Econ Calendar + Top News) ════
@@ -278,7 +319,13 @@ async function renderOverview() {
   html += '</div>';
   // Econ calendar
   html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);">';
-  html += '<div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Economic Calendar</div>';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
+  html += '<div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Economic Calendar</div>';
+  html += '<div style="display:flex;gap:8px;font-size:7px;color:var(--text-muted);">';
+  html += '<span><span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--red);margin-right:2px;vertical-align:middle;"></span>High</span>';
+  html += '<span><span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--amber);margin-right:2px;vertical-align:middle;"></span>Med</span>';
+  html += '<span><span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--text-muted);margin-right:2px;vertical-align:middle;"></span>Low</span>';
+  html += '</div></div>';
   html += '<div id="econ-cal-grid" style="font-size:11px;color:var(--text-muted);">Loading...</div>';
   html += '</div>';
   // Top news headlines
@@ -302,12 +349,7 @@ async function renderOverview() {
     html += '<div style="font-size:10px;color:var(--text-muted);">No news available.</div>';
   }
   html += '</div>';
-  // Impact legend
-  html += '<div style="padding:5px 16px;border-top:1px solid var(--border);display:flex;gap:12px;font-size:8px;color:var(--text-muted);">';
-  html += '<span><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--red);margin-right:2px;vertical-align:middle;"></span>High</span>';
-  html += '<span><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--amber);margin-right:2px;vertical-align:middle;"></span>Medium</span>';
-  html += '<span><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--text-muted);margin-right:2px;vertical-align:middle;"></span>Low</span>';
-  html += '</div></div>';
+  html += '</div>';
 
   // ════ 6. WATCHLIST (embedded, was its own tab) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
