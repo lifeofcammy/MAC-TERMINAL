@@ -14,6 +14,7 @@ document.querySelectorAll('.tabs > .tab:not(.tab-dropdown)').forEach(tab => {
     tab.classList.add('active');
     document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
     if (tab.dataset.tab === 'analysis') renderAnalysis();
+    if (tab.dataset.tab === 'watchlist') renderWatchlistTab();
   });
 });
 
@@ -38,16 +39,14 @@ document.querySelectorAll('.tab-dropdown-item').forEach(item => {
 
 // ==================== REFRESH ====================
 function refreshAll() {
-  const btn = document.getElementById('refreshBtn');
+  var btn = document.getElementById('refreshBtn');
   btn.classList.add('spinning');
   document.getElementById('lastUpdated').textContent = 'Refreshing...';
 
   renderOverview();
-  renderSegments();
-  renderIdeas();
   renderRecapCalendar();
 
-  setTimeout(() => {
+  setTimeout(function() {
     btn.classList.remove('spinning');
     document.getElementById('lastUpdated').textContent = 'Updated ' + getTimestamp();
   }, 2000);
