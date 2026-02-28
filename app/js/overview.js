@@ -34,7 +34,7 @@ async function renderOverview() {
   calendarHTML += '<div class="card card-hue-blue" style="padding:16px;margin-bottom:16px;">';
   calendarHTML += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">';
   calendarHTML += '<div style="font-size:12px;font-weight:800;color:var(--text-primary);">Today\'s Morning Briefing</div>';
-  calendarHTML += '<button id="briefing-copy-btn" onclick="copyBriefingPrompt()" style="padding:6px 14px;border-radius:6px;border:1px solid var(--blue);background:rgba(59,130,246,0.1);color:var(--blue);cursor:pointer;font-size:10px;font-weight:700;font-family:\'Plus Jakarta Sans\',sans-serif;">📋 Copy & Open Claude</button>';
+  calendarHTML += '<button id="briefing-copy-btn" onclick="copyBriefingPrompt()" style="padding:6px 14px;border-radius:6px;border:1px solid var(--blue);background:rgba(59,130,246,0.1);color:var(--blue);cursor:pointer;font-size:10px;font-weight:700;font-family:\'Inter\',sans-serif;">📋 Copy & Open Claude</button>';
   calendarHTML += '</div>';
   calendarHTML += '<div style="font-size:11px;color:var(--text-muted);">Fetches live news from Polygon, copies a ready-made briefing prompt to clipboard, and opens Claude in a new tab. Just paste.</div>';
   calendarHTML += '</div>';

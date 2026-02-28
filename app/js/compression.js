@@ -23,7 +23,7 @@
 
   // Scan button
   html += '<div style="display:flex;gap:6px;margin-bottom:12px;align-items:center;">';
-  html += '<button onclick="load2HSMAStack();" style="padding:6px 18px;border-radius:4px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);cursor:pointer;font-size:11px;font-weight:700;font-family:\'Plus Jakarta Sans\',sans-serif;letter-spacing:0.5px;">SCAN</button>';
+  html += '<button onclick="load2HSMAStack();" style="padding:6px 18px;border-radius:4px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);cursor:pointer;font-size:11px;font-weight:700;font-family:\'Inter\',sans-serif;letter-spacing:0.5px;">SCAN</button>';
   html += '</div>';
 
   // Multi-TF SMA Compression section — loads async

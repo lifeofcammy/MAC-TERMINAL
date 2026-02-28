@@ -86,7 +86,7 @@ function renderAnalysis() {
     { id: 'an-mindset', label: '\u{1F9E0} Mindset' }
   ];
   subTabs.forEach(function(t) {
-    html += '<button onclick="showAnalysisPanel(\'' + t.id + '\')" class="an-pill' + (t.active ? ' an-pill-active' : '') + '" data-panel="' + t.id + '" style="padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:' + (t.active ? 'var(--blue)' : 'var(--bg-card)') + ';color:' + (t.active ? '#fff' : 'var(--text-muted)') + ';font-size:11px;font-weight:700;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif;transition:all 0.15s ease;white-space:nowrap;">' + t.label + '</button>';
+    html += '<button onclick="showAnalysisPanel(\'' + t.id + '\')" class="an-pill' + (t.active ? ' an-pill-active' : '') + '" data-panel="' + t.id + '" style="padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:' + (t.active ? 'var(--blue)' : 'var(--bg-card)') + ';color:' + (t.active ? '#fff' : 'var(--text-muted)') + ';font-size:11px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;transition:all 0.15s ease;white-space:nowrap;">' + t.label + '</button>';
   });
   html += '</div>';
 

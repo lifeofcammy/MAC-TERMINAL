@@ -51,7 +51,7 @@
       </div>
 
       <div style="display:flex;gap:10px;margin-top:24px;">
-        <button onclick="toggleSettings()" style="flex:1;background:var(--blue);color:white;border:none;border-radius:8px;padding:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;">Done</button>
+        <button onclick="toggleSettings()" style="flex:1;background:var(--blue);color:white;border:none;border-radius:8px;padding:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;">Done</button>
       </div>
 
       <div style="margin-top:16px;padding:12px;background:var(--bg-secondary);border-radius:8px;font-size:10px;color:var(--text-muted);line-height:1.6;">
