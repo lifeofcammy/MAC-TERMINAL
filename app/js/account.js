@@ -15,8 +15,14 @@ function getRiskPct() {
 }
 function saveAccountSize() {
   try {
-    localStorage.setItem('mcc_account', document.getElementById('accountSize').value);
-    localStorage.setItem('mcc_risk', document.getElementById('riskPct').value);
+    var acct = document.getElementById('accountSize').value;
+    var risk = document.getElementById('riskPct').value;
+    localStorage.setItem('mcc_account', acct);
+    localStorage.setItem('mcc_risk', risk);
+    // Cloud sync
+    if (typeof dbSaveUserSettings === 'function' && typeof getUser === 'function' && getUser()) {
+      dbSaveUserSettings({ account_size: acct, risk_pct: risk }).catch(function(e) {});
+    }
   } catch(e) {}
 }
 function loadAccountSize() {

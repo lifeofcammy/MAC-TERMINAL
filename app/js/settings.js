@@ -97,6 +97,14 @@ function saveSettingsKey(type) {
       if (ak) ak.value = val;
     }
     updateKeyStatus(type, val);
+    // Cloud sync
+    if (typeof dbSaveUserSettings === 'function' && typeof getUser === 'function' && getUser()) {
+      var s = {};
+      if (type === 'polygon') s.polygon_key = val;
+      else if (type === 'alpha') s.alpha_key = val;
+      else if (type === 'anthropic') s.anthropic_key = val;
+      dbSaveUserSettings(s).catch(function(e) {});
+    }
   } catch(e) {}
 }
 

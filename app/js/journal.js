@@ -61,17 +61,27 @@ function recapImportAll(event) {
           imported++;
         });
         localStorage.setItem('mtp_cal_summaries', JSON.stringify(existingSummaries));
+        // Cloud sync
+        if (typeof dbSaveCalSummaries === 'function' && typeof getUser === 'function' && getUser()) {
+          dbSaveCalSummaries(existingSummaries).catch(function(e) {});
+        }
       }
       // Restore raw CSV data per day
       if (data.recapData) {
         Object.keys(data.recapData).forEach(dateKey => {
           localStorage.setItem('mtp_recap_data_' + dateKey, data.recapData[dateKey]);
+          if (typeof dbSaveRecapData === 'function' && typeof getUser === 'function' && getUser()) {
+            dbSaveRecapData(dateKey, data.recapData[dateKey], null).catch(function(e) {});
+          }
         });
       }
       // Restore recap HTML per day
       if (data.recapHTML) {
         Object.keys(data.recapHTML).forEach(dateKey => {
           localStorage.setItem('mtp_recap_' + dateKey, data.recapHTML[dateKey]);
+          if (typeof dbSaveRecapData === 'function' && typeof getUser === 'function' && getUser()) {
+            dbSaveRecapData(dateKey, null, data.recapHTML[dateKey]).catch(function(e) {});
+          }
         });
       }
       // Restore journal data
@@ -83,6 +93,7 @@ function recapImportAll(event) {
           if (!existingIds.has(t.id)) existingJournal.push(t);
         });
         localStorage.setItem('mtp_journal', JSON.stringify(existingJournal));
+        saveJournal(existingJournal);
       }
 
       // Restore analysis data
@@ -90,6 +101,10 @@ function recapImportAll(event) {
       if (data.analysisData) {
         Object.keys(data.analysisData).forEach(dateKey => {
           localStorage.setItem('mtp_analysis_' + dateKey, data.analysisData[dateKey]);
+          // Cloud sync
+          if (typeof dbSaveAnalysis === 'function' && typeof getUser === 'function' && getUser()) {
+            try { dbSaveAnalysis(dateKey, JSON.parse(data.analysisData[dateKey])).catch(function(e) {}); } catch(e) {}
+          }
           analysisImported++;
         });
       }
@@ -118,6 +133,10 @@ function getJournal() {
 
 function saveJournal(journal) {
   try { localStorage.setItem('mtp_journal', JSON.stringify(journal)); } catch(e) {}
+  // Cloud sync
+  if (typeof dbSaveJournal === 'function' && typeof getUser === 'function' && getUser()) {
+    dbSaveJournal(journal).catch(function(e) { console.warn('[journal] cloud sync error:', e); });
+  }
 }
 
 function addTrade(trade) {
@@ -1021,8 +1040,16 @@ function recapAnalyze() {
       const summaries = JSON.parse(localStorage.getItem('mtp_cal_summaries') || '{}');
       summaries[dateKey] = parseFloat(grossPnL.toFixed(2));
       localStorage.setItem('mtp_cal_summaries', JSON.stringify(summaries));
+      // Cloud sync
+      if (typeof dbSaveCalSummaries === 'function' && typeof getUser === 'function' && getUser()) {
+        dbSaveCalSummaries(summaries).catch(function(e) {});
+      }
       const rawCsv = document.getElementById('recap-paste').value;
       if (rawCsv) localStorage.setItem('mtp_recap_data_' + dateKey, rawCsv);
+      // Cloud sync recap
+      if (typeof dbSaveRecapData === 'function' && typeof getUser === 'function' && getUser()) {
+        dbSaveRecapData(dateKey, rawCsv || null, null).catch(function(e) {});
+      }
       // Refresh calendar to show the new entry
       renderRecapCalendar();
     } catch (e) {}
@@ -1093,6 +1120,10 @@ function recapExportPDF() {
   try {
     const html = document.getElementById('recap-results').innerHTML;
     localStorage.setItem('mtp_recap_' + dateKey, html.substring(0, 50000));
+    // Cloud sync
+    if (typeof dbSaveRecapData === 'function' && typeof getUser === 'function' && getUser()) {
+      dbSaveRecapData(dateKey, null, html.substring(0, 50000)).catch(function(e) {});
+    }
     alert('Recap saved to calendar! Use Ctrl+P / Cmd+P to print as PDF.');
   } catch (e) { alert('Use Ctrl+P / Cmd+P to save as PDF.'); }
 }

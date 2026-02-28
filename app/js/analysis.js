@@ -28,6 +28,10 @@ function getAnalysis(date) {
 function saveAnalysis(date, data) {
   _analysisCache[date] = data;
   try { localStorage.setItem('mtp_analysis_' + date, JSON.stringify(data)); } catch(e) {}
+  // Cloud sync
+  if (typeof dbSaveAnalysis === 'function' && typeof getUser === 'function' && getUser()) {
+    dbSaveAnalysis(date, data).catch(function(e) { console.warn('[analysis] cloud sync error:', e); });
+  }
 }
 
 function getAllAnalysisDates() {

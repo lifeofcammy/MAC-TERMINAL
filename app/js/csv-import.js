@@ -560,4 +560,8 @@ function updateCalendarFromImport(importResult) {
   });
 
   localStorage.setItem('mtp_cal_summaries', JSON.stringify(summaries));
+  // Cloud sync
+  if (typeof dbSaveCalSummaries === 'function' && typeof getUser === 'function' && getUser()) {
+    dbSaveCalSummaries(summaries).catch(function(e) {});
+  }
 }

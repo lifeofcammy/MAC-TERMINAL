@@ -12,6 +12,7 @@ const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // Expose client globally for other scripts
 window.supabaseClient = _supabase;
 window.currentUser = null;
+window._currentSession = null;
 
 // ── Auth guard ──────────────────────────────────────────────
 (async function checkAuth() {
@@ -25,6 +26,12 @@ window.currentUser = null;
 
   // Logged in — store user and populate UI
   window.currentUser = session.user;
+  window._currentSession = session;
+
+  // Sync cloud data (migrate localStorage on first login)
+  if (typeof migrateLocalToCloud === 'function') {
+    migrateLocalToCloud().catch(function(e) { console.warn('[db] Migration error:', e); });
+  }
 
   const emailEl = document.getElementById('user-email');
   if (emailEl) {
@@ -38,6 +45,7 @@ window.currentUser = null;
       window.location.replace('/app/login.html');
     } else {
       window.currentUser = newSession.user;
+      window._currentSession = newSession;
     }
   });
 })();
