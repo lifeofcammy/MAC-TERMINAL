@@ -14,7 +14,6 @@ document.querySelectorAll('.tabs > .tab:not(.tab-dropdown)').forEach(tab => {
     tab.classList.add('active');
     document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
     if (tab.dataset.tab === 'analysis') renderAnalysis();
-    if (tab.dataset.tab === 'watchlist') renderWatchlistTab();
   });
 });
 
