@@ -250,20 +250,6 @@ async function renderOverview() {
     html += '</div>';
   }
   html += '</div></div>';
-  var hasOverride = manualRegime && manualRegime!=='auto';
-  if(hasOverride){
-    html += '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">';
-    html += '<select id="regime-override" onchange="saveRegimeOverride(this.value)" style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:10px;font-weight:600;color:var(--text-secondary);font-family:\'Inter\',sans-serif;cursor:pointer;">';
-    html += '<option value="risk-on"'+(manualRegime==='risk-on'?' selected':'')+'>Risk On</option>';
-    html += '<option value="risk-off"'+(manualRegime==='risk-off'?' selected':'')+'>Risk Off</option>';
-    html += '<option value="choppy"'+(manualRegime==='choppy'?' selected':'')+'>Choppy</option>';
-    html += '<option value="wait"'+(manualRegime==='wait'?' selected':'')+'>Wait</option>';
-    html += '</select>';
-    html += '<button onclick="saveRegimeOverride(\'auto\')" style="background:none;border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:8px;font-weight:700;color:var(--text-muted);cursor:pointer;font-family:\'Inter\',sans-serif;" title="Remove override">✕ Reset</button>';
-    html += '</div>';
-  } else {
-    html += '<button onclick="promptRegimeOverride()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:9px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:\'Inter\',sans-serif;flex-shrink:0;" title="Override auto regime">Override</button>';
-  }
   html += '</div>';
 
   // ════ 3. MARKET SNAPSHOT (tight row: SPY QQQ IWM DIA VIX DXY) ════
@@ -319,13 +305,7 @@ async function renderOverview() {
   html += '</div>';
   // Econ calendar
   html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);">';
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
-  html += '<div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Economic Calendar</div>';
-  html += '<div style="display:flex;gap:8px;font-size:7px;color:var(--text-muted);">';
-  html += '<span><span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--red);margin-right:2px;vertical-align:middle;"></span>High</span>';
-  html += '<span><span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--amber);margin-right:2px;vertical-align:middle;"></span>Med</span>';
-  html += '<span><span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--text-muted);margin-right:2px;vertical-align:middle;"></span>Low</span>';
-  html += '</div></div>';
+  html += '<div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Economic Calendar</div>';
   html += '<div id="econ-cal-grid" style="font-size:11px;color:var(--text-muted);">Loading...</div>';
   html += '</div>';
   // Top news headlines
