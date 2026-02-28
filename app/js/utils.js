@@ -41,3 +41,26 @@ function isMarketOpen() {
   return d > 0 && d < 6 && (h > 9 || (h === 9 && m >= 30)) && h < 16;
 }
 
+function getDataFreshnessLabel() {
+  // Polygon free tier: 15-min delayed during market hours, end-of-day after close
+  var now = new Date();
+  var et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  var h = et.getHours(), m = et.getMinutes(), d = et.getDay();
+  var isWeekday = d > 0 && d < 6;
+  var marketOpen = isWeekday && (h > 9 || (h === 9 && m >= 30)) && h < 16;
+  var afterHours = isWeekday && h >= 16;
+  var preMarket = isWeekday && (h < 9 || (h === 9 && m < 30));
+  var etTime = et.toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit',hour12:true});
+
+  if(marketOpen) {
+    return 'Data via Polygon · 15-min delay · as of ~' + etTime + ' ET';
+  } else if(afterHours) {
+    return 'Data via Polygon · Close prices (4:00 PM ET)';
+  } else if(preMarket) {
+    return 'Data via Polygon · Prior close (4:00 PM ET)';
+  } else {
+    // Weekend
+    return 'Data via Polygon · Last trading day close';
+  }
+}
+

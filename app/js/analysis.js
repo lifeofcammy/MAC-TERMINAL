@@ -323,31 +323,55 @@ function showAnalysisPanel(panelId) {
 
 function renderRecentEntries(parentEl) {
   var allDates = getAllAnalysisDates();
-  if (allDates.length === 0) return;
+
+  // Determine how many weekdays are missing in the last 7 trading days
+  var missingCount = 0;
+  var today = new Date();
+  var checkDate = new Date(today);
+  var weekdaysChecked = 0;
+  while(weekdaysChecked < 7) {
+    checkDate.setDate(checkDate.getDate() - 1);
+    if(checkDate.getDay() >= 1 && checkDate.getDay() <= 5) {
+      weekdaysChecked++;
+      var ds = checkDate.toISOString().split('T')[0];
+      if(!getAnalysis(ds)) missingCount++;
+    }
+  }
 
   var html = '<div style="margin-top:24px;">';
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">';
   html += '<div class="section-title" style="margin:0;"><span class="dot" style="background:var(--blue)"></span> Recent Analysis Entries</div>';
-  html += '<button onclick="backfillAnalysis()" style="padding:4px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(37,99,235,0.08);color:var(--blue);cursor:pointer;font-size:9px;font-weight:700;font-family:\'Inter\',sans-serif;">Fill Missing Days</button>';
-  html += '</div>';
+  html += '<div style="display:flex;gap:6px;">';
+  if(missingCount > 0) {
+    html += '<button onclick="backfillAnalysis(7)" id="backfill-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(37,99,235,0.08);color:var(--blue);cursor:pointer;font-size:9px;font-weight:700;font-family:\'Inter\',sans-serif;">Fill Missing ('+missingCount+')</button>';
+  }
+  html += '<button onclick="backfillAnalysis(14)" id="backfill-2wk-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--purple);background:rgba(124,58,237,0.08);color:var(--purple);cursor:pointer;font-size:9px;font-weight:700;font-family:\'Inter\',sans-serif;">Look Back 2 Weeks</button>';
+  html += '</div></div>';
+  html += '<div id="backfill-status" style="font-size:10px;color:var(--text-muted);margin-bottom:6px;"></div>';
   html += '<div class="card" style="padding:0;overflow:hidden;">';
 
-  allDates.slice(0, 15).forEach(function(date) {
-    var a = getAnalysis(date);
-    if (!a) return;
-    var dateObj = new Date(date + 'T12:00:00');
-    var dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    var isActive = date === analysisCurrentDate;
-    var moverCount = (a.movers || []).length;
-    var topMover = moverCount > 0 ? a.movers[0].ticker + ' ' + (a.movers[0].changePct >= 0 ? '+' : '') + a.movers[0].changePct.toFixed(1) + '%' : '';
-    var topColor = moverCount > 0 && a.movers[0].changePct >= 0 ? 'var(--green)' : 'var(--red)';
+  // Show existing entries (or placeholders for last 7 weekdays if none exist)
+  var entriesToShow = allDates.slice(0, 15);
+  if(entriesToShow.length === 0) {
+    html += '<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:10px;">No entries yet. Click a button above to auto-generate.</div>';
+  } else {
+    entriesToShow.forEach(function(date) {
+      var a = getAnalysis(date);
+      if (!a) return;
+      var dateObj = new Date(date + 'T12:00:00');
+      var dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      var isActive = date === analysisCurrentDate;
+      var moverCount = (a.movers || []).length;
+      var topMover = moverCount > 0 ? a.movers[0].ticker + ' ' + (a.movers[0].changePct >= 0 ? '+' : '') + a.movers[0].changePct.toFixed(1) + '%' : '';
+      var topColor = moverCount > 0 && a.movers[0].changePct >= 0 ? 'var(--green)' : 'var(--red)';
 
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:11px;' + (isActive ? 'background:rgba(59,130,246,0.08);' : '') + '" onclick="analysisCurrentDate=\'' + date + '\';renderAnalysis();">';
-    html += '<span style="color:var(--text-secondary);font-weight:' + (isActive ? '700' : '400') + ';">' + dayName + '</span>';
-    html += '<span style="font-size:10px;color:var(--text-muted);">' + moverCount + ' movers</span>';
-    if (topMover) html += '<span style="font-weight:700;color:' + topColor + ';font-family:\'JetBrains Mono\',monospace;font-size:10px;">' + topMover + '</span>';
-    html += '</div>';
-  });
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:11px;' + (isActive ? 'background:rgba(59,130,246,0.08);' : '') + '" onclick="analysisCurrentDate=\'' + date + '\';renderAnalysis();">';
+      html += '<span style="color:var(--text-secondary);font-weight:' + (isActive ? '700' : '400') + ';">' + dayName + '</span>';
+      html += '<span style="font-size:10px;color:var(--text-muted);">' + moverCount + ' movers</span>';
+      if (topMover) html += '<span style="font-weight:700;color:' + topColor + ';font-family:\'JetBrains Mono\',monospace;font-size:10px;">' + topMover + '</span>';
+      html += '</div>';
+    });
+  }
 
   html += '</div></div>';
   parentEl.innerHTML += html;
@@ -531,29 +555,149 @@ async function autoGenerateAnalysis(dateStr) {
   }
 }
 
-// ==================== BACKFILL MULTIPLE DATES ====================
-async function backfillAnalysis() {
-  // Find all weekdays between earliest entry and today that are missing
-  var allDates=getAllAnalysisDates();
-  var today=new Date();
-  var start=new Date('2026-02-20T12:00:00'); // earliest seed date
-  var missing=[];
-  var d=new Date(start);
-  while(d<=today){
-    if(d.getDay()>=1&&d.getDay()<=5){
-      var ds=d.toISOString().split('T')[0];
-      if(!getAnalysis(ds))missing.push(ds);
+// ==================== SILENT AUTO-GENERATE (for backfill, no DOM updates) ====================
+async function autoGenerateAnalysisSilent(dateStr) {
+  var anthropicKey='';
+  try{anthropicKey=localStorage.getItem('mtp_anthropic_key')||'';}catch(e){}
+  if(!anthropicKey) throw new Error('Anthropic API key required');
+
+  var universe=['SPY','QQQ','IWM','DIA','AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AMD','AVGO','CRM','NFLX','COIN','SNOW','PLTR','DKNG','UBER','SQ','SHOP','NET','CRWD','MU','MRVL','ANET','PANW','NOW','ADBE','ORCL','LLY','UNH','JPM','GS','V','MA','BAC','XOM','CVX','CAT','DE','LMT','BA','MSTR','SOFI','HOOD','RKLB','APP','HIMS','ARM','SMCI','TSM','ASML','WMT','COST','TGT','DIS','PYPL','INTC','DELL','PARA','DUOL','ZS','AXP','RIVN','NIO','BABA','SPOT','RBLX','ABNB','DASH','TTD','ROKU','PINS','SNAP'];
+  var sectorETFs=['XLK','XLF','XLE','XLV','XLY','XLI','XLRE','XLU','XLB','XLC','XLP','SMH'];
+  var allTickers=universe.concat(sectorETFs);
+
+  var fromDate=new Date(dateStr+'T12:00:00');
+  fromDate.setDate(fromDate.getDate()-5);
+  var fromStr=fromDate.toISOString().split('T')[0];
+  var toDate=new Date(dateStr+'T12:00:00');
+  toDate.setDate(toDate.getDate()+1);
+  var toStr=toDate.toISOString().split('T')[0];
+
+  var polygonKey='';try{polygonKey=localStorage.getItem('mtp_polygon_key')||'';}catch(e){}
+  if(!polygonKey)polygonKey='cITeodtOFuLRZuppvB3hc6U4XMBQUT0u';
+
+  var barData={};
+  for(var i=0;i<allTickers.length;i++){
+    var ticker=allTickers[i];
+    try{
+      var url='https://api.polygon.io/v2/aggs/ticker/'+ticker+'/range/1/day/'+fromStr+'/'+toStr+'?adjusted=true&sort=asc&apiKey='+polygonKey;
+      var resp=await fetch(url);
+      if(resp.ok){var json=await resp.json();if(json.results&&json.results.length>0)barData[ticker]=json.results;}
+    }catch(e){}
+    if(i>0&&i%5===0) await new Promise(function(r){setTimeout(r,1200);});
+  }
+
+  var movers=[];
+  universe.forEach(function(t){
+    var bars=barData[t];if(!bars||bars.length<2)return;
+    var targetBar=null,prevBar=null;
+    for(var j=0;j<bars.length;j++){
+      var barDate=new Date(bars[j].t).toISOString().split('T')[0];
+      if(barDate===dateStr){targetBar=bars[j];if(j>0)prevBar=bars[j-1];break;}
     }
-    d.setDate(d.getDate()+1);
+    if(!targetBar||!prevBar)return;
+    var pctChg=((targetBar.c-prevBar.c)/prevBar.c)*100;
+    movers.push({ticker:t,close:targetBar.c,prevClose:prevBar.c,pct:pctChg,absPct:Math.abs(pctChg),volume:targetBar.v});
+  });
+  movers.sort(function(a,b){return b.absPct-a.absPct;});
+  var topMovers=movers.slice(0,15);
+
+  var sectorPerf=[];
+  var sectorNames={'XLK':'Technology','XLF':'Financials','XLE':'Energy','XLV':'Healthcare','XLY':'Consumer Disc.','XLI':'Industrials','XLRE':'Real Estate','XLU':'Utilities','XLB':'Materials','XLC':'Comm. Services','XLP':'Consumer Staples','SMH':'Semiconductors'};
+  sectorETFs.forEach(function(etf){
+    var bars=barData[etf];if(!bars||bars.length<2)return;
+    var targetBar=null,prevBar=null;
+    for(var j=0;j<bars.length;j++){
+      var barDate=new Date(bars[j].t).toISOString().split('T')[0];
+      if(barDate===dateStr){targetBar=bars[j];if(j>0)prevBar=bars[j-1];break;}
+    }
+    if(!targetBar||!prevBar)return;
+    var pctChg=((targetBar.c-prevBar.c)/prevBar.c)*100;
+    sectorPerf.push({etf:etf,name:sectorNames[etf]||etf,pct:pctChg});
+  });
+  sectorPerf.sort(function(a,b){return b.pct-a.pct;});
+
+  var spyBar=barData['SPY'];var spyChg=0;
+  if(spyBar){for(var si=0;si<spyBar.length;si++){var sd=new Date(spyBar[si].t).toISOString().split('T')[0];if(sd===dateStr&&si>0){spyChg=((spyBar[si].c-spyBar[si-1].c)/spyBar[si-1].c)*100;break;}}}
+
+  if(topMovers.length===0) throw new Error('No trading data for '+dateStr);
+
+  var moverNews={};
+  for(var ni=0;ni<Math.min(topMovers.length,10);ni++){
+    try{
+      var newsUrl='https://api.polygon.io/v2/reference/news?ticker='+topMovers[ni].ticker+'&published_utc.gte='+dateStr+'T00:00:00Z&published_utc.lte='+dateStr+'T23:59:59Z&limit=5&apiKey='+polygonKey;
+      var nResp=await fetch(newsUrl);if(nResp.ok){var nJson=await nResp.json();moverNews[topMovers[ni].ticker]=(nJson.results||[]).map(function(a){return a.title||'';}).filter(function(t){return t.length>0;});}
+    }catch(e){}
+    if(ni>0&&ni%5===0) await new Promise(function(r){setTimeout(r,1200);});
   }
-  if(missing.length===0){alert('All trading days have analysis entries!');return;}
-  var confirm=window.confirm('Generate analysis for '+missing.length+' missing days?\n\n'+missing.join(', ')+'\n\nThis will use your Anthropic API key and may take a few minutes.');
-  if(!confirm)return;
-  for(var i=0;i<missing.length;i++){
-    try{await autoGenerateAnalysis(missing[i]);}catch(e){}
+
+  var moverContext=topMovers.map(function(m){
+    var dir=m.pct>0?'UP':'DOWN';
+    var news=moverNews[m.ticker]||[];
+    var newsStr=news.length>0?'\n  Headlines: '+news.slice(0,3).join('; '):'\n  No specific headlines.';
+    return m.ticker+' '+dir+' '+m.pct.toFixed(1)+'% (Close: $'+m.close.toFixed(2)+')'+newsStr;
+  }).join('\n\n');
+
+  var sectorContext=sectorPerf.map(function(s){return s.name+' ('+s.etf+'): '+(s.pct>=0?'+':'')+s.pct.toFixed(2)+'%';}).join('\n');
+
+  var prompt='You are a professional market analyst. Generate a full end-of-day analysis for '+dateStr+'.\n\nSPY change: '+(spyChg>=0?'+':'')+spyChg.toFixed(2)+'%\n\nSECTOR PERFORMANCE:\n'+sectorContext+'\n\nBIGGEST MOVERS:\n'+moverContext+'\n\nGenerate a complete analysis in this EXACT JSON format. Return ONLY the JSON object:\n{\n  "marketContext": "2-3 sentence summary of the day. What drove the session. Key headlines.",\n  "movers": [\n    {"ticker": "DELL", "changePct": 21.8, "sector": "Technology", "catchable": "yes|partial|no", "why": "1-2 sentences on what caused the move", "lesson": "1-2 sentences — what a trader should learn from this"}\n  ],\n  "sectorRotation": "MONEY FLOWING INTO: ... MONEY FLOWING OUT OF: ... NOTABLE: ...",\n  "patterns": "DEVELOPING: bullet points of multi-day patterns building. FADING: patterns losing steam.",\n  "missed": "Opportunities that were catchable but may have been missed. Actionable lessons.",\n  "tomorrowWatch": "Priority setups for tomorrow. Specific tickers, levels, and strategies.",\n  "probabilityMap": [\n    {"ticker": "CRWD", "probability": 75, "tier": 1, "direction": "long|short|both", "catalyst": "short label", "thesis": "2-3 sentences", "keyLevels": "Support: $X | Resistance: $Y", "optionsPlay": "specific options strategy"}\n  ],\n  "watchlist": [\n    {"theme": "Theme Name", "status": "active|watch|fading", "tickers": ["TICK1","TICK2"], "note": "Why this theme matters"}\n  ],\n  "mindset": {"score": 7, "scoreNote": "Brief note on discipline", "violations": [{"rule": "Rule name", "detail": "what happened"}], "wins": ["What went right"]}\n}\n\nRULES:\n- Include 6-10 movers (biggest absolute % changes with clear catalysts)\n- "catchable" = yes if the setup was visible pre-market or early session, partial if needed fast reaction, no if purely news-driven\n- probabilityMap: 4-6 tickers ranked by probability of 3%+ move TOMORROW\n- watchlist: 3-5 thematic groupings\n- For mindset: since we dont know the users trades, give a general score of 7 with note "Auto-generated — update with your actual trades"\n- Keep everything concise and trader-focused. No fluff.\n- Return ONLY the JSON object.';
+
+  var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4096,messages:[{role:'user',content:prompt}]})});
+  if(!r.ok) throw new Error('API error: '+r.status);
+  var data=await r.json();
+  var text=data.content&&data.content[0]?data.content[0].text:'';
+  var jsonMatch=text.match(/\{[\s\S]*\}/);if(!jsonMatch) throw new Error('Could not parse AI response');
+  var result=JSON.parse(jsonMatch[0]);
+  saveAnalysis(dateStr, result);
+}
+
+// ==================== BACKFILL MULTIPLE DATES ====================
+async function backfillAnalysis(lookbackDays) {
+  lookbackDays = lookbackDays || 7;
+  var statusEl = document.getElementById('backfill-status');
+  var btn7 = document.getElementById('backfill-btn');
+  var btn14 = document.getElementById('backfill-2wk-btn');
+  function setStatus(msg) { if(statusEl) statusEl.innerHTML = msg; }
+
+  // Find all weekdays in the lookback window that are missing
+  var today = new Date();
+  var missing = [];
+  var d = new Date(today);
+  // Go back lookbackDays calendar days (to cover enough weekdays)
+  d.setDate(d.getDate() - Math.ceil(lookbackDays * 1.5));
+  while(d <= today) {
+    if(d.getDay() >= 1 && d.getDay() <= 5) {
+      var ds = d.toISOString().split('T')[0];
+      if(!getAnalysis(ds)) missing.push(ds);
+    }
+    d.setDate(d.getDate() + 1);
+  }
+
+  if(missing.length === 0) {
+    setStatus('<span style="color:var(--green);">All trading days in the last ' + lookbackDays + ' days have analysis entries.</span>');
+    return;
+  }
+
+  var ok = window.confirm('Generate analysis for ' + missing.length + ' missing day(s)?\n\n' + missing.join(', ') + '\n\nThis uses your Anthropic API key and may take a few minutes.');
+  if(!ok) return;
+
+  // Disable buttons during backfill
+  if(btn7) { btn7.disabled = true; btn7.textContent = 'Working...'; }
+  if(btn14) { btn14.disabled = true; btn14.textContent = 'Working...'; }
+
+  for(var i = 0; i < missing.length; i++) {
+    setStatus('Generating ' + (i+1) + '/' + missing.length + ': ' + missing[i] + '...');
+    try {
+      await autoGenerateAnalysisSilent(missing[i]);
+    } catch(e) {
+      setStatus('<span style="color:var(--red);">Error on ' + missing[i] + ': ' + e.message + '</span>');
+    }
     // Wait between generations to avoid rate limits
-    if(i<missing.length-1) await new Promise(function(r){setTimeout(r,3000);});
+    if(i < missing.length - 1) await new Promise(function(r) { setTimeout(r, 3000); });
   }
+
+  setStatus('<span style="color:var(--green);">Done! Generated ' + missing.length + ' entries.</span>');
+  // Refresh the analysis view to show new entries
+  setTimeout(function() { renderAnalysis(); }, 500);
 }
 
 // ==================== SHAKEOUT RECLAIM SCANNER ====================

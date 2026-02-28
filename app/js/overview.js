@@ -91,17 +91,54 @@ async function renderOverview() {
   var diaData = await getSnapWithBars('DIA');
   var vixyData = await getSnapWithBars('VIXY');
 
-  // ── SPY 10 & 20 SMA ──
-  var spySma10=null, spySma20=null;
-  if (spyBars.length>=20) {
-    var cl = spyBars.map(function(b){return b.c;}); var ln=cl.length;
-    var s10=0; for(var i=ln-10;i<ln;i++) s10+=cl[i]; spySma10=s10/10;
-    var s20=0; for(var j=ln-20;j<ln;j++) s20+=cl[j]; spySma20=s20/20;
+  // ── INDEX 10 & 20 SMAs (SPY, QQQ, IWM, DIA) ──
+  function calcSMA(bars, period) {
+    if(!bars||bars.length<period) return null;
+    var cl=bars.map(function(b){return b.c;}); var ln=cl.length;
+    var sum=0; for(var i=ln-period;i<ln;i++) sum+=cl[i]; return sum/period;
   }
+  var spySma10=calcSMA(spyBars,10), spySma20=calcSMA(spyBars,20);
   var spyAbove10 = spySma10!==null && spyData.price>spySma10;
   var spyAbove20 = spySma20!==null && spyData.price>spySma20;
   var spyBelow10 = spySma10!==null && spyData.price<spySma10;
   var spyBelow20 = spySma20!==null && spyData.price<spySma20;
+
+  // Fetch bars for QQQ, IWM, DIA for their SMAs
+  var qqqBars=[],iwmBars=[],diaBars=[];
+  try{qqqBars=await getDailyBars('QQQ',30);}catch(e){}
+  try{iwmBars=await getDailyBars('IWM',30);}catch(e){}
+  try{diaBars=await getDailyBars('DIA',30);}catch(e){}
+
+  var qqqSma10=calcSMA(qqqBars,10),qqqSma20=calcSMA(qqqBars,20);
+  var iwmSma10=calcSMA(iwmBars,10),iwmSma20=calcSMA(iwmBars,20);
+  var diaSma10=calcSMA(diaBars,10),diaSma20=calcSMA(diaBars,20);
+
+  var qqqAbove10=qqqSma10!==null&&qqqData.price>qqqSma10;
+  var qqqAbove20=qqqSma20!==null&&qqqData.price>qqqSma20;
+  var iwmAbove10=iwmSma10!==null&&iwmData.price>iwmSma10;
+  var iwmAbove20=iwmSma20!==null&&iwmData.price>iwmSma20;
+  var diaAbove10=diaSma10!==null&&diaData.price>diaSma10;
+  var diaAbove20=diaSma20!==null&&diaData.price>diaSma20;
+
+  // Count how many indexes are above both SMAs vs below both
+  var idxAboveBoth=0, idxBelowBoth=0, idxMixed=0;
+  var idxSmaDetails=[];
+  [{name:'SPY',p:spyData.price,a10:spyAbove10,a20:spyAbove20,s10:spySma10,s20:spySma20},
+   {name:'QQQ',p:qqqData.price,a10:qqqAbove10,a20:qqqAbove20,s10:qqqSma10,s20:qqqSma20},
+   {name:'IWM',p:iwmData.price,a10:iwmAbove10,a20:iwmAbove20,s10:iwmSma10,s20:iwmSma20},
+   {name:'DIA',p:diaData.price,a10:diaAbove10,a20:diaAbove20,s10:diaSma10,s20:diaSma20}].forEach(function(idx){
+    if(idx.s10===null)return;
+    if(idx.a10&&idx.a20){idxAboveBoth++;idxSmaDetails.push(idx.name+' above both');}
+    else if(!idx.a10&&!idx.a20){idxBelowBoth++;idxSmaDetails.push(idx.name+' below both');}
+    else{idxMixed++;idxSmaDetails.push(idx.name+' mixed');}
+  });
+
+  // VIX context
+  var vixPct=vixyData.pct;
+  var vixNote='';
+  if(Math.abs(vixPct)>5)vixNote='VIX '+(vixPct>0?'spiking +':'dropping ')+Math.abs(vixPct).toFixed(1)+'% — '+(vixPct>0?'fear elevated.':'fear fading.');
+  else if(Math.abs(vixPct)>2)vixNote='VIX '+(vixPct>0?'rising +':'easing ')+Math.abs(vixPct).toFixed(1)+'%.';
+  else vixNote='VIX stable.';
 
   // ── SECTOR DATA ──
   var sectorData = sectorETFs.map(function(sec) {
@@ -190,7 +227,8 @@ async function renderOverview() {
 
   // ════ 2. MARKET REGIME ════
   var regimeLabel='Neutral',regimeColor='var(--text-muted)',regimeBg='var(--bg-secondary)',regimeBorder='var(--border)',regimeIcon='◆',regimeDetail='';
-  var spyPct=spyData.pct, qqqPct=qqqData.pct, avgPct=(spyPct+qqqPct)/2;
+  var spyPct=spyData.pct, qqqPct=qqqData.pct, iwmPct=iwmData.pct, diaPct=diaData.pct;
+  var avgPct=(spyPct+qqqPct+iwmPct+diaPct)/4;
 
   // High-impact econ event check
   var hasHighImpactEvent=false, eventName='';
@@ -207,52 +245,84 @@ async function renderOverview() {
     }
   } catch(e){}
 
-  var manualRegime=null;
-  try{manualRegime=localStorage.getItem('mac_regime_override');}catch(e){}
-
-  if(manualRegime && manualRegime!=='auto') {
-    var ov={'risk-on':{label:'Risk On',icon:'▲',color:'var(--green)',bg:'rgba(16,185,129,0.06)',border:'rgba(16,185,129,0.3)'},
-      'risk-off':{label:'Risk Off',icon:'▼',color:'var(--red)',bg:'rgba(239,68,68,0.06)',border:'rgba(239,68,68,0.3)'},
-      'choppy':{label:'Choppy / Rangebound',icon:'↔',color:'var(--amber)',bg:'rgba(245,158,11,0.06)',border:'rgba(245,158,11,0.3)'},
-      'wait':{label:'Wait for News',icon:'⏸',color:'var(--purple)',bg:'rgba(124,58,237,0.06)',border:'rgba(124,58,237,0.3)'}}[manualRegime]||{label:'Choppy',icon:'↔',color:'var(--amber)',bg:'rgba(245,158,11,0.06)',border:'rgba(245,158,11,0.3)'};
-    regimeLabel=ov.label;regimeIcon=ov.icon;regimeColor=ov.color;regimeBg=ov.bg;regimeBorder=ov.border;regimeDetail='Manual override active';
-  } else {
-    if(hasHighImpactEvent&&!live){regimeLabel='Wait for '+eventName;regimeIcon='⏸';regimeColor='var(--purple)';regimeBg='rgba(124,58,237,0.06)';regimeBorder='rgba(124,58,237,0.3)';regimeDetail=eventName+' data expected — wait for the reaction before entering.';}
-    else if(avgPct>0.8&&breadthPct>=65&&spyAbove10&&spyAbove20){regimeLabel='Risk On';regimeIcon='▲';regimeColor='var(--green)';regimeBg='rgba(16,185,129,0.06)';regimeBorder='rgba(16,185,129,0.3)';regimeDetail='Broad strength. '+sectorsUp+'/'+sectorData.length+' sectors green. SPY above 10 & 20 SMA.';}
-    else if(avgPct<-0.8&&breadthPct<=35&&spyBelow10&&spyBelow20){regimeLabel='Risk Off';regimeIcon='▼';regimeColor='var(--red)';regimeBg='rgba(239,68,68,0.06)';regimeBorder='rgba(239,68,68,0.3)';regimeDetail='Broad weakness. '+sectorsDown+'/'+sectorData.length+' sectors red. SPY below 10 & 20 SMA. Reduce size.';}
-    else if(Math.abs(avgPct)<0.3&&Math.abs(spyPct-qqqPct)<0.5){
-      var smaCtx='';
-      if(spySma10!==null&&spySma20!==null){
-        if(spyAbove10&&spyAbove20)smaCtx='SPY above 10 & 20 SMA — slight bullish bias despite chop.';
-        else if(spyBelow10&&spyBelow20)smaCtx='SPY below 10 & 20 SMA — slight bearish bias despite chop.';
-        else if(spyAbove20&&spyBelow10)smaCtx='SPY between SMAs (above 20, below 10) — indecision.';
-        else if(spyBelow20&&spyAbove10)smaCtx='SPY crossed above 10 SMA but below 20 — early reversal? Wait.';
-        else smaCtx='SPY tangled between 10 & 20 SMA — no clear direction.';
-      }
-      regimeLabel='Choppy / Low Conviction';regimeIcon='↔';regimeColor='var(--amber)';regimeBg='rgba(245,158,11,0.06)';regimeBorder='rgba(245,158,11,0.3)';regimeDetail='Narrow range, mixed signals. '+smaCtx;
-    }
-    else if(avgPct>0.3){var bs=spyAbove10&&spyAbove20?' SPY above 10 & 20 SMA — trend supportive.':' SPY not cleanly above both SMAs — caution.';regimeLabel='Lean Bullish';regimeIcon='▲';regimeColor='var(--green)';regimeBg='rgba(16,185,129,0.04)';regimeBorder='rgba(16,185,129,0.2)';regimeDetail=sectorsUp+'/'+sectorData.length+' sectors positive. Selective longs.'+bs;}
-    else if(avgPct<-0.3){var br=spyBelow10&&spyBelow20?' SPY below both SMAs — confirms weakness.':' SPY holding above at least one SMA — watch for support.';regimeLabel='Lean Bearish';regimeIcon='▼';regimeColor='var(--red)';regimeBg='rgba(239,68,68,0.04)';regimeBorder='rgba(239,68,68,0.2)';regimeDetail=sectorsDown+'/'+sectorData.length+' sectors negative. Cautious.'+br;}
-    else {var ns=spySma10!==null?(spyAbove10&&spyAbove20?' SPY above both SMAs — lean longs.':(spyBelow10&&spyBelow20?' SPY below both SMAs — lean caution.':' SPY between SMAs — no edge.')):'';regimeLabel='Neutral';regimeIcon='◆';regimeColor='var(--text-muted)';regimeBg='var(--bg-secondary)';regimeBorder='var(--border)';regimeDetail='Mixed signals. A+ setups only.'+ns;}
-    if(hasHighImpactEvent&&live) regimeDetail+=' ⚠ '+eventName+' today — volatility expected.';
+  // Build index status summary for notes
+  function buildIndexNotes(){
+    var parts=[];
+    [{name:'SPY',pct:spyPct,a10:spyAbove10,a20:spyAbove20},
+     {name:'QQQ',pct:qqqPct,a10:qqqAbove10,a20:qqqAbove20},
+     {name:'IWM',pct:iwmPct,a10:iwmAbove10,a20:iwmAbove20},
+     {name:'DIA',pct:diaPct,a10:diaAbove10,a20:diaAbove20}].forEach(function(idx){
+      var smaStatus=idx.a10&&idx.a20?'above both SMAs':(!idx.a10&&!idx.a20?'below both SMAs':'between SMAs');
+      parts.push(idx.name+' '+(idx.pct>=0?'+':'')+idx.pct.toFixed(1)+'% ('+smaStatus+')');
+    });
+    return parts.join(' · ');
   }
+  var indexNotes=buildIndexNotes();
+  var vixLine=vixNote;
+
+  // Regime decision using ALL indexes + VIX
+  if(hasHighImpactEvent&&!live){
+    regimeLabel='Wait for '+eventName;regimeIcon='⏸';regimeColor='var(--purple)';regimeBg='rgba(124,58,237,0.06)';regimeBorder='rgba(124,58,237,0.3)';
+    regimeDetail=eventName+' data expected — wait for the reaction before entering.';
+  }
+  else if(avgPct>0.8&&breadthPct>=65&&idxAboveBoth>=3){
+    regimeLabel='Risk On';regimeIcon='▲';regimeColor='var(--green)';regimeBg='rgba(16,185,129,0.06)';regimeBorder='rgba(16,185,129,0.3)';
+    regimeDetail='Broad strength. '+idxAboveBoth+'/4 indexes above 10 & 20 SMA. '+sectorsUp+'/'+sectorData.length+' sectors green. '+vixLine+'\n'+indexNotes;
+  }
+  else if(avgPct<-0.8&&breadthPct<=35&&idxBelowBoth>=3){
+    regimeLabel='Risk Off';regimeIcon='▼';regimeColor='var(--red)';regimeBg='rgba(239,68,68,0.06)';regimeBorder='rgba(239,68,68,0.3)';
+    regimeDetail='Broad weakness. '+idxBelowBoth+'/4 indexes below 10 & 20 SMA. '+sectorsDown+'/'+sectorData.length+' sectors red. '+vixLine+' Reduce size.\n'+indexNotes;
+  }
+  else if(Math.abs(avgPct)<0.3&&idxMixed>=2){
+    regimeLabel='Choppy / Low Conviction';regimeIcon='↔';regimeColor='var(--amber)';regimeBg='rgba(245,158,11,0.06)';regimeBorder='rgba(245,158,11,0.3)';
+    regimeDetail='Narrow range, mixed signals. '+idxAboveBoth+'/4 above both SMAs, '+idxBelowBoth+'/4 below both, '+idxMixed+'/4 mixed. '+vixLine+'\n'+indexNotes;
+  }
+  else if(avgPct>0.3||idxAboveBoth>=3){
+    regimeLabel='Lean Bullish';regimeIcon='▲';regimeColor='var(--green)';regimeBg='rgba(16,185,129,0.04)';regimeBorder='rgba(16,185,129,0.2)';
+    regimeDetail=idxAboveBoth+'/4 indexes above both SMAs. '+sectorsUp+'/'+sectorData.length+' sectors positive. '+vixLine+' Selective longs.\n'+indexNotes;
+  }
+  else if(avgPct<-0.3||idxBelowBoth>=3){
+    regimeLabel='Lean Bearish';regimeIcon='▼';regimeColor='var(--red)';regimeBg='rgba(239,68,68,0.04)';regimeBorder='rgba(239,68,68,0.2)';
+    regimeDetail=idxBelowBoth+'/4 indexes below both SMAs. '+sectorsDown+'/'+sectorData.length+' sectors negative. '+vixLine+' Cautious, reduce size.\n'+indexNotes;
+  }
+  else{
+    regimeLabel='Neutral';regimeIcon='◆';regimeColor='var(--text-muted)';regimeBg='var(--bg-secondary)';regimeBorder='var(--border)';
+    regimeDetail='Mixed signals across indexes. '+idxAboveBoth+' above both SMAs, '+idxBelowBoth+' below both. '+vixLine+' A+ setups only.\n'+indexNotes;
+  }
+  if(hasHighImpactEvent&&live) regimeDetail+=' ⚠ '+eventName+' today — volatility expected.';
 
   html += '<div style="background:'+regimeBg+';border:1px solid '+regimeBorder+';border-radius:10px;padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;">';
   html += '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">';
   html += '<span style="font-size:22px;color:'+regimeColor+';">'+regimeIcon+'</span>';
   html += '<div style="min-width:0;">';
   html += '<div style="font-size:15px;font-weight:800;color:'+regimeColor+';">'+regimeLabel+'</div>';
-  html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;line-height:1.4;">'+regimeDetail+'</div>';
-  if(spySma10!==null&&spySma20!==null){
-    html += '<div style="display:flex;gap:10px;margin-top:3px;font-size:9px;font-family:\'JetBrains Mono\',monospace;">';
-    html += '<span style="color:'+(spyAbove10?'var(--green)':'var(--red)')+';">10 SMA $'+spySma10.toFixed(2)+' ('+(spyAbove10?'ABOVE':'BELOW')+')</span>';
-    html += '<span style="color:'+(spyAbove20?'var(--green)':'var(--red)')+';">20 SMA $'+spySma20.toFixed(2)+' ('+(spyAbove20?'ABOVE':'BELOW')+')</span>';
+  html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
+  // Show all 4 indexes' SMA status
+  var smaIndexes = [
+    {name:'SPY',s10:spySma10,s20:spySma20,a10:spyAbove10,a20:spyAbove20},
+    {name:'QQQ',s10:qqqSma10,s20:qqqSma20,a10:qqqAbove10,a20:qqqAbove20},
+    {name:'IWM',s10:iwmSma10,s20:iwmSma20,a10:iwmAbove10,a20:iwmAbove20},
+    {name:'DIA',s10:diaSma10,s20:diaSma20,a10:diaAbove10,a20:diaAbove20}
+  ];
+  var hasSmaData = smaIndexes.some(function(idx){return idx.s10!==null;});
+  if(hasSmaData){
+    html += '<div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;">';
+    smaIndexes.forEach(function(idx){
+      if(idx.s10===null) return;
+      var both = idx.a10 && idx.a20;
+      var neither = !idx.a10 && !idx.a20;
+      var smaColor = both ? 'var(--green)' : neither ? 'var(--red)' : 'var(--amber)';
+      var smaLabel = both ? 'Above Both' : neither ? 'Below Both' : 'Mixed';
+      html += '<span style="font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+smaColor+'15;color:'+smaColor+';font-family:\'JetBrains Mono\',monospace;">'+idx.name+' '+smaLabel+'</span>';
+    });
     html += '</div>';
   }
   html += '</div></div>';
   html += '</div>';
 
   // ════ 3. MARKET SNAPSHOT (tight row: SPY QQQ IWM DIA VIX DXY) ════
+  var dataFreshness = getDataFreshnessLabel();
+  html += '<div style="display:flex;justify-content:flex-end;margin-bottom:4px;"><span style="font-size:8px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span></div>';
   html += '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px;">';
   var snapItems = [
     {ticker:'SPY',label:'S&P 500',data:spyData},
@@ -294,7 +364,7 @@ async function renderOverview() {
   html += '</div>';
   html += '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:8px;color:var(--text-muted);">';
   html += '<span>Breadth: '+breadthPct+'%</span>';
-  html += '<span>'+(live?'● Live':'○ Last trading day')+'</span>';
+  html += '<span>'+dataFreshness+'</span>';
   html += '</div></div>';
 
   // ════ 5. TODAY'S CATALYSTS (Econ Calendar + Top News) ════
@@ -336,7 +406,10 @@ async function renderOverview() {
   html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
   html += '<div style="font-size:12px;font-weight:800;color:var(--text-primary);">Watchlist</div>';
   var wList = getWatchlist();
+  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += '<span style="font-size:7px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
   if(wList.length>0) html += '<button onclick="clearWatchlist();renderOverview();" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:8px;color:var(--text-muted);cursor:pointer;">Clear All</button>';
+  html += '</div>';
   html += '</div>';
   // Add form
   html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-wrap:wrap;">';
@@ -389,7 +462,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleHeatmap()" style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="font-size:12px;font-weight:800;color:var(--text-primary);">Sector Heatmap</div>';
-  html += '<span id="heatmap-arrow" style="font-size:11px;color:var(--text-muted);">'+(heatmapCollapsed?'▶':'▼')+'</span>';
+  html += '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:7px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:11px;color:var(--text-muted);">'+(heatmapCollapsed?'▶':'▼')+'</span></div>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
   html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:12px 14px;">';
