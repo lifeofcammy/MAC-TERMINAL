@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms of Service — MAC Terminal</title>
+  <meta name="description" content="Terms of Service for MAC Terminal, your all-in-one trading command center.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Nav (shared legal page nav) ── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      border-bottom: 1px solid var(--color-divider);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      background: oklch(from var(--color-bg) l c h / 0.92);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      max-width: var(--content-wide);
+      margin-inline: auto;
+      padding-inline: var(--space-6);
+      gap: var(--space-6);
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .nav-logo-mark {
+      width: 28px;
+      height: 28px;
+      background: var(--color-primary);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    .nav-logo-text {
+      font-family: var(--font-display);
+      font-size: var(--text-base);
+      color: var(--color-text);
+      line-height: 1;
+    }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      flex-shrink: 0;
+    }
+    .nav-theme-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: background var(--transition-interactive), color var(--transition-interactive);
+      flex-shrink: 0;
+    }
+    .nav-theme-toggle:hover { background: var(--color-surface-2); color: var(--color-text); }
+
+    /* ── Legal Page Layout ── */
+    .legal-page { padding-block: clamp(3rem, 6vw, 5rem); }
+    .legal-container { max-width: 720px; margin-inline: auto; padding-inline: 1.5rem; }
+    .legal-title { font-family: var(--font-display); font-size: var(--text-2xl); margin-bottom: 0.5rem; color: var(--color-text); }
+    .legal-updated { font-size: var(--text-sm); color: var(--color-text-muted); margin-bottom: 2rem; }
+    .legal-section { margin-bottom: 2rem; }
+    .legal-section h2 { font-family: var(--font-display); font-size: var(--text-lg); margin-bottom: 0.75rem; color: var(--color-text); }
+    .legal-section p, .legal-section li { font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.75; }
+    .legal-section ul { list-style: disc; padding-left: 1.5rem; }
+    .legal-section ul li { margin-bottom: 0.5rem; }
+    .legal-section a { color: var(--color-primary); text-decoration: underline; }
+    .legal-section a:hover { color: var(--color-primary-hover); }
+
+    /* ── Footer ── */
+    .footer {
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-divider);
+      padding-block: var(--space-6);
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+      max-width: var(--content-wide);
+      margin-inline: auto;
+      padding-inline: var(--space-6);
+    }
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      text-decoration: none;
+    }
+    .footer-logo-name {
+      font-family: var(--font-display);
+      font-size: var(--text-sm);
+      color: var(--color-text);
+    }
+    .footer-links-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      list-style: none;
+      flex-wrap: wrap;
+    }
+    .footer-links-row a {
+      font-family: var(--font-body);
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      text-decoration: none;
+      transition: color var(--transition-interactive);
+    }
+    .footer-links-row a:hover { color: var(--color-text); }
+    .footer-copy {
+      font-family: var(--font-body);
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAV -->
+  <nav class="nav" role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">
+        <div class="nav-logo-mark">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <span class="nav-logo-text">MAC Terminal</span>
+      </a>
+      <div class="nav-right">
+        <button class="nav-theme-toggle" data-theme-toggle aria-label="Switch to dark mode">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+
+  <main class="legal-page">
+    <div class="legal-container">
+
+      <h1 class="legal-title">Terms of Service</h1>
+      <p class="legal-updated">Last updated: February 28, 2026</p>
+
+      <div class="legal-section">
+        <h2>1. Acceptance of Terms</h2>
+        <p>By accessing or using MAC Terminal ("the Service"), available at marketactioncenter.com, you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you may not access or use the Service. These Terms constitute a legally binding agreement between you and MAC Terminal.</p>
+        <p>We may update these Terms from time to time. Your continued use of the Service after any changes constitutes your acceptance of the revised Terms.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>2. Account Registration and Eligibility</h2>
+        <p>To use MAC Terminal, you must:</p>
+        <ul>
+          <li>Be at least 18 years of age</li>
+          <li>Provide accurate, current, and complete registration information</li>
+          <li>Maintain the security and confidentiality of your account credentials</li>
+          <li>Be legally capable of entering into binding contracts in your jurisdiction</li>
+          <li>Not have been previously suspended or removed from the Service</li>
+        </ul>
+        <p>You are solely responsible for all activity that occurs under your account. You must notify us immediately at <a href="mailto:support@marketactioncenter.com">support@marketactioncenter.com</a> if you suspect any unauthorized use of your account.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>3. Subscription Plans and Billing</h2>
+        <p>MAC Terminal offers the following subscription plans:</p>
+        <ul>
+          <li><strong>Free ($0/month)</strong> — Basic scanner access, market overview dashboard, up to 50 trades/month, and 1 watchlist</li>
+          <li><strong>Pro ($29/month)</strong> — Unlimited trades, full scanner suite, options flow data, 10 watchlists, and email support</li>
+          <li><strong>Elite ($59/month)</strong> — Everything in Pro, plus AI-powered insights, advanced pattern detection, unlimited watchlists, custom alerts, and priority support</li>
+        </ul>
+        <p>All paid subscriptions are billed monthly. You may cancel your subscription at any time — your access will continue until the end of the current billing period. No partial refunds will be issued for unused time within a billing cycle.</p>
+        <p>We reserve the right to change our pricing with at least 30 days' notice. Price changes will take effect at the start of your next billing cycle following the notice.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>4. Acceptable Use Policy</h2>
+        <p>When using MAC Terminal, you agree not to:</p>
+        <ul>
+          <li>Redistribute, resell, or share any data, analysis, or content provided by the Service without prior written consent</li>
+          <li>Use automated scripts, bots, scrapers, or other tools to access or extract data from the platform</li>
+          <li>Share your account credentials with others or allow multiple individuals to use a single account</li>
+          <li>Attempt to reverse-engineer, decompile, or disassemble any part of the Service</li>
+          <li>Use the Service to engage in any illegal activity, including market manipulation, insider trading, or fraud</li>
+          <li>Circumvent any rate limits, access controls, or security measures</li>
+          <li>Interfere with or disrupt the Service, servers, or networks connected to the Service</li>
+          <li>Transmit any viruses, malware, or harmful code through the platform</li>
+        </ul>
+        <p>Violation of this Acceptable Use Policy may result in immediate suspension or termination of your account.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>5. Intellectual Property</h2>
+        <p>MAC Terminal and its original content, features, functionality, design, and branding are owned by MAC Terminal and are protected by copyright, trademark, and other intellectual property laws. This includes but is not limited to the platform's user interface, scanner algorithms, AI models, market analysis methodology, and all associated documentation.</p>
+        <p>You retain full ownership of your trade data, journal entries, notes, and any other content you create within the platform. By using the Service, you grant MAC Terminal a limited license to process and store your data solely for the purpose of providing the Service to you.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>6. API Usage and Rate Limits</h2>
+        <p>Access to MAC Terminal's features, including scanner data and AI analysis, is subject to usage limits that vary by subscription plan. Free tier users are subject to rate limiting and reduced access to certain features.</p>
+        <p>API keys, where applicable, are provided for your personal use and may not be shared or used in unauthorized applications. We reserve the right to throttle or suspend access if usage patterns indicate abuse, excessive automated requests, or activity inconsistent with normal platform use.</p>
+        <p>Currently, API keys are stored client-side in your browser's local storage. You are responsible for the security of your API keys on your devices.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>7. Termination</h2>
+        <p>Either party may terminate this agreement at any time:</p>
+        <ul>
+          <li><strong>You</strong> may cancel your subscription and close your account at any time through the platform's account settings</li>
+          <li><strong>MAC Terminal</strong> may suspend or terminate your account if you violate these Terms, engage in abusive behavior, or for any other reason at our sole discretion</li>
+        </ul>
+        <p>Upon termination, your right to access the Service ceases immediately. However, you will have a 30-day window after termination to export your trade data and any other content you've created on the platform. After this 30-day period, your data may be permanently deleted.</p>
+        <p>Termination does not relieve you of any obligations to pay outstanding fees incurred before termination.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>8. Limitation of Liability</h2>
+        <p>To the maximum extent permitted by applicable law, MAC Terminal, its owners, operators, affiliates, and employees shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to:</p>
+        <ul>
+          <li>Trading losses or lost profits arising from your use of the Service</li>
+          <li>Loss of data, goodwill, or business opportunity</li>
+          <li>Any reliance on information, analysis, or signals provided by the platform</li>
+          <li>Service interruptions, downtime, or technical errors</li>
+          <li>Actions of third-party data providers or payment processors</li>
+        </ul>
+        <p>MAC Terminal is a tools and analytics service. All trading decisions are made solely by you, and you bear full responsibility for the outcomes. Our total liability to you for any claims arising from the Service shall not exceed the amount you paid us in the 12 months preceding the claim.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>9. Disclaimer of Warranties</h2>
+        <p>The Service is provided on an "AS IS" and "AS AVAILABLE" basis, without warranties of any kind, either express or implied. MAC Terminal disclaims all warranties, including but not limited to implied warranties of merchantability, fitness for a particular purpose, non-infringement, and accuracy.</p>
+        <p>We do not warrant that:</p>
+        <ul>
+          <li>The Service will be uninterrupted, timely, secure, or error-free</li>
+          <li>The results obtained from the Service will be accurate or reliable</li>
+          <li>Any errors in the Service will be corrected</li>
+          <li>The Service will meet your specific requirements or expectations</li>
+        </ul>
+        <p>Market data is provided by third-party providers and may be delayed, inaccurate, or incomplete. AI analysis is algorithmic in nature and should not be relied upon as the sole basis for any trading decision.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>10. Governing Law</h2>
+        <p>These Terms shall be governed by and construed in accordance with the laws of the United States. Any disputes arising from or relating to these Terms or the Service shall be resolved through binding arbitration in accordance with applicable rules, except where prohibited by law. You agree to waive any right to participate in a class action lawsuit or class-wide arbitration.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>11. Changes to Terms</h2>
+        <p>We reserve the right to modify these Terms at any time. When we make material changes, we will notify you via the email address associated with your account at least 14 days before the changes take effect. We may also post a prominent notice on the platform.</p>
+        <p>Your continued use of the Service after the effective date of revised Terms constitutes your acceptance of the changes. If you do not agree to the revised Terms, you must stop using the Service and close your account.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>12. Severability</h2>
+        <p>If any provision of these Terms is found to be unenforceable or invalid by a court of competent jurisdiction, that provision shall be limited or eliminated to the minimum extent necessary, and the remaining provisions shall remain in full force and effect.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>13. Contact Information</h2>
+        <p>If you have any questions about these Terms of Service, please contact us at:</p>
+        <p><strong>MAC Terminal</strong><br>
+        Email: <a href="mailto:support@marketactioncenter.com">support@marketactioncenter.com</a><br>
+        Website: <a href="https://marketactioncenter.com">marketactioncenter.com</a></p>
+      </div>
+
+    </div>
+  </main>
+
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <a href="index.html" class="footer-logo">
+        <div class="nav-logo-mark" style="width:24px;height:24px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <span class="footer-logo-name">MAC Terminal</span>
+      </a>
+      <ul class="footer-links-row">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="terms.html">Terms</a></li>
+        <li><a href="privacy.html">Privacy</a></li>
+        <li><a href="disclaimer.html">Disclaimer</a></li>
+      </ul>
+      <p class="footer-copy">&copy; 2026 MAC Terminal. Not financial advice.</p>
+    </div>
+  </footer>
+
+
+  <!-- JAVASCRIPT -->
+  <script>
+    // Theme toggle
+    (function() {
+      const toggles = document.querySelectorAll('[data-theme-toggle]');
+      const root = document.documentElement;
+      let theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      root.setAttribute('data-theme', theme);
+      function updateToggles() {
+        toggles.forEach(t => {
+          t.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+          t.innerHTML = theme === 'dark'
+            ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+            : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        });
+      }
+      updateToggles();
+      toggles.forEach(t => t.addEventListener('click', () => {
+        theme = theme === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', theme);
+        updateToggles();
+      }));
+    })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Risk &amp; Trading Disclaimer — MAC Terminal</title>
+  <meta name="description" content="Important risk disclosure and trading disclaimer for MAC Terminal. Read before using the platform.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Nav (shared legal page nav) ── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      border-bottom: 1px solid var(--color-divider);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      background: oklch(from var(--color-bg) l c h / 0.92);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      max-width: var(--content-wide);
+      margin-inline: auto;
+      padding-inline: var(--space-6);
+      gap: var(--space-6);
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .nav-logo-mark {
+      width: 28px;
+      height: 28px;
+      background: var(--color-primary);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    .nav-logo-text {
+      font-family: var(--font-display);
+      font-size: var(--text-base);
+      color: var(--color-text);
+      line-height: 1;
+    }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      flex-shrink: 0;
+    }
+    .nav-theme-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: background var(--transition-interactive), color var(--transition-interactive);
+      flex-shrink: 0;
+    }
+    .nav-theme-toggle:hover { background: var(--color-surface-2); color: var(--color-text); }
+
+    /* ── Legal Page Layout ── */
+    .legal-page { padding-block: clamp(3rem, 6vw, 5rem); }
+    .legal-container { max-width: 720px; margin-inline: auto; padding-inline: 1.5rem; }
+    .legal-title { font-family: var(--font-display); font-size: var(--text-2xl); margin-bottom: 0.5rem; color: var(--color-text); }
+    .legal-updated { font-size: var(--text-sm); color: var(--color-text-muted); margin-bottom: 2rem; }
+    .legal-section { margin-bottom: 2rem; }
+    .legal-section h2 { font-family: var(--font-display); font-size: var(--text-lg); margin-bottom: 0.75rem; color: var(--color-text); }
+    .legal-section p, .legal-section li { font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.75; }
+    .legal-section ul { list-style: disc; padding-left: 1.5rem; }
+    .legal-section ul li { margin-bottom: 0.5rem; }
+    .legal-section a { color: var(--color-primary); text-decoration: underline; }
+    .legal-section a:hover { color: var(--color-primary-hover); }
+
+    /* ── Prominent Warning Banner ── */
+    .disclaimer-banner {
+      background: var(--color-error-highlight);
+      border: 2px solid var(--color-error);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      margin-bottom: 2.5rem;
+    }
+    .disclaimer-banner-title {
+      font-family: var(--font-display);
+      font-size: var(--text-lg);
+      color: var(--color-error);
+      margin-bottom: var(--space-2);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    .disclaimer-banner p {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      line-height: 1.75;
+    }
+    .disclaimer-banner strong {
+      color: var(--color-text);
+    }
+
+    /* ── Callout Box ── */
+    .callout {
+      background: var(--color-surface);
+      border-left: 4px solid var(--color-warning);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      padding: var(--space-4) var(--space-5);
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+    }
+    .callout p {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      line-height: 1.75;
+      margin: 0;
+    }
+    .callout strong {
+      color: var(--color-text);
+    }
+
+    /* ── Footer ── */
+    .footer {
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-divider);
+      padding-block: var(--space-6);
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+      max-width: var(--content-wide);
+      margin-inline: auto;
+      padding-inline: var(--space-6);
+    }
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      text-decoration: none;
+    }
+    .footer-logo-name {
+      font-family: var(--font-display);
+      font-size: var(--text-sm);
+      color: var(--color-text);
+    }
+    .footer-links-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      list-style: none;
+      flex-wrap: wrap;
+    }
+    .footer-links-row a {
+      font-family: var(--font-body);
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      text-decoration: none;
+      transition: color var(--transition-interactive);
+    }
+    .footer-links-row a:hover { color: var(--color-text); }
+    .footer-copy {
+      font-family: var(--font-body);
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAV -->
+  <nav class="nav" role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">
+        <div class="nav-logo-mark">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <span class="nav-logo-text">MAC Terminal</span>
+      </a>
+      <div class="nav-right">
+        <button class="nav-theme-toggle" data-theme-toggle aria-label="Switch to dark mode">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+
+  <main class="legal-page">
+    <div class="legal-container">
+
+      <h1 class="legal-title">Risk &amp; Trading Disclaimer</h1>
+      <p class="legal-updated">Last updated: February 28, 2026</p>
+
+      <!-- ═══════════════════════════════════════
+           PROMINENT WARNING BANNER
+      ════════════════════════════════════════ -->
+      <div class="disclaimer-banner">
+        <p class="disclaimer-banner-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          Important: Please Read Carefully
+        </p>
+        <p><strong>MAC Terminal is NOT a financial advisor.</strong> The platform provides tools, scanners, and AI-powered analysis for educational and informational purposes only. Nothing on this platform constitutes investment advice, a recommendation to buy or sell any security, or a solicitation to engage in any trading activity. <strong>Trading stocks, options, and other securities involves substantial risk of loss, including the potential loss of more than your initial investment.</strong> You are solely responsible for your own trading decisions and their outcomes.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>1. Not Financial Advice</h2>
+        <p>MAC Terminal provides software tools and analysis features — including Smart Scanners, AI Trade Review, and AI Market Themes — for informational and educational purposes only. The information, analysis, patterns, signals, and any other output generated by the platform:</p>
+        <ul>
+          <li>Do <strong>not</strong> constitute investment advice, financial advice, trading advice, or any other form of professional advice</li>
+          <li>Are <strong>not</strong> recommendations to buy, sell, hold, or trade any security, option, or financial instrument</li>
+          <li>Should <strong>not</strong> be used as the sole basis for any investment or trading decision</li>
+          <li>Are <strong>not</strong> personalized to your individual financial situation, risk tolerance, or investment objectives</li>
+        </ul>
+        <p>You should always conduct your own independent research and analysis before making any trading decisions.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>2. No Guarantee of Profit</h2>
+        <p>There is no guarantee that using MAC Terminal will result in profitable trades. Past performance of any scanner, strategy, pattern, or AI analysis does not guarantee or indicate future results. Markets are inherently unpredictable, and historical patterns may not repeat.</p>
+        <div class="callout">
+          <p><strong>Past performance is not indicative of future results.</strong> Any examples, case studies, or hypothetical performance shown on the platform are for illustrative purposes only and do not represent actual trading results you should expect to achieve.</p>
+        </div>
+      </div>
+
+      <div class="legal-section">
+        <h2>3. Trading Risk Disclosure</h2>
+        <p>Trading in stocks, options, futures, and other securities carries a high degree of risk and may not be suitable for all investors. Before engaging in any trading activity, you should carefully consider the following:</p>
+        <ul>
+          <li><strong>Risk of Loss:</strong> You can lose some or all of your invested capital. Do not trade with money you cannot afford to lose.</li>
+          <li><strong>Options Risk:</strong> Options trading is especially risky. Certain options strategies can result in losses exceeding your initial investment. Selling uncovered options carries theoretically unlimited risk.</li>
+          <li><strong>Leverage Risk:</strong> Using margin or leveraged products amplifies both potential gains and potential losses.</li>
+          <li><strong>Market Volatility:</strong> Securities prices can fluctuate dramatically due to market conditions, economic events, company-specific news, geopolitical developments, and other unpredictable factors.</li>
+          <li><strong>Liquidity Risk:</strong> Some securities may be difficult to sell quickly at a fair price, particularly during periods of market stress.</li>
+          <li><strong>Systemic Risk:</strong> Broad market declines can affect the value of all or most securities, regardless of individual merit.</li>
+        </ul>
+        <div class="callout">
+          <p><strong>Only trade with capital you can afford to lose entirely.</strong> Never risk money that you need for essential living expenses, debt obligations, or emergency reserves.</p>
+        </div>
+      </div>
+
+      <div class="legal-section">
+        <h2>4. AI Analysis Limitations</h2>
+        <p>MAC Terminal incorporates artificial intelligence and machine learning in several features, including AI Trade Review and AI Market Themes. It is essential to understand the limitations of these AI-powered features:</p>
+        <ul>
+          <li><strong>AI is not infallible.</strong> AI analysis is algorithmic in nature and can produce incorrect, incomplete, or misleading results. AI models operate on historical data and statistical patterns that may not reflect current or future market conditions.</li>
+          <li><strong>AI analysis is not a substitute for human judgment.</strong> The AI features are designed to assist your decision-making process, not replace it. You should always apply your own critical thinking and due diligence.</li>
+          <li><strong>AI outputs may be biased.</strong> Machine learning models can inherit biases from their training data, leading to outputs that may overweight or underweight certain factors.</li>
+          <li><strong>AI cannot predict the future.</strong> No algorithm, however sophisticated, can reliably predict future price movements, market conditions, or trading outcomes.</li>
+        </ul>
+        <p>Always verify AI-generated analysis against multiple independent sources before making any trading decisions.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>5. Scanner Limitations</h2>
+        <p>MAC Terminal's Smart Scanners are designed to identify technical patterns and conditions in market data (such as VCP patterns, compression setups, shakeout reversals, and flat bases). Important limitations include:</p>
+        <ul>
+          <li>Scanners identify patterns based on technical criteria — they do <strong>not</strong> predict future price movement</li>
+          <li>The presence of a pattern does not guarantee that a stock will move in any particular direction</li>
+          <li>Scanner results should be considered starting points for further research, not actionable trade signals</li>
+          <li>Technical patterns can fail, and false signals are a normal and expected occurrence</li>
+          <li>Scanner parameters and algorithms may be updated periodically, which can affect results</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>6. User Responsibility</h2>
+        <p><strong>All trading decisions are your sole responsibility.</strong> By using MAC Terminal, you acknowledge and agree that:</p>
+        <ul>
+          <li>You are making your own independent trading decisions</li>
+          <li>You understand the risks involved in trading securities</li>
+          <li>You will not hold MAC Terminal, its owners, operators, or affiliates responsible for any trading losses</li>
+          <li>You have sufficient knowledge, experience, and financial resources to evaluate the merits and risks of each trade</li>
+          <li>You are responsible for ensuring that your trading activities comply with all applicable laws and regulations in your jurisdiction</li>
+        </ul>
+        <div class="callout">
+          <p><strong>You bear full responsibility for every trade you execute.</strong> MAC Terminal is a tool — like a calculator or a chart. The decisions are always yours.</p>
+        </div>
+      </div>
+
+      <div class="legal-section">
+        <h2>7. Not a Registered Investment Advisor</h2>
+        <p>MAC Terminal is a software tool. <strong>We are not:</strong></p>
+        <ul>
+          <li>A registered investment advisor (RIA) with the U.S. Securities and Exchange Commission (SEC)</li>
+          <li>A registered broker-dealer with the Financial Industry Regulatory Authority (FINRA)</li>
+          <li>Licensed, registered, or affiliated with any federal, state, or international securities regulatory authority</li>
+          <li>A fiduciary to any user of the service</li>
+        </ul>
+        <p>We do not provide personalized investment advice, manage accounts, or execute trades on your behalf. We do not have any fiduciary duty or obligation to you.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>8. Consult Licensed Professionals</h2>
+        <p>Before making any investment or trading decisions, we strongly recommend that you consult with qualified, licensed professionals:</p>
+        <ul>
+          <li><strong>Financial Advisor</strong> — A licensed financial advisor or registered investment advisor can provide personalized investment advice based on your financial situation, goals, and risk tolerance</li>
+          <li><strong>Tax Professional</strong> — A qualified tax professional can advise you on the tax implications of your trading activity</li>
+          <li><strong>Legal Counsel</strong> — An attorney can advise you on the legal implications of your trading and investment activities</li>
+        </ul>
+        <p>Professional advisors are regulated, carry insurance, and have a fiduciary duty to act in your best interest — something a software tool cannot provide.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>9. Data Accuracy</h2>
+        <p>Market data displayed on MAC Terminal is sourced from third-party data providers. While we strive to deliver accurate and timely information, we cannot guarantee and do not warrant the accuracy, completeness, timeliness, or reliability of any market data. Specifically:</p>
+        <ul>
+          <li>Market data may be delayed by 15 minutes or more, depending on the data source and your subscription plan</li>
+          <li>Prices, volumes, and other data points may contain errors or inaccuracies from the source provider</li>
+          <li>Data feeds may experience interruptions, outages, or gaps due to technical issues at the provider level</li>
+          <li>Historical data may be adjusted or corrected retroactively, which can affect scanner results and analysis</li>
+          <li>Corporate actions (splits, dividends, mergers) may not be immediately reflected in the data</li>
+        </ul>
+        <p>Always verify critical data with your broker or a primary market data source before executing trades.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>10. Hypothetical and Simulated Performance</h2>
+        <p>Any hypothetical or simulated performance results shown on the platform have inherent limitations. Unlike actual trading records, simulated results do not represent real trading and may not account for the impact of certain market factors, including liquidity constraints, slippage, commissions, and the emotional aspects of real trading decisions.</p>
+        <p>Hypothetical results are generally prepared with the benefit of hindsight and may significantly overstate the potential for profit while understating the potential for loss.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>11. Acknowledgment</h2>
+        <p>By using MAC Terminal, you acknowledge that you have read, understood, and agree to this Risk &amp; Trading Disclaimer. You understand that:</p>
+        <ul>
+          <li>Trading securities involves substantial risk and may result in the loss of your entire investment</li>
+          <li>MAC Terminal provides tools and analysis, not investment advice or recommendations</li>
+          <li>AI and scanner outputs can be wrong and should not be relied upon exclusively</li>
+          <li>You are solely responsible for your own trading decisions and outcomes</li>
+          <li>MAC Terminal is not a registered investment advisor or broker-dealer</li>
+          <li>You should consult licensed financial professionals for personalized advice</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>12. Contact Us</h2>
+        <p>If you have any questions about this disclaimer, please contact us at:</p>
+        <p><strong>MAC Terminal</strong><br>
+        Email: <a href="mailto:support@marketactioncenter.com">support@marketactioncenter.com</a><br>
+        Website: <a href="https://marketactioncenter.com">marketactioncenter.com</a></p>
+      </div>
+
+    </div>
+  </main>
+
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <a href="index.html" class="footer-logo">
+        <div class="nav-logo-mark" style="width:24px;height:24px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <span class="footer-logo-name">MAC Terminal</span>
+      </a>
+      <ul class="footer-links-row">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="terms.html">Terms</a></li>
+        <li><a href="privacy.html">Privacy</a></li>
+        <li><a href="disclaimer.html">Disclaimer</a></li>
+      </ul>
+      <p class="footer-copy">&copy; 2026 MAC Terminal. Not financial advice.</p>
+    </div>
+  </footer>
+
+
+  <!-- JAVASCRIPT -->
+  <script>
+    // Theme toggle
+    (function() {
+      const toggles = document.querySelectorAll('[data-theme-toggle]');
+      const root = document.documentElement;
+      let theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      root.setAttribute('data-theme', theme);
+      function updateToggles() {
+        toggles.forEach(t => {
+          t.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+          t.innerHTML = theme === 'dark'
+            ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+            : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        });
+      }
+      updateToggles();
+      toggles.forEach(t => t.addEventListener('click', () => {
+        theme = theme === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', theme);
+        updateToggles();
+      }));
+    })();
+  </script>
+
+</body>
+</html>

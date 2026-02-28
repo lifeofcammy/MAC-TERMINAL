@@ -1,0 +1,270 @@
+/* ============================================================
+   MAC Terminal — Design System
+   Custom palette: Blue-primary, Navy-dark, Finance-oriented
+   Font: DM Serif Display (display) + Inter (body/UI)
+   ============================================================ */
+
+/* === Google Fonts === */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300..700&display=swap');
+
+/* === Type Scale === */
+:root {
+  --text-xs:   clamp(0.75rem,  0.7rem  + 0.25vw, 0.875rem);
+  --text-sm:   clamp(0.875rem, 0.8rem  + 0.35vw, 1rem);
+  --text-base: clamp(1rem,     0.9rem  + 0.5vw,  1.125rem);
+  --text-lg:   clamp(1.125rem, 0.95rem + 0.85vw, 1.5rem);
+  --text-xl:   clamp(1.5rem,   1rem    + 1.5vw,  2.25rem);
+  --text-2xl:  clamp(2rem,     1.2rem  + 2.5vw,  3.5rem);
+  --text-3xl:  clamp(2.5rem,   1rem    + 4vw,    5rem);
+  --text-hero: clamp(3rem,     0.5rem  + 7vw,    8rem);
+}
+
+/* === 4px Spacing === */
+:root {
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+  --space-32: 8rem;
+}
+
+/* === Radius, Transitions, Shadows (shared) === */
+:root {
+  --radius-sm:   0.375rem;
+  --radius-md:   0.5rem;
+  --radius-lg:   0.75rem;
+  --radius-xl:   1rem;
+  --radius-2xl:  1.5rem;
+  --radius-full: 9999px;
+
+  --transition-interactive: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  --content-narrow:  640px;
+  --content-default: 960px;
+  --content-wide:    1200px;
+
+  --font-display: 'DM Serif Display', 'Georgia', serif;
+  --font-body:    'Inter', 'Helvetica Neue', sans-serif;
+}
+
+/* === LIGHT MODE (Custom: White/Blue Finance Palette) === */
+:root, [data-theme="light"] {
+  /* Surfaces */
+  --color-bg:               #FFFFFF;
+  --color-surface:          #F8FAFC;
+  --color-surface-2:        #F1F5F9;
+  --color-surface-offset:   #E8EEF5;
+  --color-surface-offset-2: #DDE6F0;
+  --color-surface-dynamic:  #D4DFF0;
+  --color-divider:          #E2E8F0;
+  --color-border:           #CBD5E1;
+
+  /* Text */
+  --color-text:         #0F172A;
+  --color-text-muted:   #475569;
+  --color-text-faint:   #94A3B8;
+  --color-text-inverse: #FFFFFF;
+
+  /* Primary: Sophisticated Blue */
+  --color-primary:          #2563EB;
+  --color-primary-hover:    #1D4ED8;
+  --color-primary-active:   #1E40AF;
+  --color-primary-highlight:#DBEAFE;
+
+  /* Success green for trading */
+  --color-success:          #16A34A;
+  --color-success-hover:    #15803D;
+  --color-success-active:   #166534;
+  --color-success-highlight:#DCFCE7;
+
+  /* Error / loss red */
+  --color-error:            #DC2626;
+  --color-error-hover:      #B91C1C;
+  --color-error-active:     #991B1B;
+  --color-error-highlight:  #FEE2E2;
+
+  /* Warning / gold */
+  --color-warning:          #D97706;
+  --color-warning-hover:    #B45309;
+  --color-warning-active:   #92400E;
+  --color-warning-highlight:#FEF3C7;
+
+  /* Shadows (blue-tinted for finance) */
+  --shadow-sm: 0 1px 2px oklch(0.2 0.05 250 / 0.06);
+  --shadow-md: 0 4px 12px oklch(0.2 0.05 250 / 0.08), 0 1px 3px oklch(0.2 0.05 250 / 0.05);
+  --shadow-lg: 0 12px 32px oklch(0.2 0.05 250 / 0.12), 0 4px 8px oklch(0.2 0.05 250 / 0.06);
+  --shadow-glow: 0 0 0 3px oklch(from var(--color-primary) l c h / 0.15);
+}
+
+/* === DARK MODE === */
+[data-theme="dark"] {
+  /* Surfaces — Deep navy/charcoal */
+  --color-bg:               #0A0F1E;
+  --color-surface:          #0F172A;
+  --color-surface-2:        #1E293B;
+  --color-surface-offset:   #172035;
+  --color-surface-offset-2: #1B2846;
+  --color-surface-dynamic:  #243050;
+  --color-divider:          #1E293B;
+  --color-border:           #334155;
+
+  /* Text */
+  --color-text:         #F1F5F9;
+  --color-text-muted:   #94A3B8;
+  --color-text-faint:   #475569;
+  --color-text-inverse: #0F172A;
+
+  /* Primary Blue (lighter for dark bg) */
+  --color-primary:          #3B82F6;
+  --color-primary-hover:    #60A5FA;
+  --color-primary-active:   #93C5FD;
+  --color-primary-highlight:#1E3A5F;
+
+  /* Success */
+  --color-success:          #22C55E;
+  --color-success-hover:    #4ADE80;
+  --color-success-active:   #86EFAC;
+  --color-success-highlight:#052E16;
+
+  /* Error */
+  --color-error:            #F87171;
+  --color-error-hover:      #FCA5A5;
+  --color-error-active:     #FECACA;
+  --color-error-highlight:  #450A0A;
+
+  /* Warning */
+  --color-warning:          #FBBF24;
+  --color-warning-hover:    #FCD34D;
+  --color-warning-active:   #FDE68A;
+  --color-warning-highlight:#451A03;
+
+  /* Shadows (darker on dark bg) */
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
+  --shadow-md: 0 4px 12px oklch(0 0 0 / 0.4), 0 1px 3px oklch(0 0 0 / 0.3);
+  --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.5), 0 4px 8px oklch(0 0 0 / 0.3);
+  --shadow-glow: 0 0 0 3px oklch(from var(--color-primary) l c h / 0.25);
+}
+
+/* System preference fallback */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-bg:               #0A0F1E;
+    --color-surface:          #0F172A;
+    --color-surface-2:        #1E293B;
+    --color-surface-offset:   #172035;
+    --color-surface-offset-2: #1B2846;
+    --color-surface-dynamic:  #243050;
+    --color-divider:          #1E293B;
+    --color-border:           #334155;
+    --color-text:         #F1F5F9;
+    --color-text-muted:   #94A3B8;
+    --color-text-faint:   #475569;
+    --color-text-inverse: #0F172A;
+    --color-primary:          #3B82F6;
+    --color-primary-hover:    #60A5FA;
+    --color-primary-active:   #93C5FD;
+    --color-primary-highlight:#1E3A5F;
+    --color-success:          #22C55E;
+    --color-success-hover:    #4ADE80;
+    --color-success-active:   #86EFAC;
+    --color-success-highlight:#052E16;
+    --color-error:            #F87171;
+    --color-error-hover:      #FCA5A5;
+    --color-error-active:     #FECACA;
+    --color-error-highlight:  #450A0A;
+    --color-warning:          #FBBF24;
+    --color-warning-hover:    #FCD34D;
+    --color-warning-active:   #FDE68A;
+    --color-warning-highlight:#451A03;
+    --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
+    --shadow-md: 0 4px 12px oklch(0 0 0 / 0.4), 0 1px 3px oklch(0 0 0 / 0.3);
+    --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.5), 0 4px 8px oklch(0 0 0 / 0.3);
+    --shadow-glow: 0 0 0 3px oklch(from var(--color-primary) l c h / 0.25);
+  }
+}
+
+/* === BASE RESET === */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -moz-text-size-adjust: none;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+  hanging-punctuation: first last;
+  scroll-padding-top: var(--space-16);
+}
+
+body {
+  min-height: 100dvh;
+  line-height: 1.6;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+}
+
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+ul[role="list"], ol[role="list"] { list-style: none; }
+
+input, button, textarea, select { font: inherit; color: inherit; }
+
+h1, h2, h3, h4, h5, h6 {
+  text-wrap: balance;
+  line-height: 1.15;
+  font-family: var(--font-display);
+}
+
+p, li, figcaption {
+  text-wrap: pretty;
+  max-width: 72ch;
+}
+
+::selection {
+  background: oklch(from var(--color-primary) l c h / 0.2);
+  color: var(--color-text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+button { cursor: pointer; background: none; border: none; }
+table  { border-collapse: collapse; width: 100%; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border-width: 0;
+}

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — MAC Terminal</title>
+  <meta name="description" content="Privacy Policy for MAC Terminal. Learn how we collect, use, and protect your data.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Nav (shared legal page nav) ── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      border-bottom: 1px solid var(--color-divider);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      background: oklch(from var(--color-bg) l c h / 0.92);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      max-width: var(--content-wide);
+      margin-inline: auto;
+      padding-inline: var(--space-6);
+      gap: var(--space-6);
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .nav-logo-mark {
+      width: 28px;
+      height: 28px;
+      background: var(--color-primary);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    .nav-logo-text {
+      font-family: var(--font-display);
+      font-size: var(--text-base);
+      color: var(--color-text);
+      line-height: 1;
+    }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      flex-shrink: 0;
+    }
+    .nav-theme-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: background var(--transition-interactive), color var(--transition-interactive);
+      flex-shrink: 0;
+    }
+    .nav-theme-toggle:hover { background: var(--color-surface-2); color: var(--color-text); }
+
+    /* ── Legal Page Layout ── */
+    .legal-page { padding-block: clamp(3rem, 6vw, 5rem); }
+    .legal-container { max-width: 720px; margin-inline: auto; padding-inline: 1.5rem; }
+    .legal-title { font-family: var(--font-display); font-size: var(--text-2xl); margin-bottom: 0.5rem; color: var(--color-text); }
+    .legal-updated { font-size: var(--text-sm); color: var(--color-text-muted); margin-bottom: 2rem; }
+    .legal-section { margin-bottom: 2rem; }
+    .legal-section h2 { font-family: var(--font-display); font-size: var(--text-lg); margin-bottom: 0.75rem; color: var(--color-text); }
+    .legal-section p, .legal-section li { font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.75; }
+    .legal-section ul { list-style: disc; padding-left: 1.5rem; }
+    .legal-section ul li { margin-bottom: 0.5rem; }
+    .legal-section a { color: var(--color-primary); text-decoration: underline; }
+    .legal-section a:hover { color: var(--color-primary-hover); }
+
+    /* ── Footer ── */
+    .footer {
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-divider);
+      padding-block: var(--space-6);
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+      max-width: var(--content-wide);
+      margin-inline: auto;
+      padding-inline: var(--space-6);
+    }
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      text-decoration: none;
+    }
+    .footer-logo-name {
+      font-family: var(--font-display);
+      font-size: var(--text-sm);
+      color: var(--color-text);
+    }
+    .footer-links-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      list-style: none;
+      flex-wrap: wrap;
+    }
+    .footer-links-row a {
+      font-family: var(--font-body);
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      text-decoration: none;
+      transition: color var(--transition-interactive);
+    }
+    .footer-links-row a:hover { color: var(--color-text); }
+    .footer-copy {
+      font-family: var(--font-body);
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAV -->
+  <nav class="nav" role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">
+        <div class="nav-logo-mark">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <span class="nav-logo-text">MAC Terminal</span>
+      </a>
+      <div class="nav-right">
+        <button class="nav-theme-toggle" data-theme-toggle aria-label="Switch to dark mode">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+
+  <main class="legal-page">
+    <div class="legal-container">
+
+      <h1 class="legal-title">Privacy Policy</h1>
+      <p class="legal-updated">Last updated: February 28, 2026</p>
+
+      <div class="legal-section">
+        <p>MAC Terminal ("we," "us," or "our") operates the trading dashboard platform at marketactioncenter.com. This Privacy Policy explains how we collect, use, disclose, and protect your personal information when you use our Service. By using MAC Terminal, you consent to the data practices described in this policy.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>1. Information We Collect</h2>
+        <p>We collect the following types of information:</p>
+        <ul>
+          <li><strong>Account Information</strong> — When you register, we collect your name, email address, and password. If you subscribe to a paid plan, we collect billing information through our payment processor.</li>
+          <li><strong>Trade Data</strong> — Information you input into the platform, including trade entries, journal notes, watchlists, scanner settings, and portfolio data. This data is yours and is used solely to provide the Service to you.</li>
+          <li><strong>Usage Analytics</strong> — We collect anonymized data about how you interact with the platform, including pages viewed, features used, session duration, and general usage patterns. This helps us improve the product.</li>
+          <li><strong>Device and Browser Information</strong> — We may collect your browser type, operating system, IP address, and device identifiers for security and troubleshooting purposes.</li>
+          <li><strong>Cookies and Local Storage</strong> — We use functional cookies and browser local storage to maintain your session, remember your preferences (such as theme settings), and store API keys client-side.</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>2. How We Use Your Information</h2>
+        <p>We use the information we collect to:</p>
+        <ul>
+          <li><strong>Provide and operate the Service</strong> — Deliver scanner results, AI trade analysis, market themes, and all platform features</li>
+          <li><strong>Improve the platform</strong> — Analyze usage patterns to identify bugs, optimize performance, and develop new features</li>
+          <li><strong>Communicate with you</strong> — Send important account notifications, billing confirmations, service updates, and changes to our terms or policies</li>
+          <li><strong>Ensure security</strong> — Detect and prevent fraud, abuse, and unauthorized access to accounts</li>
+          <li><strong>Process payments</strong> — Manage subscription billing through our third-party payment processor</li>
+        </ul>
+        <p>We do not sell, rent, or trade your personal information to third parties for marketing purposes.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>3. Data Storage and Security</h2>
+        <p>We take the security of your data seriously and implement reasonable administrative, technical, and physical safeguards:</p>
+        <ul>
+          <li>Data is transmitted using TLS/SSL encryption</li>
+          <li>Sensitive information is encrypted at rest</li>
+          <li>Access to user data is restricted to authorized personnel on a need-to-know basis</li>
+          <li>We conduct regular security reviews and updates</li>
+        </ul>
+        <p><strong>Client-Side API Key Storage:</strong> Currently, API keys used within the platform are stored in your browser's local storage (client-side). This means your API keys are stored locally on your device and are not transmitted to or stored on our servers. You are responsible for securing access to your device and browser. We are planning to transition to a server-side backend (using Supabase) for enhanced security in the future.</p>
+        <p>While we strive to protect your information, no method of electronic transmission or storage is 100% secure. We cannot guarantee absolute security.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>4. Third-Party Services</h2>
+        <p>We work with the following categories of third-party service providers:</p>
+        <ul>
+          <li><strong>Market Data Providers</strong> — We integrate with third-party APIs to deliver real-time and historical market data, stock quotes, and options flow information. These providers have their own privacy policies governing data they collect.</li>
+          <li><strong>Analytics Services</strong> — We use analytics tools to understand platform usage and improve the user experience. These services collect anonymized, aggregated data.</li>
+          <li><strong>Payment Processor</strong> — Subscription payments are handled by a third-party payment processor. We do not store your full credit card number, CVV, or banking details on our servers. Your payment information is handled directly by our payment processor in accordance with PCI-DSS standards.</li>
+          <li><strong>Hosting Infrastructure</strong> — Our platform is hosted on reputable cloud infrastructure providers with industry-standard security certifications.</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>5. Cookies and Tracking</h2>
+        <p>MAC Terminal uses minimal, functional cookies and local storage mechanisms. We do not use invasive tracking or advertising cookies.</p>
+        <ul>
+          <li><strong>Essential Cookies</strong> — Required for authentication, session management, and core platform functionality</li>
+          <li><strong>Preference Cookies</strong> — Store your display preferences, such as light/dark theme selection</li>
+          <li><strong>Local Storage</strong> — Used to store API keys and user preferences client-side for performance</li>
+        </ul>
+        <p>You can manage cookie settings through your browser. Disabling essential cookies may prevent you from using certain features of the Service.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>6. Data Retention</h2>
+        <p>We retain your personal information and account data for as long as your account remains active and as needed to provide you the Service.</p>
+        <ul>
+          <li><strong>Active accounts</strong> — Your data is retained and accessible throughout the life of your account</li>
+          <li><strong>Closed accounts</strong> — Upon account closure or deletion request, we will delete your personal data within 90 days. Some anonymized, aggregated data may be retained for analytical purposes.</li>
+          <li><strong>Billing records</strong> — We may retain billing and transaction records as required by applicable tax and accounting laws</li>
+          <li><strong>Backup retention</strong> — Residual copies in backups may persist for a limited period but will be overwritten in the normal course of operations</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>7. Your Rights</h2>
+        <p>You have the following rights regarding your personal data:</p>
+        <ul>
+          <li><strong>Access</strong> — Request a copy of the personal data we hold about you</li>
+          <li><strong>Correction</strong> — Request that we correct any inaccurate or incomplete information</li>
+          <li><strong>Deletion</strong> — Request that we delete your account and associated personal data</li>
+          <li><strong>Data Export</strong> — Export your trade data, journal entries, and watchlists at any time through the platform</li>
+          <li><strong>Opt-Out</strong> — Unsubscribe from non-essential communications at any time</li>
+          <li><strong>Restriction</strong> — Request that we limit how we use your data in certain circumstances</li>
+        </ul>
+        <p>To exercise any of these rights, contact us at <a href="mailto:support@marketactioncenter.com">support@marketactioncenter.com</a>. We will respond to your request within 30 days.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>8. Children's Privacy</h2>
+        <p>MAC Terminal is not intended for use by anyone under the age of 18. We do not knowingly collect personal information from children under 18. If we become aware that we have collected data from a person under 18, we will take steps to delete that information promptly. If you believe a minor has provided us with personal data, please contact us immediately at <a href="mailto:support@marketactioncenter.com">support@marketactioncenter.com</a>.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>9. International Data Transfers</h2>
+        <p>If you access MAC Terminal from outside the United States, your information may be transferred to, stored, and processed in the United States or other countries where our service providers operate. By using the Service, you consent to such transfers. We take steps to ensure your data receives an adequate level of protection regardless of where it is processed.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>10. Changes to This Policy</h2>
+        <p>We may update this Privacy Policy from time to time. When we make material changes, we will notify you via the email address associated with your account at least 14 days before the changes take effect. We will also update the "Last updated" date at the top of this page.</p>
+        <p>Your continued use of the Service after the effective date of revised policy constitutes your acceptance of the changes.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>11. Contact Us</h2>
+        <p>If you have any questions about this Privacy Policy or our data practices, please contact us at:</p>
+        <p><strong>MAC Terminal</strong><br>
+        Email: <a href="mailto:support@marketactioncenter.com">support@marketactioncenter.com</a><br>
+        Website: <a href="https://marketactioncenter.com">marketactioncenter.com</a></p>
+      </div>
+
+    </div>
+  </main>
+
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <a href="index.html" class="footer-logo">
+        <div class="nav-logo-mark" style="width:24px;height:24px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <span class="footer-logo-name">MAC Terminal</span>
+      </a>
+      <ul class="footer-links-row">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="terms.html">Terms</a></li>
+        <li><a href="privacy.html">Privacy</a></li>
+        <li><a href="disclaimer.html">Disclaimer</a></li>
+      </ul>
+      <p class="footer-copy">&copy; 2026 MAC Terminal. Not financial advice.</p>
+    </div>
+  </footer>
+
+
+  <!-- JAVASCRIPT -->
+  <script>
+    // Theme toggle
+    (function() {
+      const toggles = document.querySelectorAll('[data-theme-toggle]');
+      const root = document.documentElement;
+      let theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      root.setAttribute('data-theme', theme);
+      function updateToggles() {
+        toggles.forEach(t => {
+          t.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+          t.innerHTML = theme === 'dark'
+            ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+            : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        });
+      }
+      updateToggles();
+      toggles.forEach(t => t.addEventListener('click', () => {
+        theme = theme === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', theme);
+        updateToggles();
+      }));
+    })();
+  </script>
+
+</body>
+</html>
