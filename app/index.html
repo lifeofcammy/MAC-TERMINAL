@@ -24,20 +24,6 @@
     </div>
   </div>
   <div class="header-right" style="display:flex;align-items:center;gap:12px;">
-    <span id="user-email" style="font-size:11px;color:var(--text-muted);font-weight:500;"></span>
-    <button class="refresh-btn" onclick="logoutUser()" title="Sign Out" style="padding:7px 10px;">Sign Out</button>
-    <div style="display:flex;align-items:center;gap:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:5px 10px;">
-      <label style="font-size:10px;color:var(--text-muted);font-weight:600;white-space:nowrap;">ACCOUNT $</label>
-      <input type="text" id="accountSize" value="25,000" oninput="saveAccountSize()" style="width:90px;background:var(--bg-primary);border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text-primary);text-align:right;" />
-      <span style="font-size:9px;color:var(--text-muted);">Risk:</span>
-      <select id="riskPct" onchange="saveAccountSize()" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;padding:3px 4px;font-size:11px;font-weight:600;color:var(--text-primary);font-family:'JetBrains Mono',monospace;">
-        <option value="0.5">0.5%</option>
-        <option value="1" selected>1%</option>
-        <option value="1.5">1.5%</option>
-        <option value="2">2%</option>
-        <option value="3">3%</option>
-      </select>
-    </div>
     <span class="last-updated" id="lastUpdated"></span>
     <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -49,6 +35,8 @@
     <a href="https://docs.google.com/forms/d/e/1FAIpQLSen-JL8VLKqSDt3hkkbqihnItxiVHc4El1o0uEis1i3Y2xOUg/viewform" target="_blank" class="refresh-btn" title="Send Feedback" style="padding:7px 10px;text-decoration:none;border-color:rgba(124,58,237,0.3);color:var(--purple,#7C3AED);">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     </a>
+    <span id="user-email" style="font-size:11px;color:var(--text-muted);font-weight:500;"></span>
+    <button class="refresh-btn" onclick="logoutUser()" title="Sign Out" style="padding:7px 10px;">Sign Out</button>
   </div>
 </div>
 
@@ -56,10 +44,15 @@
 <div class="tabs">
   <div class="tab active" data-tab="overview">Overview</div>
   <div class="tab" data-tab="segments">Segments</div>
-  <div class="tab" data-tab="ideas">⚡ Compression Scans</div>
-  <div class="tab" data-tab="vcp">⚡ VCP / Flag Scanner</div>
-  <div class="tab" data-tab="shakeout">⚡ Shakeout Reclaim</div>
-  <div class="tab" data-tab="options">⚡ Option Selling</div>
+  <div class="tab tab-dropdown" id="scanners-tab">
+    Scanners <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:4px;"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="tab-dropdown-menu">
+      <div class="tab-dropdown-item" data-tab="ideas">Compression Scans</div>
+      <div class="tab-dropdown-item" data-tab="vcp">VCP / Flag Scanner</div>
+      <div class="tab-dropdown-item" data-tab="shakeout">Shakeout Reclaim</div>
+      <div class="tab-dropdown-item" data-tab="options">Option Selling</div>
+    </div>
+  </div>
   <div class="tab" data-tab="recap">Trade Journal</div>
   <div class="tab" data-tab="analysis">Analysis</div>
 </div>
