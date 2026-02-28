@@ -2,6 +2,7 @@
 // Compression Scanner tab: renderIdeas (UI shell), load2HSMAStack (full multi-TF scan),
 // scoring algorithm (0-100), base proximity metrics, RVOL calculation.
 
+async function renderIdeas() {
   const container = document.getElementById('tab-ideas');
   const ts = getTimestamp();
   const live = isMarketOpen();

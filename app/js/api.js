@@ -82,6 +82,3 @@ async function getOptionsSnapshot(ticker) {
     return d.results || [];
   } catch (e) { return []; }
 }
-
-async function renderIdeas() {
-  const container = document.getElementById('tab-ideas');
