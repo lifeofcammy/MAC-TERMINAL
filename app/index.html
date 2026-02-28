@@ -6,6 +6,7 @@
 <title>MAC Terminal — Market Action Center</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -19,6 +20,8 @@
     </div>
   </div>
   <div class="header-right" style="display:flex;align-items:center;gap:12px;">
+    <span id="user-email" style="font-size:11px;color:var(--text-muted);font-weight:500;"></span>
+    <button class="refresh-btn" onclick="logoutUser()" title="Sign Out" style="padding:7px 10px;">Sign Out</button>
     <div style="display:flex;align-items:center;gap:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:5px 10px;">
       <label style="font-size:10px;color:var(--text-muted);font-weight:600;white-space:nowrap;">ACCOUNT $</label>
       <input type="text" id="accountSize" value="25,000" oninput="saveAccountSize()" style="width:90px;background:var(--bg-primary);border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text-primary);text-align:right;" />
@@ -180,6 +183,7 @@
 
 
 <!-- JavaScript — load in dependency order -->
+<script src="js/auth.js"></script>
 <script src="js/config.js"></script>
 <script src="js/tickers.js"></script>
 <script src="js/utils.js"></script>
