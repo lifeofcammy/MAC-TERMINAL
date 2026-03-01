@@ -432,7 +432,7 @@ details[open] summary { color: var(--blue) !important; }
 
   /* Scanner: Top 100 table → horizontal scroll */
   .sc-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .sc-table-row { min-width: 520px; }
+  .sc-table-row { min-width: 560px; }
 
   /* Trade Journal: 2-col → stacked */
   .tj-day-grid { grid-template-columns: 1fr !important; }

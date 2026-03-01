@@ -95,6 +95,7 @@ async function buildMomentumUniverse(statusFn) {
           pct50d: score.pct50d,
           distFromHigh: score.distFromHigh,
           aboveSMAs: score.aboveSMAs,
+          adrMultiple: score.adrMultiple,
           bars: null // Don't cache bars to save localStorage space
         });
       }
@@ -127,6 +128,8 @@ async function buildMomentumUniverse(statusFn) {
 
 function calcMomentumScore(bars, currentPrice) {
   var closes = bars.map(function(b) { return b.c; });
+  var highs = bars.map(function(b) { return b.h; });
+  var lows = bars.map(function(b) { return b.l; });
   var len = closes.length;
   if (len < 20) return { total: 0 };
 
@@ -184,6 +187,15 @@ function calcMomentumScore(bars, currentPrice) {
   // Bonus for proper stack (10 > 20 > 50)
   if (sma10 && sma20 && sma50 && sma10 > sma20 && sma20 > sma50) ptsSMA += 5;
 
+  // ADR extension: how many ADRs above the 50 SMA
+  var adrMultiple = null;
+  if (sma50 && currentPrice > sma50) {
+    var adrSum = 0;
+    for (var ai = len - 20; ai < len; ai++) adrSum += (highs[ai] - lows[ai]);
+    var adr = adrSum / 20;
+    if (adr > 0) adrMultiple = Math.round(((currentPrice - sma50) / adr) * 10) / 10;
+  }
+
   var total = Math.round(pts20d + pts50d + ptsHigh + ptsSMA);
 
   return {
@@ -191,7 +203,8 @@ function calcMomentumScore(bars, currentPrice) {
     pct20d: Math.round(pct20d * 10) / 10,
     pct50d: Math.round(pct50d * 10) / 10,
     distFromHigh: Math.round(distFromHigh * 10) / 10,
-    aboveSMAs: aboveSMAs + '/3'
+    aboveSMAs: aboveSMAs + '/3',
+    adrMultiple: adrMultiple
   };
 }
 
@@ -324,6 +337,15 @@ function analyzeSetup(ticker, bars) {
   if (sma10 > sma20) ptsTrend += 4;
   if (sma50 && sma20 > sma50) ptsTrend += 4;
 
+  // ADR extension: how many ADRs above the 50 SMA
+  var adrMultiple = null;
+  if (sma50 && price > sma50) {
+    var adrSum2 = 0;
+    for (var ai2 = len - 20; ai2 < len; ai2++) adrSum2 += (highs[ai2] - lows[ai2]);
+    var adr2 = adrSum2 / 20;
+    if (adr2 > 0) adrMultiple = Math.round(((price - sma50) / adr2) * 10) / 10;
+  }
+
   var totalScore = Math.round(ptsTight + ptsVolDry + ptsBreakout + ptsTrend);
 
   // Build description
@@ -357,6 +379,7 @@ function analyzeSetup(ticker, bars) {
     sma10val: sma10 ? sma10.toFixed(2) : null,
     sma20val: sma20 ? sma20.toFixed(2) : null,
     sma50val: sma50 ? sma50.toFixed(2) : null,
+    adrMultiple: adrMultiple,
     components: {
       tightness: ptsTight,
       volumeDryUp: ptsVolDry,
@@ -487,6 +510,7 @@ function renderScanResults(data) {
       thesis.push('Moving averages are stacked bullish (10 > 20 > 50 SMA).');
     }
     if (thesis.length === 0) thesis.push('Moderate setup based on trend alignment and base formation.');
+    if (s.adrMultiple && s.adrMultiple >= 3) thesis.push('Note: ' + s.adrMultiple + 'x ADRs above 50 SMA \u2014 extended from base.');
 
     html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Thesis</div>';
     html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px;">' + thesis.join(' ') + '</div>';
@@ -540,8 +564,8 @@ function renderTop100List(tickers) {
   var html = '<div class="sc-table-wrap" style=""><div class="card" style="padding:0;overflow:hidden;">';
 
   // Table header
-  html += '<div class="sc-table-row" style="display:grid;grid-template-columns:40px 70px 80px 65px 65px 55px 55px;gap:4px;padding:8px 14px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">';
-  html += '<span>#</span><span>Ticker</span><span>Price</span><span>20d %</span><span>50d %</span><span>vs High</span><span>SMAs</span>';
+  html += '<div class="sc-table-row" style="display:grid;grid-template-columns:40px 70px 80px 65px 65px 55px 55px 44px;gap:4px;padding:8px 14px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">';
+  html += '<span>#</span><span>Ticker</span><span>Price</span><span>20d %</span><span>50d %</span><span>vs High</span><span>SMAs</span><span>Ext</span>';
   html += '</div>';
 
   tickers.forEach(function(t, idx) {
@@ -549,7 +573,7 @@ function renderTop100List(tickers) {
     var pct50Color = (t.pct50d || 0) >= 0 ? 'var(--green)' : 'var(--red)';
     var bg = idx % 2 === 0 ? '' : 'background:var(--bg-secondary);';
 
-    html += '<div class="sc-table-row" style="display:grid;grid-template-columns:40px 70px 80px 65px 65px 55px 55px;gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:14px;' + bg + 'align-items:center;">';
+    html += '<div class="sc-table-row" style="display:grid;grid-template-columns:40px 70px 80px 65px 65px 55px 55px 44px;gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:14px;' + bg + 'align-items:center;">';
     html += '<span style="color:var(--text-muted);font-size:14px;">' + (idx + 1) + '</span>';
     html += '<span style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + t.ticker + '</span>';
     html += '<span style="font-family:\'JetBrains Mono\',monospace;color:var(--text-secondary);">$' + t.price.toFixed(2) + '</span>';
@@ -557,6 +581,7 @@ function renderTop100List(tickers) {
     html += '<span style="font-weight:700;color:' + pct50Color + ';font-family:\'JetBrains Mono\',monospace;">' + (t.pct50d >= 0 ? '+' : '') + (t.pct50d || 0) + '%</span>';
     html += '<span style="font-size:14px;color:var(--text-muted);">' + t.distFromHigh + '% off</span>';
     html += '<span style="font-size:14px;color:' + (t.aboveSMAs === '3/3' ? 'var(--green)' : 'var(--text-muted)') + ';">' + t.aboveSMAs + '</span>';
+    html += '<span style="font-size:12px;color:var(--text-muted);">' + (t.adrMultiple != null ? t.adrMultiple + 'x' : '\u2014') + '</span>';
     html += '</div>';
   });
 
