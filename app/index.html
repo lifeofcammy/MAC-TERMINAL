@@ -32,7 +32,7 @@
       <div class="header-sub">Market Action Center</div>
     </div>
   </div>
-  <div class="header-tagline" style="position:absolute;left:50%;transform:translateX(-50%);font-family:'DM Serif Display',Georgia,serif;font-size:18px;font-weight:400;letter-spacing:0.02em;color:var(--blue);">
+  <div class="header-tagline" style="position:absolute;left:50%;transform:translateX(-50%);font-family:'DM Serif Display',Georgia,serif;font-size:20px;font-weight:400;letter-spacing:0.02em;color:var(--blue);">
     Simplify Your Trading
   </div>
   <div class="header-right">
@@ -78,12 +78,11 @@
 
     <!-- CALENDAR VIEW -->
     <div id="recap-cal-view">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
-        <div>
-          <div class="section-title" style="margin:0;"><span class="dot" style="background:var(--green)"></span> Trading Journal</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Click any day · Drop a file or paste to log trades</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;align-items:center;justify-content:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+      <div class="card-header-bar">Trading Journal</div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;align-items:center;gap:8px;">
           <button onclick="recapExportAll()" class="refresh-btn" style="padding:6px 12px;" title="Export all trade recap data to JSON file">↑ Export</button>
           <button onclick="document.getElementById('recap-import-file').click()" class="refresh-btn" style="padding:6px 12px;" title="Import trade recap data from JSON file">↓ Import</button>
           <input type="file" id="recap-import-file" accept=".json" style="display:none;" onchange="recapImportAll(event)">
@@ -156,11 +155,10 @@
 
   <!-- ANALYSIS TAB -->
   <div class="tab-content" id="tab-analysis">
+    <div style="display:flex;align-items:center;justify-content:center;margin-bottom:8px;">
+      <div class="card-header-bar">Analysis</div>
+    </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
-      <div>
-        <div class="section-title" style="margin:0;"><span class="dot" style="background:var(--blue)"></span> Analysis</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Post-market analysis · Best setups · Lessons · Forward look · All-time scorecard</div>
-      </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <button onclick="analysisNav(-1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">‹</button>
         <div id="analysis-date-label" style="font-weight:800;font-size:16px;color:var(--text-primary);min-width:160px;text-align:center;"></div>
