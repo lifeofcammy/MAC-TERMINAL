@@ -248,10 +248,10 @@ async function renderOverview() {
   // ════ 2. WATCHLIST (right under Morning Mindset) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="min-width:70px;"></div>';
-  html += '<div class="card-header-bar">Watchlist</div>';
+  html += '<div style="flex:1;"></div>';
+  html += '<div class="card-header-bar" style="flex:none;">Watchlist</div>';
   var wList = getWatchlist();
-  html += '<div style="min-width:70px;display:flex;justify-content:flex-end;align-items:center;gap:8px;">';
+  html += '<div style="flex:1;display:flex;justify-content:flex-end;align-items:center;gap:8px;">';
   if(wList.length>0) html += '<button onclick="clearWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Clear All</button>';
   html += '</div>';
   html += '</div>';
@@ -398,9 +398,9 @@ async function renderOverview() {
   // ════ 4. MARKET SNAPSHOT (tight row: SPY QQQ IWM DIA VIX DXY) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<span style="min-width:120px;font-size:12px;"></span>';
-  html += '<div class="card-header-bar">Market Snapshot</div>';
-  html += '<span style="min-width:120px;text-align:right;font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
+  html += '<div style="flex:1;"></div>';
+  html += '<div class="card-header-bar" style="flex:none;">Market Snapshot</div>';
+  html += '<div style="flex:1;text-align:right;font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</div>';
   html += '</div>';
   html += '<div style="padding:12px 16px;">';
   html += '<div class="ov-snap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">';
@@ -452,9 +452,9 @@ async function renderOverview() {
   // ════ 6. TODAY'S CATALYSTS + THEMES ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<span style="min-width:80px;font-size:12px;"></span>';
-  html += '<div class="card-header-bar">Today\'s Catalysts & Themes</div>';
-  html += '<span style="min-width:80px;text-align:right;font-size:12px;color:var(--text-muted);">'+tsLabel(ts)+'</span>';
+  html += '<div style="flex:1;"></div>';
+  html += '<div class="card-header-bar" style="flex:none;">Today\'s Catalysts & Themes</div>';
+  html += '<div style="flex:1;text-align:right;font-size:12px;color:var(--text-muted);">'+tsLabel(ts)+'</div>';
   html += '</div>';
   // Econ calendar
   html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);">';
@@ -502,9 +502,9 @@ async function renderOverview() {
   var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')==='true';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
-  html += '<span style="min-width:100px;font-size:12px;"></span>';
-  html += '<div class="card-header-bar">Sector Heatmap</div>';
-  html += '<div style="min-width:100px;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'▶':'▼')+'</span></div>';
+  html += '<div style="flex:1;"></div>';
+  html += '<div class="card-header-bar" style="flex:none;">Sector Heatmap</div>';
+  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'▶':'▼')+'</span></div>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
   html += '<div class="ov-heatmap-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:12px 14px;">';
@@ -528,9 +528,9 @@ async function renderOverview() {
   // ════ 8. TOP IDEAS (from scanners) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="min-width:50px;"></div>';
-  html += '<div class="card-header-bar">Top Ideas</div>';
-  html += '<div style="min-width:50px;display:flex;justify-content:flex-end;"><button onclick="runQuickScan()" id="quick-scan-btn" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Scan</button></div>';
+  html += '<div style="flex:1;"></div>';
+  html += '<div class="card-header-bar" style="flex:none;">Top Ideas</div>';
+  html += '<div style="flex:1;display:flex;justify-content:flex-end;"><button onclick="runQuickScan()" id="quick-scan-btn" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Scan</button></div>';
   html += '</div>';
   html += '<div id="top-ideas-content" style="padding:12px 16px;">';
   var cachedIdeas=null;

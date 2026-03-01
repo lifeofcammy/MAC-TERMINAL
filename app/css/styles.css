@@ -507,5 +507,5 @@ details[open] summary { color: var(--blue) !important; }
   font-family: 'DM Serif Display', Georgia, serif;
   color: var(--text-primary);
   text-align: center;
-  flex: 1;
+  white-space: nowrap;
 }
