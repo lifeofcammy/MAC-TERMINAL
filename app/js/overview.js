@@ -419,36 +419,15 @@ async function renderOverview() {
   });
   html += '</div>';
 
-  // ════ 5. BREADTH BAR (visual advancers/decliners) ════
-  var breadthColor = breadthPct>=65?'var(--green)':breadthPct>=40?'var(--amber)':'var(--red)';
-  html += '<div class="card" style="padding:16px 20px;margin-bottom:14px;">';
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
-  html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">Sector Breadth</div>';
-  html += '<div style="font-size:10px;color:var(--text-muted);">'+sectorsUp+' advancing · '+sectorsDown+' declining'+(sectorsFlat>0?' · '+sectorsFlat+' flat':'')+'</div>';
-  html += '</div>';
-  // Visual bar
-  html += '<div style="display:flex;height:20px;border-radius:6px;overflow:hidden;background:var(--bg-secondary);">';
-  var greenW = (sectorsUp/sectorData.length)*100;
-  var redW = (sectorsDown/sectorData.length)*100;
-  var flatW = 100-greenW-redW;
-  if(greenW>0) html += '<div style="width:'+greenW+'%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;">'+sectorsUp+'</div>';
-  if(flatW>0) html += '<div style="width:'+flatW+'%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--text-muted);">'+sectorsFlat+'</div>';
-  if(redW>0) html += '<div style="width:'+redW+'%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;">'+sectorsDown+'</div>';
-  html += '</div>';
-  html += '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:8px;color:var(--text-muted);">';
-  html += '<span>Breadth: '+breadthPct+'%</span>';
-  html += '<span>'+dataFreshness+'</span>';
-  html += '</div>';
-
-  // Stock Breadth row
+  // ════ 5. STOCK BREADTH (advancers/decliners from ~90 stock universe) ════
   if(adTotal > 0) {
     var adBreadthColor = adBreadthPct>=65?'var(--green)':adBreadthPct>=40?'var(--amber)':'var(--red)';
     var adGreenW = (adStocksUp/adTotal)*100;
     var adRedW = (adStocksDown/adTotal)*100;
     var adFlatW = 100-adGreenW-adRedW;
-    html += '<div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;">';
+    html += '<div class="card" style="padding:16px 20px;margin-bottom:14px;">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
-    html += '<div style="font-size:12px;font-weight:700;color:var(--text-primary);">Stock Breadth</div>';
+    html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">Stock Breadth</div>';
     html += '<div style="font-size:10px;color:var(--text-muted);">'+adStocksUp+' advancing · '+adStocksDown+' declining'+(adStocksFlat>0?' · '+adStocksFlat+' flat':'')+'</div>';
     html += '</div>';
     html += '<div style="display:flex;height:20px;border-radius:6px;overflow:hidden;background:var(--bg-secondary);">';
@@ -456,11 +435,12 @@ async function renderOverview() {
     if(adFlatW>0) html += '<div style="width:'+adFlatW+'%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--text-muted);">'+adStocksFlat+'</div>';
     if(adRedW>0) html += '<div style="width:'+adRedW+'%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;">'+adStocksDown+'</div>';
     html += '</div>';
-    html += '<div style="font-size:8px;color:var(--text-muted);margin-top:4px;">Breadth: '+adBreadthPct+'%</div>';
+    html += '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:8px;color:var(--text-muted);">';
+    html += '<span>Breadth: '+adBreadthPct+'%</span>';
+    html += '<span>'+dataFreshness+'</span>';
+    html += '</div>';
     html += '</div>';
   }
-
-  html += '</div>';
 
   // ════ 6. TODAY'S CATALYSTS + THEMES ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
