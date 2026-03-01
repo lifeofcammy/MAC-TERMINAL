@@ -32,6 +32,7 @@ async function renderOverview() {
   ];
 
   var snap = {}, sectorSnap = {}, sectorBars = {}, spyBars = [], newsArticles = [];
+  var dataFreshness = getDataFreshnessLabel();
 
   try {
     // Index + VIX proxy snapshots
@@ -259,10 +260,10 @@ async function renderOverview() {
   // Add form
   html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-wrap:wrap;">';
   html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
-  html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:12px;font-weight:600;color:var(--text-primary);font-family:\'Inter\',sans-serif;">';
+  html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:12px;font-weight:600;color:var(--text-primary);">';
   html += '<option value="long">▲ Long</option><option value="short">▼ Short</option><option value="watch">● Watch</option></select>';
   html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="flex:1;min-width:120px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:12px;color:var(--text-primary);" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
-  html += '<button onclick="addToWatchlist();renderOverview();" style="background:var(--blue);color:white;border:none;border-radius:5px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;">+ Add</button>';
+  html += '<button onclick="addToWatchlist();renderOverview();" style="background:var(--blue);color:white;border:none;border-radius:5px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">+ Add</button>';
   html += '</div>';
   // Watchlist items
   html += '<div id="watchlist-content" style="padding:10px 16px;">';
@@ -399,7 +400,6 @@ async function renderOverview() {
   html += '</div>';
 
   // ════ 4. MARKET SNAPSHOT (tight row: SPY QQQ IWM DIA VIX DXY) ════
-  var dataFreshness = getDataFreshnessLabel();
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
   html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Market Snapshot</div>';
@@ -491,7 +491,7 @@ async function renderOverview() {
   html += '<div style="padding:10px 16px;border-top:1px solid var(--border);">';
   html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
   html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Today\'s Themes</div>';
-  html += '<button id="generate-themes-btn" onclick="generateThemes()" style="padding:4px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(37,99,235,0.08);color:var(--blue);cursor:pointer;font-size:12px;font-weight:700;font-family:\'Inter\',sans-serif;">Generate</button>';
+  html += '<button id="generate-themes-btn" onclick="generateThemes()" style="padding:4px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(37,99,235,0.08);color:var(--blue);cursor:pointer;font-size:12px;font-weight:700;">Generate</button>';
   html += '</div>';
   html += '<div id="themes-content">';
   var cachedThemes=null;
@@ -532,7 +532,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
   html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Top Ideas</div>';
-  html += '<button onclick="runQuickScan()" id="quick-scan-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--green);background:rgba(16,185,129,0.08);color:var(--green);cursor:pointer;font-size:12px;font-weight:700;font-family:\'Inter\',sans-serif;">Quick Scan</button>';
+  html += '<button onclick="runQuickScan()" id="quick-scan-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--green);background:rgba(16,185,129,0.08);color:var(--green);cursor:pointer;font-size:12px;font-weight:700;">Quick Scan</button>';
   html += '</div>';
   html += '<div id="top-ideas-content" style="padding:12px 16px;">';
   var cachedIdeas=null;
@@ -571,16 +571,6 @@ async function loadWatchlistPrices() {
       el.style.color = 'var(--text-primary)';
     });
   } catch(e){}
-}
-
-// ==================== REGIME OVERRIDE ====================
-function saveRegimeOverride(val) {
-  try{localStorage.setItem('mac_regime_override',val);}catch(e){}
-  renderOverview();
-}
-function promptRegimeOverride() {
-  // Quick-set to choppy as a starting override, user can then change via dropdown
-  saveRegimeOverride('risk-on');
 }
 
 // ==================== TOGGLES ====================

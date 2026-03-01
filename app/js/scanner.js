@@ -377,8 +377,8 @@ function renderScanner() {
   html += '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Qullamaggie + Zanger methodology · ' + dataFreshness + '</div>';
   html += '</div>';
   html += '<div style="display:flex;gap:6px;">';
-  html += '<button onclick="refreshMomentumUI()" id="refresh-universe-btn" style="padding:6px 14px;border-radius:6px;border:1px solid ' + (isFresh ? 'var(--border)' : 'var(--amber)') + ';background:' + (isFresh ? 'var(--bg-card)' : 'rgba(245,158,11,0.08)') + ';color:' + (isFresh ? 'var(--text-secondary)' : 'var(--amber)') + ';cursor:pointer;font-size:12px;font-weight:700;font-family:\'Inter\',sans-serif;">' + (isFresh ? 'Refresh Top 100' : '⟳ Update Top 100') + '</button>';
-  html += '<button onclick="runScanUI()" id="run-scan-btn" style="padding:6px 14px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-size:12px;font-weight:700;font-family:\'Inter\',sans-serif;">Scan for Setups</button>';
+  html += '<button onclick="refreshMomentumUI()" id="refresh-universe-btn" style="padding:6px 14px;border-radius:6px;border:1px solid ' + (isFresh ? 'var(--border)' : 'var(--amber)') + ';background:' + (isFresh ? 'var(--bg-card)' : 'rgba(245,158,11,0.08)') + ';color:' + (isFresh ? 'var(--text-secondary)' : 'var(--amber)') + ';cursor:pointer;font-size:12px;font-weight:700;">' + (isFresh ? 'Refresh Top 100' : '⟳ Update Top 100') + '</button>';
+  html += '<button onclick="runScanUI()" id="run-scan-btn" style="padding:6px 14px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-size:12px;font-weight:700;">Scan for Setups</button>';
   html += '</div></div>';
 
   // ── STATUS BAR ──

@@ -28,5 +28,3 @@ function refreshAll() {
     document.getElementById('lastUpdated').textContent = 'Updated ' + getTimestamp();
   }, 2000);
 }
-
-// ==================== TRADE RECAP DATA BACKUP ====================

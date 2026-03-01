@@ -28,28 +28,6 @@ async function getDailyBars(ticker, days = 60) {
   return d.results || [];
 }
 
-async function get4HBars(ticker, days = 90) {
-  const to = new Date().toISOString().split('T')[0];
-  const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const d = await polyGet(`/v2/aggs/ticker/${ticker}/range/4/hour/${from}/${to}?adjusted=true&sort=asc&limit=5000`);
-  return d.results || [];
-}
-
-async function get2HBars(ticker, days = 60) {
-  const to = new Date().toISOString().split('T')[0];
-  const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const d = await polyGet(`/v2/aggs/ticker/${ticker}/range/2/hour/${from}/${to}?adjusted=true&sort=asc&limit=5000`);
-  return d.results || [];
-}
-
-async function get1HBars(ticker, days = 30) {
-  const to = new Date().toISOString().split('T')[0];
-  const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const d = await polyGet(`/v2/aggs/ticker/${ticker}/range/1/hour/${from}/${to}?adjusted=true&sort=asc&limit=5000`);
-  return d.results || [];
-}
-
-
 // ==================== ALPHA VANTAGE API ====================
 async function alphaGet(fn, params = '') {
   const url = `${ALPHA}?function=${fn}&${params}&apikey=${ALPHA_KEY}`;
@@ -71,10 +49,7 @@ async function getPolygonNews(tickers, limit = 20) {
 }
 
 
-// ==================== MORNING MINDSET TOGGLE ====================
-
-// --- Options Flow API ---
-// --- Options Flow API ---
+// ==================== OPTIONS SNAPSHOT ====================
 async function getOptionsSnapshot(ticker) {
   try {
     const path = '/v3/snapshot/options/' + ticker + '?limit=250';

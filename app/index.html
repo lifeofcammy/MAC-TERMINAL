@@ -32,10 +32,10 @@
       <div class="header-sub">Market Action Center</div>
     </div>
   </div>
-  <div style="position:absolute;left:50%;transform:translateX(-50%);font-size:14px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--blue);font-family:'Inter',sans-serif;">
+  <div style="position:absolute;left:50%;transform:translateX(-50%);font-size:14px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--blue);">
     Simplify Your Trading
   </div>
-  <div class="header-right" style="display:flex;align-items:center;gap:12px;">
+  <div class="header-right">
     <span class="last-updated" id="lastUpdated"></span>
     <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -84,14 +84,14 @@
           <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Click any day · Drop a file or paste to log trades</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <button onclick="recapExportAll()" style="background:var(--bg-card);border:1px solid var(--border);color:var(--blue);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:11px;font-family:'Inter',sans-serif;font-weight:600;" title="Export all trade recap data to JSON file">↑ Export</button>
-          <button onclick="document.getElementById('recap-import-file').click()" style="background:var(--bg-card);border:1px solid var(--border);color:var(--green);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:11px;font-family:'Inter',sans-serif;font-weight:600;" title="Import trade recap data from JSON file">↓ Import</button>
+          <button onclick="recapExportAll()" style="background:var(--bg-card);border:1px solid var(--border);color:var(--blue);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:11px;font-weight:600;" title="Export all trade recap data to JSON file">↑ Export</button>
+          <button onclick="document.getElementById('recap-import-file').click()" style="background:var(--bg-card);border:1px solid var(--border);color:var(--green);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:11px;font-weight:600;" title="Import trade recap data from JSON file">↓ Import</button>
           <input type="file" id="recap-import-file" accept=".json" style="display:none;" onchange="recapImportAll(event)">
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <button onclick="calNav(-1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;font-family:'Inter',sans-serif;">‹</button>
+          <button onclick="calNav(-1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">‹</button>
           <div id="cal-month-label" style="font-weight:800;font-size:16px;color:var(--text-primary);min-width:160px;text-align:center;"></div>
-          <button onclick="calNav(1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;font-family:'Inter',sans-serif;">›</button>
+          <button onclick="calNav(1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">›</button>
         </div>
         <div style="display:flex;align-items:center;gap:20px;" id="cal-month-stats"></div>
       </div>
@@ -111,7 +111,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <button onclick="recapClear()" class="refresh-btn" style="border-color:rgba(239,68,68,0.3);color:var(--red);">Clear</button>
-          <button onclick="recapExportPDF()" id="recap-export-btn" style="display:none;background:var(--green);border:none;color:#fff;border-radius:8px;padding:8px 16px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;font-weight:700;">Save Recap</button>
+          <button onclick="recapExportPDF()" id="recap-export-btn" style="display:none;background:var(--green);border:none;color:#fff;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:700;">Save Recap</button>
         </div>
       </div>
 
@@ -136,7 +136,7 @@
             <textarea id="recap-paste" rows="8" placeholder="Paste trade data here..." style="width:100%;font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-secondary);resize:vertical;line-height:1.5;"></textarea>
           </div>
 
-          <button onclick="recapAnalyze()" style="width:100%;background:var(--green);border:none;color:#fff;border-radius:8px;padding:12px;font-family:'Inter',sans-serif;font-weight:800;font-size:14px;letter-spacing:.05em;cursor:pointer;">ANALYZE TRADES</button>
+          <button onclick="recapAnalyze()" style="width:100%;background:var(--green);border:none;color:#fff;border-radius:8px;padding:12px;font-weight:800;font-size:14px;letter-spacing:.05em;cursor:pointer;">ANALYZE TRADES</button>
         </div>
 
         <!-- RIGHT: Analysis output -->
@@ -162,9 +162,9 @@
         <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Post-market analysis · Best setups · Lessons · Forward look · All-time scorecard</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <button onclick="analysisNav(-1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;font-family:'Inter',sans-serif;">‹</button>
+        <button onclick="analysisNav(-1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">‹</button>
         <div id="analysis-date-label" style="font-weight:800;font-size:16px;color:var(--text-primary);min-width:160px;text-align:center;"></div>
-        <button onclick="analysisNav(1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;font-family:'Inter',sans-serif;">›</button>
+        <button onclick="analysisNav(1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">›</button>
       </div>
     </div>
     <div id="analysis-content"></div>
@@ -182,13 +182,10 @@
 <script src="js/utils.js"></script>
 <script src="js/account.js"></script>
 <script src="js/api.js"></script>
-<script src="js/technicals.js"></script>
 <script src="js/overview.js"></script>
 <script src="js/watchlist.js"></script>
-<script src="js/segments.js"></script>
 <script src="js/scanner.js"></script>
 <script src="js/journal.js"></script>
-<script src="js/csv-import.js"></script>
 <script src="js/analysis.js"></script>
 <script src="js/tabs.js"></script>
 <script src="js/settings.js"></script>

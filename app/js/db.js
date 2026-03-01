@@ -122,19 +122,6 @@ async function dbLoadAnalysis(date) {
   } catch(e) { return null; }
 }
 
-async function dbLoadAllAnalysis() {
-  var rows = await dbSelect('analysis');
-  if (rows && rows.length > 0) {
-    // Cache all to localStorage
-    rows.forEach(function(r) {
-      try { localStorage.setItem('mtp_analysis_' + r.date, JSON.stringify(r.data)); } catch(e) {}
-    });
-    return rows;
-  }
-  return null;
-}
-
-
 // ==================== CALENDAR SUMMARIES ====================
 
 async function dbSaveCalSummaries(summaries) {
@@ -228,12 +215,10 @@ async function migrateLocalToCloud() {
     await dbLoadWatchlist();
     await dbLoadJournal();
     await dbLoadCalSummaries();
-    console.log('[db] Cloud data synced to local cache.');
     return;
   }
 
   // No cloud data yet — push localStorage up
-  console.log('[db] First login — migrating local data to cloud...');
 
   // Settings
   await dbSaveUserSettings({
@@ -295,5 +280,4 @@ async function migrateLocalToCloud() {
     }
   } catch(e) {}
 
-  console.log('[db] Migration complete.');
 }

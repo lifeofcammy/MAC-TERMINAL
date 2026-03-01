@@ -68,7 +68,7 @@ function renderAnalysis() {
       '<div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">No market analysis for this date</div>' +
       '<div style="font-size:12px;color:var(--text-muted);max-width:450px;margin:0 auto;line-height:1.6;">Click "Generate" to auto-scan this day\'s biggest movers, sector rotations, and key themes using market data and AI.</div>' +
       (isWeekday && isPastOrToday ?
-        '<button onclick="autoGenerateAnalysis(\'' + analysisCurrentDate + '\')" id="auto-gen-btn" style="margin-top:16px;padding:10px 24px;border-radius:8px;border:1px solid var(--blue);background:rgba(37,99,235,0.1);color:var(--blue);cursor:pointer;font-size:14px;font-weight:700;font-family:\'Inter\',sans-serif;">Generate Analysis</button>' +
+        '<button onclick="autoGenerateAnalysis(\'' + analysisCurrentDate + '\')" id="auto-gen-btn" style="margin-top:16px;padding:10px 24px;border-radius:8px;border:1px solid var(--blue);background:rgba(37,99,235,0.1);color:var(--blue);cursor:pointer;font-size:14px;font-weight:700;">Generate Analysis</button>' +
         '<div id="auto-gen-status" style="margin-top:8px;font-size:12px;color:var(--text-muted);"></div>'
         : '<div style="margin-top:12px;font-size:12px;color:var(--text-muted);">' + (isWeekday ? 'Future date — analysis not yet available.' : 'Weekend — markets closed.') + '</div>') +
       '</div>';
@@ -91,7 +91,7 @@ function renderAnalysis() {
     { id: 'an-mindset', label: '\u{1F9E0} Mindset' }
   ];
   subTabs.forEach(function(t) {
-    html += '<button onclick="showAnalysisPanel(\'' + t.id + '\')" class="an-pill' + (t.active ? ' an-pill-active' : '') + '" data-panel="' + t.id + '" style="padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:' + (t.active ? 'var(--blue)' : 'var(--bg-card)') + ';color:' + (t.active ? '#fff' : 'var(--text-muted)') + ';font-size:12px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;transition:all 0.15s ease;white-space:nowrap;">' + t.label + '</button>';
+    html += '<button onclick="showAnalysisPanel(\'' + t.id + '\')" class="an-pill' + (t.active ? ' an-pill-active' : '') + '" data-panel="' + t.id + '" style="padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:' + (t.active ? 'var(--blue)' : 'var(--bg-card)') + ';color:' + (t.active ? '#fff' : 'var(--text-muted)') + ';font-size:12px;font-weight:700;cursor:pointer;transition:all 0.15s ease;white-space:nowrap;">' + t.label + '</button>';
   });
   html += '</div>';
 
@@ -347,9 +347,9 @@ function renderRecentEntries(parentEl) {
   html += '<div class="section-title" style="margin:0;"><span class="dot" style="background:var(--blue)"></span> Recent Analysis Entries</div>';
   html += '<div style="display:flex;gap:6px;">';
   if(missingCount > 0) {
-    html += '<button onclick="backfillAnalysis(7)" id="backfill-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(37,99,235,0.08);color:var(--blue);cursor:pointer;font-size:12px;font-weight:700;font-family:\'Inter\',sans-serif;">Fill Missing ('+missingCount+')</button>';
+    html += '<button onclick="backfillAnalysis(7)" id="backfill-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(37,99,235,0.08);color:var(--blue);cursor:pointer;font-size:12px;font-weight:700;">Fill Missing ('+missingCount+')</button>';
   }
-  html += '<button onclick="backfillAnalysis(14)" id="backfill-2wk-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--purple);background:rgba(124,58,237,0.08);color:var(--purple);cursor:pointer;font-size:12px;font-weight:700;font-family:\'Inter\',sans-serif;">Look Back 2 Weeks</button>';
+  html += '<button onclick="backfillAnalysis(14)" id="backfill-2wk-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--purple);background:rgba(124,58,237,0.08);color:var(--purple);cursor:pointer;font-size:12px;font-weight:700;">Look Back 2 Weeks</button>';
   html += '</div></div>';
   html += '<div id="backfill-status" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;"></div>';
   html += '<div class="card" style="padding:0;overflow:hidden;">';
@@ -707,36 +707,6 @@ async function backfillAnalysis(lookbackDays) {
 // ==================== ANALYSIS CHAT ENGINE ====================
 var analysisChatHistory = [];
 
-function saveAnalysisApiKey() {
-  var keyInput = document.getElementById('analysis-api-key');
-  var status = document.getElementById('analysis-key-status');
-  if (!keyInput) return;
-  var key = keyInput.value.trim();
-  if (key) {
-    try { localStorage.setItem('mtp_anthropic_key', key); } catch(e) {}
-    if (status) status.innerHTML = '<span style="color:var(--green);">Saved</span>';
-  } else {
-    try { localStorage.removeItem('mtp_anthropic_key'); } catch(e) {}
-    if (status) status.innerHTML = '';
-  }
-}
-
-function loadAnalysisApiKey() {
-  var keyInput = document.getElementById('analysis-api-key');
-  var status = document.getElementById('analysis-key-status');
-  if (!keyInput) return;
-  var key = '';
-  try { key = localStorage.getItem('mtp_anthropic_key') || ''; } catch(e) {}
-  if (key) {
-    keyInput.value = key;
-    if (status) status.innerHTML = '<span style="color:var(--green);">Saved</span>';
-  }
-}
-
-function getAnalysisApiKey() {
-  return getAnthropicKey();
-}
-
 function addChatMessage(role, text) {
   var container = document.getElementById('analysis-chat-messages');
   if (!container) return;
@@ -769,7 +739,7 @@ async function sendAnalysisChat() {
   var msg = input.value.trim();
   if (!msg) return;
 
-  var apiKey = getAnalysisApiKey();
+  var apiKey = getAnthropicKey();
   if (!apiKey) {
     addChatMessage('assistant', '→ Please enter your Anthropic API key above first. Get one at console.anthropic.com/settings/keys');
     return;
@@ -1080,5 +1050,3 @@ async function sendAnalysisChat() {
     try { localStorage.setItem('mtp_analysis_2026-02-20', JSON.stringify(feb20)); } catch(e) {}
   }
 })();
-
-// ==================== SETTINGS MODAL ====================

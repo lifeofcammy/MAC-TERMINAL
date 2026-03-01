@@ -41,6 +41,3 @@ var SCAN_TICKERS = [
     // ── ETFs ──
     'SPY','QQQ','IWM','DIA','XLF','XLE','XLK','XLV','XLI','GLD','SLV','TLT','HYG','ARKK','SMH','BITX'
 ];
-var SCAN_UNIQUE = [...new Set(SCAN_TICKERS)];
-
-// ==================== SMA COMPRESSION + RVOL SCANNER (SCORED 0-100) ====================
