@@ -52,25 +52,22 @@ async function renderOverview() {
     return;
   }
 
-  // ── ADVANCERS / DECLINERS (individual stock breadth) ──
-  var adUniverse = ['AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AMD','AVGO','CRM','NFLX','COIN','PLTR','DKNG','UBER','SQ','SHOP','NET','CRWD','MU','MRVL','ANET','PANW','NOW','ADBE','ORCL','LLY','UNH','JPM','GS','V','MA','BAC','XOM','CVX','CAT','DE','LMT','BA','SOFI','HOOD','RKLB','APP','HIMS','ARM','SMCI','TSM','ASML','WMT','COST','TGT','DIS','PYPL','INTC','DELL','BABA','MELI','SPOT','RBLX','ABNB','DASH','TTD','ROKU','PINS','SNAP','LYFT','PEP','KO','MCD','ABT','TMO','BMY','PFE','GILD','AMGN','ISRG','MDT','CVS','CI','T','VZ','CMCSA','CHTR','LOW','HD','NKE','F','GM','SBUX','CMG'];
-  var adSnap = {};
-  try {
-    for (var adi=0; adi<adUniverse.length; adi+=30) {
-      try { Object.assign(adSnap, await getSnapshots(adUniverse.slice(adi, adi+30))); } catch(e) {}
-    }
-  } catch(e) {}
+  // ── ADVANCERS / DECLINERS (true market breadth — all US stocks) ──
   var adStocksUp=0, adStocksDown=0, adStocksFlat=0;
-  adUniverse.forEach(function(t) {
-    var s = adSnap[t]; if(!s) return;
-    var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : (s.prevDay&&s.prevDay.c ? s.prevDay.c : 0);
-    var prev = s.prevDay ? s.prevDay.c : p;
-    if(!p || !prev) return;
-    var adPct = prev>0 ? ((p-prev)/prev)*100 : 0;
-    if(adPct > 0) adStocksUp++;
-    else if(adPct < 0) adStocksDown++;
-    else adStocksFlat++;
-  });
+  try {
+    var allSnap = await polyGet('/v2/snapshot/locale/us/markets/stocks/tickers?include_otc=false');
+    (allSnap.tickers || []).forEach(function(s) {
+      // Filter: common stocks only, price > $1, volume > 10000
+      if(!s || !s.prevDay || !s.prevDay.c) return;
+      var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : s.prevDay.c;
+      var prev = s.prevDay.c;
+      if(!p || !prev || prev < 1 || (s.day&&s.day.v&&s.day.v < 10000)) return;
+      var adPct = ((p-prev)/prev)*100;
+      if(adPct > 0.01) adStocksUp++;
+      else if(adPct < -0.01) adStocksDown++;
+      else adStocksFlat++;
+    });
+  } catch(e) { console.warn('Breadth fetch failed:', e); }
   var adTotal = adStocksUp + adStocksDown + adStocksFlat;
   var adBreadthPct = adTotal>0 ? Math.round((adStocksUp/adTotal)*100) : 0;
 

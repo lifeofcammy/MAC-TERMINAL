@@ -66,14 +66,14 @@ async function buildMomentumUniverse(statusFn) {
 
   statusFn('Filtered to ' + filtered.length + ' stocks. Fetching 50-day bars for top candidates...');
 
-  // Step 3: Get 50-day bars for scoring. We can't fetch all, so first rough-sort
-  // by single-day volume to take top ~400 most liquid
-  filtered.sort(function(a, b) { return (b.v * b.c) - (a.v * a.c); }); // Sort by dollar volume
-  var candidates = filtered.slice(0, 400);
+  // Step 3: Get 50-day bars for scoring — use ALL filtered stocks (full market breadth)
+  // Sort by dollar volume for deterministic ordering (highest liquidity first)
+  filtered.sort(function(a, b) { return (b.v * b.c) - (a.v * a.c); });
+  var candidates = filtered; // No cap — scan the entire filtered universe
 
   // Step 4: Fetch 50-day bars in batches and score
   var scored = [];
-  var batchSize = 5;
+  var batchSize = 10;
   for (var i = 0; i < candidates.length; i += batchSize) {
     var batch = candidates.slice(i, i + batchSize);
     var promises = batch.map(function(stock) {
@@ -334,6 +334,12 @@ function analyzeSetup(ticker, bars) {
   if (distToBreakout <= 2) desc.push('Near breakout ($' + recent10H.toFixed(2) + ')');
   if (sma10 > sma20 && sma50 && sma20 > sma50) desc.push('SMAs stacked bullish');
 
+  // Entry / Stop / Target
+  var entryPrice = recent10H;
+  var stopPrice = Math.max(recent10L, sma20 ? sma20 * 0.99 : recent10L);
+  var riskPct = ((entryPrice - stopPrice) / entryPrice) * 100;
+  var targetPrice = entryPrice + (entryPrice - stopPrice) * 2;
+
   return {
     ticker: ticker,
     price: price,
@@ -343,7 +349,14 @@ function analyzeSetup(ticker, bars) {
     volRatio: Math.round(volRatio * 100),
     breakoutLevel: recent10H,
     distToBreakout: Math.round(distToBreakout * 10) / 10,
-    description: desc.join(' · '),
+    description: desc.join(' \xb7 '),
+    entryPrice: entryPrice,
+    stopPrice: stopPrice,
+    targetPrice: targetPrice,
+    riskPct: Math.round(riskPct * 10) / 10,
+    sma10val: sma10 ? sma10.toFixed(2) : null,
+    sma20val: sma20 ? sma20.toFixed(2) : null,
+    sma50val: sma50 ? sma50.toFixed(2) : null,
     components: {
       tightness: ptsTight,
       volumeDryUp: ptsVolDry,
@@ -423,10 +436,11 @@ function renderScanResults(data) {
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;">';
 
   setups.forEach(function(s, idx) {
-    var scoreColor = s.score >= 75 ? 'var(--green)' : s.score >= 55 ? 'var(--blue)' : 'var(--amber)';
-    var scoreBg = s.score >= 75 ? 'rgba(16,185,129,0.06)' : s.score >= 55 ? 'rgba(37,99,235,0.04)' : 'rgba(245,158,11,0.04)';
+    var scoreColor = s.score >= 75 ? 'var(--green)' : 'var(--text-muted)';
+    var scoreBg = s.score >= 75 ? 'rgba(16,185,129,0.06)' : 'var(--bg-card)';
+    var detailId = 'setup-detail-' + idx;
 
-    html += '<div style="background:' + scoreBg + ';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:14px;padding:16px 18px;border-left:3px solid ' + scoreColor + '">';
+    html += '<div style="background:' + scoreBg + ';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:14px;padding:16px 18px;border-left:3px solid ' + scoreColor + ';cursor:pointer;" onclick="var d=document.getElementById(\'' + detailId + '\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';">';
 
     // Header: ticker + price + score
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
@@ -434,8 +448,10 @@ function renderScanResults(data) {
     html += '<span style="font-size:18px;font-weight:900;font-family:\'JetBrains Mono\',monospace;">' + s.ticker + '</span>';
     html += '<span style="font-size:14px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
     html += '</div>';
+    html += '<div style="display:flex;align-items:center;gap:8px;">';
+    html += '<span style="font-size:12px;color:var(--text-muted);">Click to expand</span>';
     html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:2.5px solid ' + scoreColor + ';font-size:14px;font-weight:900;color:' + scoreColor + ';font-family:\'JetBrains Mono\',monospace;">' + s.score + '</div>';
-    html += '</div>';
+    html += '</div></div>';
 
     // Description
     if (s.description) {
@@ -458,7 +474,50 @@ function renderScanResults(data) {
     html += '<span>Brkout: $' + s.breakoutLevel.toFixed(2) + ' (' + s.distToBreakout + '% away)</span>';
     html += '</div>';
 
+    // ── EXPANDABLE DETAIL PANEL ──
+    html += '<div id="' + detailId + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">';
+
+    // Thesis
+    var thesis = [];
+    if (s.range5 <= 5) thesis.push('Price is consolidating in a tight ' + s.range5 + '% range over 5 days, typical of a volatility contraction pattern (VCP).');
+    else if (s.range10 <= 10) thesis.push('Building a base with ' + s.range10 + '% range over 10 days.');
+    if (s.volRatio <= 70) thesis.push('Volume has dried up to ' + s.volRatio + '% of the 20-day average \u2014 sellers are exhausted.');
+    if (s.distToBreakout <= 2) thesis.push('Only ' + s.distToBreakout + '% from the breakout level at $' + s.breakoutLevel.toFixed(2) + '.');
+    if (s.sma10val && s.sma20val && s.sma50val && parseFloat(s.sma10val) > parseFloat(s.sma20val) && parseFloat(s.sma20val) > parseFloat(s.sma50val)) {
+      thesis.push('Moving averages are stacked bullish (10 > 20 > 50 SMA).');
+    }
+    if (thesis.length === 0) thesis.push('Moderate setup based on trend alignment and base formation.');
+
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Thesis</div>';
+    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px;">' + thesis.join(' ') + '</div>';
+
+    // Score Breakdown
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Score Breakdown</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;font-size:14px;">';
+    html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Tightness</div><div style="font-weight:800;color:var(--text-primary);">' + comps.tightness + '/30</div></div>';
+    html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Vol Dry-Up</div><div style="font-weight:800;color:var(--text-primary);">' + comps.volumeDryUp + '/25</div></div>';
+    html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Breakout Prox</div><div style="font-weight:800;color:var(--text-primary);">' + comps.breakoutProximity + '/25</div></div>';
+    html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Trend Quality</div><div style="font-weight:800;color:var(--text-primary);">' + comps.trendQuality + '/20</div></div>';
     html += '</div>';
+
+    // Entry / Stop / Target
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Trade Levels</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px;">';
+    html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Entry</div><div style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--blue);font-size:14px;">$' + (s.entryPrice ? s.entryPrice.toFixed(2) : '\u2014') + '</div></div>';
+    html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Stop</div><div style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--red);font-size:14px;">$' + (s.stopPrice ? s.stopPrice.toFixed(2) : '\u2014') + '</div></div>';
+    html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Target (2:1)</div><div style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--green);font-size:14px;">$' + (s.targetPrice ? s.targetPrice.toFixed(2) : '\u2014') + '</div></div>';
+    html += '</div>';
+
+    // Risk
+    html += '<div style="font-size:12px;color:var(--text-muted);">';
+    html += 'Risk: ' + (s.riskPct || 0) + '% per share';
+    if (s.sma10val) html += ' \xb7 10 SMA: $' + s.sma10val;
+    if (s.sma20val) html += ' \xb7 20 SMA: $' + s.sma20val;
+    if (s.sma50val) html += ' \xb7 50 SMA: $' + s.sma50val;
+    html += '</div>';
+
+    html += '</div>'; // close detail panel
+    html += '</div>'; // close card
   });
 
   html += '</div>';
