@@ -344,8 +344,9 @@ function renderRecentEntries(parentEl) {
 
   var html = '<div style="margin-top:24px;">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">';
-  html += '<div class="section-title" style="margin:0;"><span class="dot" style="background:var(--blue)"></span> Recent Analysis Entries</div>';
-  html += '<div style="display:flex;gap:6px;">';
+  html += '<div style="flex:1;"></div>';
+  html += '<div class="card-header-bar" style="flex:none;">Recent Analysis Entries</div>';
+  html += '<div style="flex:1;display:flex;justify-content:flex-end;gap:6px;">';
   if(missingCount > 0) {
     html += '<button onclick="backfillAnalysis(7)" id="backfill-btn" class="refresh-btn" style="padding:4px 10px;">Scan</button>';
   }

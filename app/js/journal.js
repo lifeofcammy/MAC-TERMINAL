@@ -444,7 +444,7 @@ function renderRecapSummary(tradingDays, monthPnL, greenDays, redDays, weeklyPnL
   var monthTrades = journal.filter(function(t) { return t.date && t.date.startsWith(monthKey); });
 
   var html = '<div style="margin-top:24px;">';
-  html += '<div class="section-title"><span class="dot" style="background:var(--green)"></span> Performance Analysis</div>';
+  html += '<div class="card-header-bar" style="margin-bottom:14px;">Performance Analysis</div>';
 
   if (monthTrades.length > 0) {
     var stratStats = {};

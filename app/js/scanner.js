@@ -472,11 +472,11 @@ function renderScanner() {
   var html = '';
 
   // ── HEADER ──
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">';
-  html += '<div>';
-  html += '<div class="section-title" style="margin:0;"><span class="dot" style="background:var(--blue)"></span> Momentum Scanner</div>';
-  html += '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Qullamaggie + Zanger methodology · ' + dataFreshness + '</div>';
+  html += '<div style="display:flex;align-items:center;justify-content:center;margin-bottom:8px;">';
+  html += '<div class="card-header-bar">Momentum Scanner</div>';
   html += '</div>';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">';
+  html += '<div style="font-size:12px;color:var(--text-muted);">Qullamaggie + Zanger methodology · ' + dataFreshness + '</div>';
   html += '<button onclick="runFullScanUI()" id="scan-btn" class="refresh-btn" style="padding:8px 20px;font-weight:700;">Scan</button>';
   html += '</div>';
 
@@ -507,8 +507,9 @@ function renderScanner() {
   html += '<div style="margin-top:16px;">';
   var listCollapsed = localStorage.getItem('mac_top100_collapsed') === 'true';
   html += '<div onclick="toggleTop100()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;margin-bottom:8px;">';
-  html += '<div class="section-title" style="margin:0;"><span class="dot" style="background:var(--purple)"></span> Top 100 Momentum Stocks</div>';
-  html += '<span id="top100-arrow" style="font-size:12px;color:var(--text-muted);">' + (listCollapsed ? '▶' : '▼') + '</span>';
+  html += '<div style="flex:1;"></div>';
+  html += '<div class="card-header-bar" style="flex:none;">Top 100 Momentum Stocks</div>';
+  html += '<div style="flex:1;display:flex;justify-content:flex-end;"><span id="top100-arrow" style="font-size:12px;color:var(--text-muted);">' + (listCollapsed ? '▶' : '▼') + '</span></div>';
   html += '</div>';
   html += '<div id="top100-body" style="' + (listCollapsed ? 'display:none;' : '') + '">';
   if (cache && cache.tickers && cache.tickers.length > 0) {
