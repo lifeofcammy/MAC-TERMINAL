@@ -2,14 +2,13 @@
 // Overview: Morning command center
 // Layout (top to bottom):
 // 1. Morning Mindset (collapsible, Today's Focus always visible)
-// 2. Market Regime (auto with 10/20 SMA logic, manual override)
-// 3. Market Snapshot (SPY/QQQ/IWM/DIA/VIX/DXY in one tight row)
-// 4. Breadth Bar (Advancers/Decliners + New Highs/Lows visual)
-// 5. Today's Catalysts (Econ Calendar + top news headlines)
-// 6. Watchlist (manual ticker entry, embedded)
-// 7. Pre-Market Movers (top gappers)
-// 8. Sector Heatmap (collapsible, color-coded)
-// 9. Top Ideas (auto from scanners)
+// 2. Watchlist (manual ticker entry, right under mindset)
+// 3. Market Regime (auto with 10/20 SMA logic)
+// 4. Market Snapshot (SPY/QQQ/IWM/DIA/VIX/DXY in one tight row)
+// 5. Breadth (Sector + Stock Advancers/Decliners)
+// 6. Today's Catalysts + Themes (combined: econ calendar, headlines, themes)
+// 7. Sector Heatmap (collapsible, color-coded)
+// 8. Top Ideas (auto from scanners)
 
 // ==================== RENDER: OVERVIEW ====================
 async function renderOverview() {
@@ -51,6 +50,28 @@ async function renderOverview() {
     container.innerHTML = '<div class="card" style="text-align:center;color:var(--red);padding:30px;">Failed to load data: '+e.message+'<br><span style="font-size:11px;color:var(--text-muted);">Check your Polygon API key (gear icon).</span></div>';
     return;
   }
+
+  // ── ADVANCERS / DECLINERS (individual stock breadth) ──
+  var adUniverse = ['AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AMD','AVGO','CRM','NFLX','COIN','PLTR','DKNG','UBER','SQ','SHOP','NET','CRWD','MU','MRVL','ANET','PANW','NOW','ADBE','ORCL','LLY','UNH','JPM','GS','V','MA','BAC','XOM','CVX','CAT','DE','LMT','BA','SOFI','HOOD','RKLB','APP','HIMS','ARM','SMCI','TSM','ASML','WMT','COST','TGT','DIS','PYPL','INTC','DELL','BABA','MELI','SPOT','RBLX','ABNB','DASH','TTD','ROKU','PINS','SNAP','LYFT','PEP','KO','MCD','ABT','TMO','BMY','PFE','GILD','AMGN','ISRG','MDT','CVS','CI','T','VZ','CMCSA','CHTR','LOW','HD','NKE','F','GM','SBUX','CMG'];
+  var adSnap = {};
+  try {
+    for (var adi=0; adi<adUniverse.length; adi+=30) {
+      try { Object.assign(adSnap, await getSnapshots(adUniverse.slice(adi, adi+30))); } catch(e) {}
+    }
+  } catch(e) {}
+  var adStocksUp=0, adStocksDown=0, adStocksFlat=0;
+  adUniverse.forEach(function(t) {
+    var s = adSnap[t]; if(!s) return;
+    var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : (s.prevDay&&s.prevDay.c ? s.prevDay.c : 0);
+    var prev = s.prevDay ? s.prevDay.c : p;
+    if(!p || !prev) return;
+    var adPct = prev>0 ? ((p-prev)/prev)*100 : 0;
+    if(adPct > 0) adStocksUp++;
+    else if(adPct < 0) adStocksDown++;
+    else adStocksFlat++;
+  });
+  var adTotal = adStocksUp + adStocksDown + adStocksFlat;
+  var adBreadthPct = adTotal>0 ? Math.round((adStocksUp/adTotal)*100) : 0;
 
   // ── HELPERS ──
   function getSnap(ticker) {
@@ -225,22 +246,74 @@ async function renderOverview() {
   });
   html += '</div></div></div>';
 
-  // ════ 2. MARKET REGIME ════
+  // ════ 2. WATCHLIST (right under Morning Mindset) ════
+  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
+  html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
+  html += '<div style="font-size:15px;font-weight:800;color:var(--text-primary);">Watchlist</div>';
+  var wList = getWatchlist();
+  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += '<span style="font-size:7px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
+  if(wList.length>0) html += '<button onclick="clearWatchlist();renderOverview();" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:8px;color:var(--text-muted);cursor:pointer;">Clear All</button>';
+  html += '</div>';
+  html += '</div>';
+  // Add form
+  html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-wrap:wrap;">';
+  html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
+  html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:10px;font-weight:600;color:var(--text-primary);font-family:\'Inter\',sans-serif;">';
+  html += '<option value="long">▲ Long</option><option value="short">▼ Short</option><option value="watch">● Watch</option></select>';
+  html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="flex:1;min-width:120px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:11px;color:var(--text-primary);" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
+  html += '<button onclick="addToWatchlist();renderOverview();" style="background:var(--blue);color:white;border:none;border-radius:5px;padding:6px 14px;font-size:10px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;">+ Add</button>';
+  html += '</div>';
+  // Watchlist items
+  html += '<div id="watchlist-content" style="padding:10px 16px;">';
+  if(wList.length===0) {
+    html += '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:10px;">No tickers. Add symbols above to track them.</div>';
+  } else {
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">';
+    // We'll load data async after render
+    wList.forEach(function(item){
+      var biasColor = item.bias==='long'?'var(--green)':item.bias==='short'?'var(--red)':'var(--amber)';
+      var biasIcon = item.bias==='long'?'▲':item.bias==='short'?'▼':'●';
+      html += '<div class="wl-card-'+item.ticker+'" style="box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px;border-left:3px solid '+biasColor+';position:relative;">';
+      html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');renderOverview();" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">×</button>';
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
+      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">'+item.ticker+'</span>';
+      html += '<span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
+      html += '<span class="wl-price-'+item.ticker+'" style="font-size:11px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);">Loading...</span>';
+      html += '</div>';
+      if(item.note) html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.3;font-style:italic;">'+item.note.replace(/</g,'&lt;')+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  html += '</div></div>';
+
+
+  // ════ 3. MARKET REGIME ════
   var regimeLabel='Neutral',regimeColor='var(--text-muted)',regimeBg='var(--bg-secondary)',regimeBorder='var(--border)',regimeIcon='◆',regimeDetail='';
   var spyPct=spyData.pct, qqqPct=qqqData.pct, iwmPct=iwmData.pct, diaPct=diaData.pct;
   var avgPct=(spyPct+qqqPct+iwmPct+diaPct)/4;
 
-  // High-impact econ event check
+  // High-impact econ event check (uses auto-fetched calendar)
   var hasHighImpactEvent=false, eventName='';
   try {
     var td=new Date();var dw=td.getDay();var mon=new Date(td);mon.setDate(td.getDate()-(dw===0?6:dw-1));
-    var calKey='mtp_econ_cal_ff_'+mon.toISOString().split('T')[0];
+    var calKey='mac_econ_cal_auto_'+mon.toISOString().split('T')[0];
     var calData=localStorage.getItem(calKey);
-    if(calData){var parsed=JSON.parse(calData);var calText=(parsed.text||'').toLowerCase();
-      if(/cpi|fomc|fed fund|interest rate|nonfarm|payroll|gdp|pce/.test(calText)){hasHighImpactEvent=true;
-        if(/cpi/.test(calText))eventName='CPI';else if(/fomc|fed fund|interest rate/.test(calText))eventName='FOMC/Fed';
-        else if(/nonfarm|payroll/.test(calText))eventName='NFP';else if(/gdp/.test(calText))eventName='GDP';
-        else if(/pce/.test(calText))eventName='PCE';else eventName='major data';
+    if(calData){
+      var parsed=JSON.parse(calData);
+      var todayStr=td.toISOString().split('T')[0];
+      var todayEvents=(parsed.events&&parsed.events[todayStr])||[];
+      // Check if any of today's high-impact events match key releases
+      var allTitles=todayEvents.map(function(ev){return (ev.title||'').toLowerCase();}).join(' ');
+      if(/cpi|fomc|fed fund|interest rate|nonfarm|payroll|gdp|pce/.test(allTitles)){
+        hasHighImpactEvent=true;
+        if(/cpi/.test(allTitles))eventName='CPI';
+        else if(/fomc|fed fund|interest rate/.test(allTitles))eventName='FOMC/Fed';
+        else if(/nonfarm|payroll/.test(allTitles))eventName='NFP';
+        else if(/gdp/.test(allTitles))eventName='GDP';
+        else if(/pce/.test(allTitles))eventName='PCE';
+        else eventName='major data';
       }
     }
   } catch(e){}
@@ -320,7 +393,7 @@ async function renderOverview() {
   html += '</div></div>';
   html += '</div>';
 
-  // ════ 3. MARKET SNAPSHOT (tight row: SPY QQQ IWM DIA VIX DXY) ════
+  // ════ 4. MARKET SNAPSHOT (tight row: SPY QQQ IWM DIA VIX DXY) ════
   var dataFreshness = getDataFreshnessLabel();
   html += '<div style="display:flex;justify-content:flex-end;margin-bottom:4px;"><span style="font-size:8px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span></div>';
   html += '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px;">';
@@ -346,7 +419,7 @@ async function renderOverview() {
   });
   html += '</div>';
 
-  // ════ 4. BREADTH BAR (visual advancers/decliners) ════
+  // ════ 5. BREADTH BAR (visual advancers/decliners) ════
   var breadthColor = breadthPct>=65?'var(--green)':breadthPct>=40?'var(--amber)':'var(--red)';
   html += '<div class="card" style="padding:16px 20px;margin-bottom:14px;">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
@@ -365,12 +438,34 @@ async function renderOverview() {
   html += '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:8px;color:var(--text-muted);">';
   html += '<span>Breadth: '+breadthPct+'%</span>';
   html += '<span>'+dataFreshness+'</span>';
-  html += '</div></div>';
+  html += '</div>';
 
-  // ════ 5. TODAY'S CATALYSTS (Econ Calendar + Top News) ════
+  // Stock Breadth row
+  if(adTotal > 0) {
+    var adBreadthColor = adBreadthPct>=65?'var(--green)':adBreadthPct>=40?'var(--amber)':'var(--red)';
+    var adGreenW = (adStocksUp/adTotal)*100;
+    var adRedW = (adStocksDown/adTotal)*100;
+    var adFlatW = 100-adGreenW-adRedW;
+    html += '<div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text-primary);">Stock Breadth</div>';
+    html += '<div style="font-size:10px;color:var(--text-muted);">'+adStocksUp+' advancing · '+adStocksDown+' declining'+(adStocksFlat>0?' · '+adStocksFlat+' flat':'')+'</div>';
+    html += '</div>';
+    html += '<div style="display:flex;height:20px;border-radius:6px;overflow:hidden;background:var(--bg-secondary);">';
+    if(adGreenW>0) html += '<div style="width:'+adGreenW+'%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;">'+adStocksUp+'</div>';
+    if(adFlatW>0) html += '<div style="width:'+adFlatW+'%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--text-muted);">'+adStocksFlat+'</div>';
+    if(adRedW>0) html += '<div style="width:'+adRedW+'%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;">'+adStocksDown+'</div>';
+    html += '</div>';
+    html += '<div style="font-size:8px;color:var(--text-muted);margin-top:4px;">Breadth: '+adBreadthPct+'%</div>';
+    html += '</div>';
+  }
+
+  html += '</div>';
+
+  // ════ 6. TODAY'S CATALYSTS + THEMES ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:15px;font-weight:800;color:var(--text-primary);">Today\'s Catalysts</div>';
+  html += '<div style="font-size:15px;font-weight:800;color:var(--text-primary);">Today\'s Catalysts & Themes</div>';
   html += '<div style="font-size:9px;color:var(--text-muted);">'+tsLabel(ts)+'</div>';
   html += '</div>';
   // Econ calendar
@@ -399,65 +494,23 @@ async function renderOverview() {
     html += '<div style="font-size:10px;color:var(--text-muted);">No news available.</div>';
   }
   html += '</div>';
-  html += '</div>';
 
-  // ════ 6. WATCHLIST (embedded, was its own tab) ════
-  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:15px;font-weight:800;color:var(--text-primary);">Watchlist</div>';
-  var wList = getWatchlist();
-  html += '<div style="display:flex;align-items:center;gap:8px;">';
-  html += '<span style="font-size:7px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
-  if(wList.length>0) html += '<button onclick="clearWatchlist();renderOverview();" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:8px;color:var(--text-muted);cursor:pointer;">Clear All</button>';
-  html += '</div>';
-  html += '</div>';
-  // Add form
-  html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-wrap:wrap;">';
-  html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
-  html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:10px;font-weight:600;color:var(--text-primary);font-family:\'Inter\',sans-serif;">';
-  html += '<option value="long">▲ Long</option><option value="short">▼ Short</option><option value="watch">● Watch</option></select>';
-  html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="flex:1;min-width:120px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:11px;color:var(--text-primary);" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
-  html += '<button onclick="addToWatchlist();renderOverview();" style="background:var(--blue);color:white;border:none;border-radius:5px;padding:6px 14px;font-size:10px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;">+ Add</button>';
-  html += '</div>';
-  // Watchlist items
-  html += '<div id="watchlist-content" style="padding:10px 16px;">';
-  if(wList.length===0) {
-    html += '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:10px;">No tickers. Add symbols above to track them.</div>';
-  } else {
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">';
-    // We'll load data async after render
-    wList.forEach(function(item){
-      var biasColor = item.bias==='long'?'var(--green)':item.bias==='short'?'var(--red)':'var(--amber)';
-      var biasIcon = item.bias==='long'?'▲':item.bias==='short'?'▼':'●';
-      html += '<div class="wl-card-'+item.ticker+'" style="box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px;border-left:3px solid '+biasColor+';position:relative;">';
-      html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');renderOverview();" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">×</button>';
-      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
-      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">'+item.ticker+'</span>';
-      html += '<span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
-      html += '<span class="wl-price-'+item.ticker+'" style="font-size:11px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);">Loading...</span>';
-      html += '</div>';
-      if(item.note) html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.3;font-style:italic;">'+item.note.replace(/</g,'&lt;')+'</div>';
-      html += '</div>';
-    });
-    html += '</div>';
-  }
-  html += '</div></div>';
-
-  // ════ 7. TODAY'S THEMES (Market-Moving News: Winners & Losers with WHY) ════
-  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:15px;font-weight:800;color:var(--text-primary);">Today\'s Themes</div>';
+  // ════ TODAY'S THEMES (inside Catalysts card) ════
+  html += '<div style="padding:10px 16px;border-top:1px solid var(--border);">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+  html += '<div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Today\'s Themes</div>';
   html += '<button id="generate-themes-btn" onclick="generateThemes()" style="padding:4px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(37,99,235,0.08);color:var(--blue);cursor:pointer;font-size:9px;font-weight:700;font-family:\'Inter\',sans-serif;">Generate</button>';
   html += '</div>';
-  html += '<div id="themes-content" style="padding:12px 16px;">';
+  html += '<div id="themes-content">';
   var cachedThemes=null;
   try{var themeKey='mac_themes_'+new Date().toISOString().split('T')[0];var themeData=localStorage.getItem(themeKey);if(themeData)cachedThemes=JSON.parse(themeData);}catch(e){}
   if(cachedThemes&&cachedThemes.movers){html+=renderThemesHTML(cachedThemes,cachedThemes.ts);}
   else if(cachedThemes&&cachedThemes.themes){html+=renderLegacyThemesHTML(cachedThemes.themes,cachedThemes.ts);}
   else{html += '<div style="font-size:10px;color:var(--text-muted);">Click "Generate" to see today\'s biggest movers and the news behind them.</div>';}
   html += '</div></div>';
+  html += '</div>'; // close Catalysts+Themes card
 
-  // ════ 8. SECTOR HEATMAP (collapsible) ════
+  // ════ 7. SECTOR HEATMAP (collapsible) ════
   var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')==='true';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleHeatmap()" style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
@@ -483,7 +536,7 @@ async function renderOverview() {
   });
   html += '</div></div></div>';
 
-  // ════ 9. TOP IDEAS (from scanners) ════
+  // ════ 8. TOP IDEAS (from scanners) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
   html += '<div style="font-size:15px;font-weight:800;color:var(--text-primary);">Top Ideas</div>';
@@ -784,53 +837,94 @@ async function runQuickScan() {
   if(btn){btn.textContent='Quick Scan';btn.disabled=false;}
 }
 
-// ==================== ECONOMIC CALENDAR ====================
+// ==================== ECONOMIC CALENDAR (auto-fetch) ====================
 async function loadEconCalendar() {
   var el=document.getElementById('econ-cal-grid');if(!el)return;
+
+  // Cache key: week-based, 4hr TTL
   var today=new Date();var dow=today.getDay();var monday=new Date(today);monday.setDate(today.getDate()-(dow===0?6:dow-1));
-  var cacheKey='mtp_econ_cal_ff_'+monday.toISOString().split('T')[0];
-  var saved=null;try{var raw=localStorage.getItem(cacheKey);if(raw)saved=JSON.parse(raw);}catch(e){}
-  if(saved&&saved.text){renderPastedCal(el,saved.text,saved.ts);}else{showCalPasteBox(el);}
-}
-function showCalPasteBox(el) {
-  el.innerHTML='<div style="padding:4px 0;"><textarea id="econ-cal-paste" placeholder="Paste USD events (Medium + High impact) from economic calendar here..." style="width:100%;height:60px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px;font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--text-primary);resize:vertical;box-sizing:border-box;line-height:1.4;"></textarea><button onclick="saveEconCal()" style="margin-top:4px;padding:4px 12px;border-radius:4px;border:1px solid var(--green);background:rgba(0,135,90,0.08);color:var(--green);cursor:pointer;font-size:9px;font-weight:700;">Save</button></div>';
-}
-function saveEconCal() {
-  var ta=document.getElementById('econ-cal-paste');if(!ta||!ta.value.trim())return;
-  var today=new Date();var dow=today.getDay();var monday=new Date(today);monday.setDate(today.getDate()-(dow===0?6:dow-1));
-  var ck='mtp_econ_cal_ff_'+monday.toISOString().split('T')[0];
-  try{localStorage.setItem(ck,JSON.stringify({text:ta.value.trim(),ts:Date.now()}));}catch(e){}
-  renderPastedCal(document.getElementById('econ-cal-grid'),ta.value.trim(),Date.now());
-}
-function clearEconCal() {
-  var today=new Date();var dow=today.getDay();var monday=new Date(today);monday.setDate(today.getDate()-(dow===0?6:dow-1));
-  try{localStorage.removeItem('mtp_econ_cal_ff_'+monday.toISOString().split('T')[0]);}catch(e){}
-  showCalPasteBox(document.getElementById('econ-cal-grid'));
-}
-function renderPastedCal(el,text,ts) {
-  var lines=text.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
-  var events=[];var i=0;
-  while(i<lines.length){var line=lines[i];
-    if(line==='USD'){i++;continue;}if(/^\d{1,2}:\d{2}(am|pm)$/i.test(line)){i++;continue;}
-    if(/[a-zA-Z]{3,}/.test(line)&&!/^\d/.test(line)){var ev={name:line,details:''};var dl=[];var j=i+1;
-      while(j<lines.length){var nx=lines[j];if(nx==='USD')break;if(/[a-zA-Z]{3,}/.test(nx)&&!/^[\d\-]/.test(nx)&&!/^\d{1,2}:\d{2}/.test(nx)&&!/%|[KMB]$/.test(nx))break;dl.push(nx);j++;}
-      if(dl.length>0)ev.details=dl.join(' · ');events.push(ev);i=j;
-    }else{i++;}
+  var cacheKey='mac_econ_cal_auto_'+monday.toISOString().split('T')[0];
+  var cached=null;
+  try{var raw=localStorage.getItem(cacheKey);if(raw){cached=JSON.parse(raw);
+    // Check 4hr TTL
+    if(cached.ts && (Date.now()-cached.ts)<4*60*60*1000 && cached.events){
+      renderAutoEconCal(el,cached.events,cached.ts);return;
+    }
+  }}catch(e){}
+
+  el.innerHTML='<div style="font-size:9px;color:var(--text-muted);">Fetching calendar...</div>';
+
+  try {
+    var resp=await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json');
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    var data=await resp.json();
+
+    // Filter: USD only, Medium + High impact
+    var events=data.filter(function(ev){
+      return ev.country==='USD' && (ev.impact==='High' || ev.impact==='Medium');
+    });
+
+    // Group by day
+    var grouped={};
+    events.forEach(function(ev){
+      var d=ev.date?ev.date.split('T')[0]:'Unknown';
+      if(!grouped[d])grouped[d]=[];
+      grouped[d].push(ev);
+    });
+
+    // Cache it
+    var cacheData={events:grouped,ts:Date.now()};
+    try{localStorage.setItem(cacheKey,JSON.stringify(cacheData));}catch(e){}
+
+    renderAutoEconCal(el,grouped,Date.now());
+  } catch(e) {
+    el.innerHTML='<div style="font-size:9px;color:var(--red);">Failed to load calendar: '+e.message+'</div>';
   }
+}
+
+function renderAutoEconCal(el, grouped, ts) {
   var html='';
-  if(events.length>0){events.forEach(function(ev){
-    var name=ev.name.toLowerCase();var isHigh=/gdp|pce|cpi|nonfarm|payroll|fomc|fed fund|interest rate|unemployment rate|retail sales|ism manu/.test(name);
-    var isMed=/pmi|housing|home sale|consumer confidence|jobless|claim|durable|sentiment|philly|empire|pending|trump speaks|president/.test(name);
-    var dot=isHigh?'var(--red)':isMed?'var(--amber)':'var(--text-muted)';
-    html += '<div style="display:flex;gap:5px;align-items:flex-start;margin-bottom:3px;font-size:9px;">';
-    html += '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:'+dot+';flex-shrink:0;margin-top:3px;"></span>';
-    html += '<span style="color:var(--text-primary);font-weight:600;">'+ev.name+'</span>';
-    if(ev.details) html += '<span style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:8px;">'+ev.details+'</span>';
+  var dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var today=new Date().toISOString().split('T')[0];
+  var sortedDays=Object.keys(grouped).sort();
+
+  if(sortedDays.length===0){
+    el.innerHTML='<div style="font-size:9px;color:var(--text-muted);">No USD Medium/High impact events this week.</div>';
+    return;
+  }
+
+  sortedDays.forEach(function(day){
+    var dt=new Date(day+'T12:00:00');
+    var dayLabel=dayNames[dt.getDay()]+' '+dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    var isToday=day===today;
+
+    html += '<div style="margin-bottom:8px;'+(isToday?'background:var(--bg-secondary);border-radius:6px;padding:6px 8px;border:1px solid var(--border);':'')+'">';
+    html += '<div style="font-size:8px;font-weight:700;color:'+(isToday?'var(--blue)':'var(--text-muted)')+';text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">'+(isToday?'\u25CF ':'')+dayLabel+(isToday?' (Today)':'')+'</div>';
+
+    grouped[day].forEach(function(ev){
+      var isHigh=ev.impact==='High';
+      var dot=isHigh?'var(--red)':'var(--amber)';
+      var time='';
+      if(ev.date){
+        try{var evDate=new Date(ev.date);if(!isNaN(evDate.getTime())){time=evDate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});}}catch(e){}
+      }
+
+      html += '<div style="display:flex;gap:5px;align-items:flex-start;margin-bottom:3px;font-size:9px;">';
+      html += '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:'+dot+';flex-shrink:0;margin-top:3px;"></span>';
+      if(time) html += '<span style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:8px;white-space:nowrap;min-width:52px;">'+time+'</span>';
+      html += '<span style="color:var(--text-primary);font-weight:600;">'+((ev.title||'').replace(/</g,'&lt;'))+'</span>';
+
+      // Forecast / Previous
+      var details=[];
+      if(ev.forecast!==undefined&&ev.forecast!==null&&ev.forecast!=='') details.push('F: '+ev.forecast);
+      if(ev.previous!==undefined&&ev.previous!==null&&ev.previous!=='') details.push('P: '+ev.previous);
+      if(details.length>0) html += ' <span style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:8px;">'+details.join(' \xb7 ')+'</span>';
+
+      html += '</div>';
+    });
     html += '</div>';
-  });}else{html += '<div style="white-space:pre-wrap;font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--text-secondary);">'+text.replace(/</g,'&lt;')+'</div>';}
-  html += '<div style="margin-top:4px;display:flex;justify-content:space-between;font-size:8px;color:var(--text-muted);">';
-  html += '<span>Saved '+new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})+'</span>';
-  html += '<button onclick="clearEconCal()" style="background:none;border:1px solid var(--border);border-radius:3px;padding:1px 6px;font-size:7px;color:var(--text-muted);cursor:pointer;">Update</button>';
-  html += '</div>';
+  });
+
+  html += '<div style="margin-top:4px;font-size:8px;color:var(--text-muted);">Updated '+new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})+' \xb7 <a href="#" onclick="localStorage.removeItem(\'mac_econ_cal_auto_\'+function(){var t=new Date(),d=t.getDay(),m=new Date(t);m.setDate(t.getDate()-(d===0?6:d-1));return m.toISOString().split(\'T\')[0];}());loadEconCalendar();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
   el.innerHTML=html;
 }
