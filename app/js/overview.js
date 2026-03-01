@@ -490,7 +490,7 @@ async function renderOverview() {
   html += '<div style="padding:10px 16px;border-top:1px solid var(--border);">';
   html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
   html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Today\'s Themes</div>';
-  html += '<button id="generate-themes-btn" onclick="generateThemes()" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Generate</button>';
+  html += '<button id="generate-themes-btn" onclick="generateThemes()" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Scan</button>';
   html += '</div>';
   html += '<div id="themes-content">';
   var cachedThemes=null;
@@ -531,13 +531,13 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
   html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Top Ideas</div>';
-  html += '<button onclick="runQuickScan()" id="quick-scan-btn" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Quick Scan</button>';
+  html += '<button onclick="runQuickScan()" id="quick-scan-btn" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Scan</button>';
   html += '</div>';
   html += '<div id="top-ideas-content" style="padding:12px 16px;">';
   var cachedIdeas=null;
   try{var ideaKey='mac_top_ideas_'+new Date().toISOString().split('T')[0];var ideaData=localStorage.getItem(ideaKey);if(ideaData)cachedIdeas=JSON.parse(ideaData);}catch(e){}
   if(cachedIdeas&&cachedIdeas.ideas&&cachedIdeas.ideas.length>0){html+=renderTopIdeasHTML(cachedIdeas.ideas,cachedIdeas.ts);}
-  else{html += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">Click "Quick Scan" to find today\'s top setups.</div>';}
+  else{html += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">Click "Scan" to find today\'s top setups.</div>';}
   html += '</div></div>';
 
   container.innerHTML = html;
@@ -752,7 +752,7 @@ async function generateThemes() {
   el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;"><span id="theme-progress">Finding biggest movers...</span></div>';
 
   var anthropicKey=getAnthropicKey();
-  if(!anthropicKey){el.innerHTML='<div style="padding:12px;text-align:center;color:var(--amber);font-size:12px;">Anthropic API key required. Click gear icon to add.</div>';if(btn){btn.textContent='Generate';btn.disabled=false;}return;}
+  if(!anthropicKey){el.innerHTML='<div style="padding:12px;text-align:center;color:var(--amber);font-size:12px;">Anthropic API key required. Click gear icon to add.</div>';if(btn){btn.textContent='Scan';btn.disabled=false;}return;}
 
   try{
     // Step 1: Scan a universe of ~80 popular tickers for biggest % movers
@@ -776,7 +776,7 @@ async function generateThemes() {
 
     // Take top ~10 movers (mix of winners and losers)
     var topMovers=ranked.slice(0,12);
-    if(topMovers.length===0){el.innerHTML='<div style="text-align:center;padding:14px;color:var(--text-muted);font-size:12px;">No significant movers found.</div>';if(btn){btn.textContent='Generate';btn.disabled=false;}return;}
+    if(topMovers.length===0){el.innerHTML='<div style="text-align:center;padding:14px;color:var(--text-muted);font-size:12px;">No significant movers found.</div>';if(btn){btn.textContent='Scan';btn.disabled=false;}return;}
 
     // Step 3: Fetch news for each mover ticker
     if(prog)prog.textContent='Fetching news for movers...';
@@ -819,7 +819,7 @@ async function generateThemes() {
   }catch(e){
     el.innerHTML='<div style="padding:10px;color:var(--red);font-size:14px;">Failed: '+e.message+'</div>';
   }
-  if(btn){btn.textContent='Generate';btn.disabled=false;}
+  if(btn){btn.textContent='Scan';btn.disabled=false;}
 }
 
 // ==================== QUICK SCAN ====================
@@ -854,7 +854,7 @@ async function runQuickScan() {
     try{localStorage.setItem('mac_top_ideas_'+new Date().toISOString().split('T')[0],JSON.stringify({ideas:ideas,ts:Date.now()}));}catch(e){}
     el.innerHTML=ideas.length>0?renderTopIdeasHTML(ideas,Date.now()):'<div style="text-align:center;padding:14px;color:var(--text-muted);font-size:12px;">No strong setups found. Try full scanners.</div>';
   }catch(e){el.innerHTML='<div style="color:var(--red);font-size:12px;">Scan failed: '+e.message+'</div>';}
-  if(btn){btn.textContent='Quick Scan';btn.disabled=false;}
+  if(btn){btn.textContent='Scan';btn.disabled=false;}
 }
 
 // ==================== ECONOMIC CALENDAR (auto-fetch) ====================
