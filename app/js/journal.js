@@ -1083,11 +1083,17 @@ Write coaching in these sections using HTML bold tags:
 6. <strong>BOTTOM LINE</strong> — one punchy closing line`;
 
   try {
+    var coachingApiKey = getAnthropicKey();
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': coachingApiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
     });
+    if (!resp.ok) {
+      var errBody = null; try { errBody = await resp.json(); } catch(e) {}
+      var errMsg = (errBody && errBody.error && errBody.error.message) ? errBody.error.message : 'HTTP ' + resp.status;
+      throw new Error(errMsg);
+    }
     const data = await resp.json();
     const text = (data.content || []).map(b => b.text || '').join('');
     if (text) {

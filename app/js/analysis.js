@@ -540,7 +540,7 @@ async function autoGenerateAnalysis(dateStr) {
       '- Return ONLY the JSON object.';
 
     var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4096,messages:[{role:'user',content:prompt}]})});
-    if(!r.ok)throw new Error('API error: '+r.status);
+    if(!r.ok){var errBody=null;try{errBody=await r.json();}catch(e){}var errMsg=(errBody&&errBody.error&&errBody.error.message)?errBody.error.message:'HTTP '+r.status;throw new Error(errMsg);}
     var data=await r.json();
     var text=data.content&&data.content[0]?data.content[0].text:'';
     var jsonMatch=text.match(/\{[\s\S]*\}/);if(!jsonMatch)throw new Error('Could not parse AI response');
@@ -644,7 +644,7 @@ async function autoGenerateAnalysisSilent(dateStr) {
   var prompt='You are a professional market analyst. Generate a full end-of-day analysis for '+dateStr+'.\n\nSPY change: '+(spyChg>=0?'+':'')+spyChg.toFixed(2)+'%\n\nSECTOR PERFORMANCE:\n'+sectorContext+'\n\nBIGGEST MOVERS:\n'+moverContext+'\n\nGenerate a complete analysis in this EXACT JSON format. Return ONLY the JSON object:\n{\n  "marketContext": "2-3 sentence summary of the day. What drove the session. Key headlines.",\n  "movers": [\n    {"ticker": "DELL", "changePct": 21.8, "sector": "Technology", "catchable": "yes|partial|no", "why": "1-2 sentences on what caused the move", "lesson": "1-2 sentences — what a trader should learn from this"}\n  ],\n  "sectorRotation": "MONEY FLOWING INTO: ... MONEY FLOWING OUT OF: ... NOTABLE: ...",\n  "patterns": "DEVELOPING: bullet points of multi-day patterns building. FADING: patterns losing steam.",\n  "missed": "Opportunities that were catchable but may have been missed. Actionable lessons.",\n  "tomorrowWatch": "Priority setups for tomorrow. Specific tickers, levels, and strategies.",\n  "probabilityMap": [\n    {"ticker": "CRWD", "probability": 75, "tier": 1, "direction": "long|short|both", "catalyst": "short label", "thesis": "2-3 sentences", "keyLevels": "Support: $X | Resistance: $Y", "optionsPlay": "specific options strategy"}\n  ],\n  "watchlist": [\n    {"theme": "Theme Name", "status": "active|watch|fading", "tickers": ["TICK1","TICK2"], "note": "Why this theme matters"}\n  ],\n  "mindset": {"score": 7, "scoreNote": "Brief note on discipline", "violations": [{"rule": "Rule name", "detail": "what happened"}], "wins": ["What went right"]}\n}\n\nRULES:\n- Include 6-10 movers (biggest absolute % changes with clear catalysts)\n- "catchable" = yes if the setup was visible pre-market or early session, partial if needed fast reaction, no if purely news-driven\n- probabilityMap: 4-6 tickers ranked by probability of 3%+ move TOMORROW\n- watchlist: 3-5 thematic groupings\n- For mindset: since we dont know the users trades, give a general score of 7 with note "Auto-generated — update with your actual trades"\n- Keep everything concise and trader-focused. No fluff.\n- Return ONLY the JSON object.';
 
   var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4096,messages:[{role:'user',content:prompt}]})});
-  if(!r.ok) throw new Error('API error: '+r.status);
+  if(!r.ok){var errBody=null;try{errBody=await r.json();}catch(e){}var errMsg=(errBody&&errBody.error&&errBody.error.message)?errBody.error.message:'HTTP '+r.status;throw new Error(errMsg);}
   var data=await r.json();
   var text=data.content&&data.content[0]?data.content[0].text:'';
   var jsonMatch=text.match(/\{[\s\S]*\}/);if(!jsonMatch) throw new Error('Could not parse AI response');
@@ -692,6 +692,12 @@ async function backfillAnalysis(lookbackDays) {
       await autoGenerateAnalysisSilent(missing[i]);
     } catch(e) {
       setStatus('<span style="color:var(--red);">Error on ' + missing[i] + ': ' + e.message + '</span>');
+      // Stop on credit/auth errors — no point retrying
+      if(e.message.indexOf('credit') >= 0 || e.message.indexOf('401') >= 0 || e.message.indexOf('authentication') >= 0) {
+        if(btn7) { btn7.disabled = false; btn7.textContent = 'Fill Missing (' + missing.length + ')'; }
+        if(btn14) { btn14.disabled = false; btn14.textContent = 'Look Back 2 Weeks'; }
+        return;
+      }
     }
     // Wait between generations to avoid rate limits
     if(i < missing.length - 1) await new Promise(function(r) { setTimeout(r, 3000); });
