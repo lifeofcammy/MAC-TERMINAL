@@ -250,16 +250,16 @@ async function renderOverview() {
   html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Watchlist</div>';
   var wList = getWatchlist();
   html += '<div style="display:flex;align-items:center;gap:8px;">';
-  if(wList.length>0) html += '<button onclick="clearWatchlist();renderOverview();" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Clear All</button>';
+  if(wList.length>0) html += '<button onclick="clearWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Clear All</button>';
   html += '</div>';
   html += '</div>';
   // Add form
   html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-wrap:wrap;">';
-  html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
+  html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
   html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:14px;font-weight:600;color:var(--text-primary);">';
   html += '<option value="long">▲ Long</option><option value="short">▼ Short</option><option value="watch">● Watch</option></select>';
-  html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="flex:1;min-width:120px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:14px;color:var(--text-primary);" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
-  html += '<button onclick="addToWatchlist();renderOverview();" class="refresh-btn" style="padding:6px 14px;font-size:12px;">+ Add</button>';
+  html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="flex:1;min-width:120px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:14px;color:var(--text-primary);" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
+  html += '<button onclick="addToWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:6px 14px;font-size:12px;">+ Add</button>';
   html += '</div>';
   // Watchlist items
   html += '<div id="watchlist-content" style="padding:10px 16px;">';
@@ -272,7 +272,7 @@ async function renderOverview() {
       var biasColor = item.bias==='long'?'var(--green)':item.bias==='short'?'var(--red)':'var(--amber)';
       var biasIcon = item.bias==='long'?'▲':item.bias==='short'?'▼':'●';
       html += '<div class="wl-card-'+item.ticker+'" style="box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px;border-left:3px solid '+biasColor+';position:relative;">';
-      html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');renderOverview();" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">×</button>';
+      html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');refreshWatchlistUI();" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">×</button>';
       html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
       html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">'+item.ticker+'</span>';
       html += '<span style="font-size:12px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
@@ -543,6 +543,41 @@ async function renderOverview() {
   if(!cachedThemes && getAnthropicKey()){
     setTimeout(function(){ generateThemes(); }, 500);
   }
+}
+
+// ==================== WATCHLIST PARTIAL REFRESH ====================
+// Only re-renders the watchlist content + header buttons without reloading entire Overview
+function refreshWatchlistUI() {
+  var wList = getWatchlist();
+  // Update content area
+  var contentEl = document.getElementById('watchlist-content');
+  if (contentEl) {
+    var html = '';
+    if (wList.length === 0) {
+      html += '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:14px;">No tickers. Add symbols above to track them.</div>';
+    } else {
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">';
+      wList.forEach(function(item) {
+        var biasColor = item.bias==='long'?'var(--green)':item.bias==='short'?'var(--red)':'var(--amber)';
+        var biasIcon = item.bias==='long'?'▲':item.bias==='short'?'▼':'●';
+        html += '<div class="wl-card-'+item.ticker+'" style="box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px;border-left:3px solid '+biasColor+';position:relative;">';
+        html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');refreshWatchlistUI();" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">×</button>';
+        html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
+        html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">'+item.ticker+'</span>';
+        html += '<span style="font-size:12px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
+        html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);">Loading...</span>';
+        html += '</div>';
+        if(item.note) html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.3;font-style:italic;">'+item.note.replace(/</g,'&lt;')+'</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    contentEl.innerHTML = html;
+    loadWatchlistPrices();
+  }
+  // Re-focus the ticker input for quick consecutive adds
+  var input = document.getElementById('wl-ticker-input');
+  if (input) input.focus();
 }
 
 // ==================== WATCHLIST PRICE LOADER ====================

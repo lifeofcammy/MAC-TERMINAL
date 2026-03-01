@@ -341,6 +341,14 @@ function analyzeSetup(ticker, bars) {
   if (!sma10 || !sma20) return null;
   if (price < sma20) return null; // Must be above 20 SMA at minimum
 
+  // ── BUYOUT / DEAL FILTER ──
+  // Stocks pinned to an acquisition price have extremely tight ranges (<0.8% over 5 days)
+  // These are untradeable for momentum — skip them
+  var recent5H_pre = Math.max.apply(null, highs.slice(-5));
+  var recent5L_pre = Math.min.apply(null, lows.slice(-5));
+  var range5_pre = ((recent5H_pre - recent5L_pre) / price) * 100;
+  if (range5_pre < 0.8) return null;
+
   // ── TIGHTNESS (0-30 pts) ──
   // Measure how tight the last 5-10 days have been (Qullamaggie's compression)
   var recent10H = Math.max.apply(null, highs.slice(-10));
