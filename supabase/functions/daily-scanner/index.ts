@@ -160,11 +160,29 @@ function analyzeSetup(ticker: string, bars: any[]) {
   if (!sma10 || !sma20) return null
   if (price < sma20) return null
 
-  // Buyout filter
+  // Buyout filter - Check 1: flatlined stocks
   const recent5H_pre = Math.max(...highs.slice(-5))
   const recent5L_pre = Math.min(...lows.slice(-5))
   const range5_pre = ((recent5H_pre - recent5L_pre) / price) * 100
   if (range5_pre < 0.8) return null
+
+  // Buyout filter - Check 2: gap-up + compression pattern
+  if (len >= 15) {
+    for (let gi = Math.max(0, len - 30); gi < len - 5; gi++) {
+      const prevC = gi > 0 ? closes[gi - 1] : closes[gi]
+      const gapPct = prevC > 0 ? ((closes[gi] - prevC) / prevC) * 100 : 0
+      if (gapPct > 15) {
+        const postGapHighs = highs.slice(gi + 1)
+        const postGapLows = lows.slice(gi + 1)
+        if (postGapHighs.length >= 3) {
+          const postH = Math.max(...postGapHighs)
+          const postL = Math.min(...postGapLows)
+          const postRange = ((postH - postL) / price) * 100
+          if (postRange < 3) return null
+        }
+      }
+    }
+  }
 
   // Tightness (0-30 pts)
   const recent10H = Math.max(...highs.slice(-10))

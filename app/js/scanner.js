@@ -342,12 +342,32 @@ function analyzeSetup(ticker, bars) {
   if (price < sma20) return null; // Must be above 20 SMA at minimum
 
   // ── BUYOUT / DEAL FILTER ──
-  // Stocks pinned to an acquisition price have extremely tight ranges (<0.8% over 5 days)
-  // These are untradeable for momentum — skip them
+  // Pattern: big gap-up followed by abnormally low volatility = acquisition pinned price
+  // Check 1: Simple tight range filter (flatlined stocks)
   var recent5H_pre = Math.max.apply(null, highs.slice(-5));
   var recent5L_pre = Math.min.apply(null, lows.slice(-5));
   var range5_pre = ((recent5H_pre - recent5L_pre) / price) * 100;
   if (range5_pre < 0.8) return null;
+
+  // Check 2: Gap-up + compression pattern (like STKL buyout)
+  // Look for a day with >15% gap-up in last 30 days, followed by <3% total range after
+  if (len >= 15) {
+    for (var gi = Math.max(0, len - 30); gi < len - 5; gi++) {
+      var prevC = gi > 0 ? closes[gi - 1] : closes[gi];
+      var gapPct = prevC > 0 ? ((closes[gi] - prevC) / prevC) * 100 : 0;
+      if (gapPct > 15) {
+        // Big gap found — check if price has been pinned since
+        var postGapHighs = highs.slice(gi + 1);
+        var postGapLows = lows.slice(gi + 1);
+        if (postGapHighs.length >= 3) {
+          var postH = Math.max.apply(null, postGapHighs);
+          var postL = Math.min.apply(null, postGapLows);
+          var postRange = ((postH - postL) / price) * 100;
+          if (postRange < 3) return null; // Pinned to deal price
+        }
+      }
+    }
+  }
 
   // ── TIGHTNESS (0-30 pts) ──
   // Measure how tight the last 5-10 days have been (Qullamaggie's compression)
