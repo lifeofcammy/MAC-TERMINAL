@@ -224,8 +224,9 @@ async function renderOverview() {
 
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;border-left:3px solid var(--amber);border-radius:14px;">';
   html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;user-select:none;">';
-  html += '<div style="display:flex;align-items:center;justify-content:center;gap:8px;"><span class="card-header-bar">Morning Mindset</span></div>';
-  html += '<span id="mindset-arrow" style="font-size:12px;color:var(--text-muted);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
+  html += '<span style="width:20px;"></span>';
+  html += '<span class="card-header-bar">Morning Mindset</span>';
+  html += '<span id="mindset-arrow" style="width:20px;text-align:right;font-size:12px;color:var(--text-muted);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
   html += '</div>';
   // Today's Focus — ALWAYS visible
   html += '<div style="padding:0 16px 10px;"><div style="background:var(--bg-secondary);border:1px solid rgba(230,138,0,0.2);border-radius:6px;padding:10px 14px;">';
@@ -247,9 +248,10 @@ async function renderOverview() {
   // ════ 2. WATCHLIST (right under Morning Mindset) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
+  html += '<div style="min-width:70px;"></div>';
   html += '<div class="card-header-bar">Watchlist</div>';
   var wList = getWatchlist();
-  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += '<div style="min-width:70px;display:flex;justify-content:flex-end;align-items:center;gap:8px;">';
   if(wList.length>0) html += '<button onclick="clearWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Clear All</button>';
   html += '</div>';
   html += '</div>';
@@ -396,8 +398,9 @@ async function renderOverview() {
   // ════ 4. MARKET SNAPSHOT (tight row: SPY QQQ IWM DIA VIX DXY) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
+  html += '<span style="min-width:120px;font-size:12px;"></span>';
   html += '<div class="card-header-bar">Market Snapshot</div>';
-  html += '<span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
+  html += '<span style="min-width:120px;text-align:right;font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
   html += '</div>';
   html += '<div style="padding:12px 16px;">';
   html += '<div class="ov-snap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">';
@@ -432,10 +435,8 @@ async function renderOverview() {
     var adRedW = (adStocksDown/adTotal)*100;
     var adFlatW = 100-adGreenW-adRedW;
     html += '<div class="card" style="padding:16px 20px;margin-bottom:14px;">';
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
-    html += '<div class="card-header-bar">Stock Breadth</div>';
-    html += '<div style="font-size:14px;color:var(--text-muted);">'+adStocksUp+' advancing · '+adStocksDown+' declining'+(adStocksFlat>0?' · '+adStocksFlat+' flat':'')+'</div>';
-    html += '</div>';
+    html += '<div class="card-header-bar" style="margin-bottom:8px;">Stock Breadth</div>';
+    html += '<div style="text-align:center;font-size:12px;color:var(--text-muted);margin-bottom:8px;">'+adStocksUp+' advancing · '+adStocksDown+' declining'+(adStocksFlat>0?' · '+adStocksFlat+' flat':'')+'</div>';
     html += '<div style="display:flex;height:20px;border-radius:6px;overflow:hidden;background:var(--bg-secondary);">';
     if(adGreenW>0) html += '<div style="width:'+adGreenW+'%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;">'+adStocksUp+'</div>';
     if(adFlatW>0) html += '<div style="width:'+adFlatW+'%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-muted);">'+adStocksFlat+'</div>';
@@ -451,8 +452,9 @@ async function renderOverview() {
   // ════ 6. TODAY'S CATALYSTS + THEMES ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
+  html += '<span style="min-width:80px;font-size:12px;"></span>';
   html += '<div class="card-header-bar">Today\'s Catalysts & Themes</div>';
-  html += '<div style="font-size:12px;color:var(--text-muted);">'+tsLabel(ts)+'</div>';
+  html += '<span style="min-width:80px;text-align:right;font-size:12px;color:var(--text-muted);">'+tsLabel(ts)+'</span>';
   html += '</div>';
   // Econ calendar
   html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);">';
@@ -500,8 +502,9 @@ async function renderOverview() {
   var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')==='true';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
+  html += '<span style="min-width:100px;font-size:12px;"></span>';
   html += '<div class="card-header-bar">Sector Heatmap</div>';
-  html += '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'▶':'▼')+'</span></div>';
+  html += '<div style="min-width:100px;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'▶':'▼')+'</span></div>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
   html += '<div class="ov-heatmap-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:12px 14px;">';
@@ -525,8 +528,9 @@ async function renderOverview() {
   // ════ 8. TOP IDEAS (from scanners) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
+  html += '<div style="min-width:50px;"></div>';
   html += '<div class="card-header-bar">Top Ideas</div>';
-  html += '<button onclick="runQuickScan()" id="quick-scan-btn" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Scan</button>';
+  html += '<div style="min-width:50px;display:flex;justify-content:flex-end;"><button onclick="runQuickScan()" id="quick-scan-btn" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Scan</button></div>';
   html += '</div>';
   html += '<div id="top-ideas-content" style="padding:12px 16px;">';
   var cachedIdeas=null;

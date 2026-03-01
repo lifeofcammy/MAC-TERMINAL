@@ -124,7 +124,7 @@ async function buildMomentumUniverse(statusFn) {
 
   // Step 4: Fetch 50-day bars in batches and score
   var scored = [];
-  var batchSize = 10;
+  var batchSize = 25;
   var failCount = 0;
 
   for (var i = 0; i < candidates.length; i += batchSize) {
@@ -161,7 +161,7 @@ async function buildMomentumUniverse(statusFn) {
 
     // Small delay to be respectful to API
     if (i + batchSize < candidates.length) {
-      await new Promise(function(r) { setTimeout(r, 200); });
+      await new Promise(function(r) { setTimeout(r, 50); });
     }
   }
 
@@ -280,7 +280,7 @@ async function runBreakoutScan(statusFn) {
   statusFn('Scanning ' + tickers.length + ' momentum stocks for setups...');
 
   var setups = [];
-  var batchSize = 5;
+  var batchSize = 15;
 
   for (var i = 0; i < tickers.length; i += batchSize) {
     var batch = tickers.slice(i, i + batchSize);
@@ -301,7 +301,7 @@ async function runBreakoutScan(statusFn) {
     statusFn('Scanning for setups... ' + progress + '/' + tickers.length);
 
     if (i + batchSize < tickers.length) {
-      await new Promise(function(r) { setTimeout(r, 200); });
+      await new Promise(function(r) { setTimeout(r, 50); });
     }
   }
 
