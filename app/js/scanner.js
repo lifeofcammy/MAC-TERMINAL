@@ -37,21 +37,64 @@ function getLastTradingDay() {
   return d.toISOString().split('T')[0];
 }
 
+// Retry wrapper for API calls — retries on 429 / network errors
+async function polyGetRetry(path, maxRetries) {
+  if (!maxRetries) maxRetries = 3;
+  for (var attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await polyGet(path);
+    } catch(e) {
+      var is429 = e.message && e.message.indexOf('429') !== -1;
+      var isNetwork = e.message && (e.message.indexOf('Failed to fetch') !== -1 || e.message.indexOf('NetworkError') !== -1);
+      if ((is429 || isNetwork) && attempt < maxRetries - 1) {
+        // Exponential backoff: 2s, 4s, 8s
+        var wait = Math.pow(2, attempt + 1) * 1000;
+        await new Promise(function(r) { setTimeout(r, wait); });
+        continue;
+      }
+      throw e;
+    }
+  }
+}
+
+// Retry wrapper for getDailyBars
+async function getDailyBarsRetry(ticker, days) {
+  if (!days) days = 60;
+  for (var attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await getDailyBars(ticker, days);
+    } catch(e) {
+      var is429 = e.message && e.message.indexOf('429') !== -1;
+      var isNetwork = e.message && (e.message.indexOf('Failed to fetch') !== -1 || e.message.indexOf('NetworkError') !== -1);
+      if ((is429 || isNetwork) && attempt < 2) {
+        var wait = Math.pow(2, attempt + 1) * 1000;
+        await new Promise(function(r) { setTimeout(r, wait); });
+        continue;
+      }
+      throw e;
+    }
+  }
+}
+
 async function buildMomentumUniverse(statusFn) {
   if (!statusFn) statusFn = function() {};
 
-  statusFn('Fetching all US stocks (grouped daily)...');
+  statusFn('Fetching all US stocks...');
 
   // Step 1: Get grouped daily bars (all stocks, previous trading day)
   var lastDay = getLastTradingDay();
   var groupedData;
   try {
-    groupedData = await polyGet('/v2/aggs/grouped/locale/us/market/stocks/' + lastDay + '?adjusted=true');
+    groupedData = await polyGetRetry('/v2/aggs/grouped/locale/us/market/stocks/' + lastDay + '?adjusted=true');
   } catch(e) {
     throw new Error('Failed to fetch grouped daily data: ' + e.message);
   }
 
   var allStocks = groupedData.results || [];
+  if (allStocks.length === 0) {
+    throw new Error('No market data returned for ' + lastDay + '. Market may be closed.');
+  }
+
   statusFn('Got ' + allStocks.length + ' tickers. Filtering...');
 
   // Step 2: Filter — price > $5, volume > 500K, common stocks only (no OTC, warrants, etc.)
@@ -64,22 +107,23 @@ async function buildMomentumUniverse(statusFn) {
     return true;
   });
 
-  statusFn('Filtered to ' + filtered.length + ' stocks. Fetching 50-day bars for top candidates...');
+  statusFn('Filtered to ' + filtered.length + ' stocks. Fetching 50-day bars...');
 
-  // Step 3: Get 50-day bars for scoring — use ALL filtered stocks (full market breadth)
-  // Sort by dollar volume for deterministic ordering (highest liquidity first)
+  // Step 3: Sort by dollar volume for deterministic ordering (highest liquidity first)
   filtered.sort(function(a, b) { return (b.v * b.c) - (a.v * a.c); });
-  var candidates = filtered; // No cap — scan the entire filtered universe
+  var candidates = filtered;
 
   // Step 4: Fetch 50-day bars in batches and score
   var scored = [];
   var batchSize = 10;
+  var failCount = 0;
+
   for (var i = 0; i < candidates.length; i += batchSize) {
     var batch = candidates.slice(i, i + batchSize);
     var promises = batch.map(function(stock) {
-      return getDailyBars(stock.T, 60).then(function(bars) {
+      return getDailyBarsRetry(stock.T, 60).then(function(bars) {
         return { ticker: stock.T, bars: bars, latestClose: stock.c, latestVol: stock.v };
-      }).catch(function() { return null; });
+      }).catch(function() { failCount++; return null; });
     });
     var results = await Promise.all(promises);
     results.forEach(function(r) {
@@ -101,12 +145,14 @@ async function buildMomentumUniverse(statusFn) {
       }
     });
 
-    if (i % 20 === 0 && i > 0) {
-      statusFn('Scoring... (' + Math.min(i + batchSize, candidates.length) + '/' + candidates.length + ')');
-    }
-    // Small delay to respect rate limits
+    // Progress update every batch
+    var progress = Math.min(i + batchSize, candidates.length);
+    var pct = Math.round(progress / candidates.length * 100);
+    statusFn('Scoring... ' + progress + '/' + candidates.length + ' (' + pct + '%)');
+
+    // Small delay to be respectful to API
     if (i + batchSize < candidates.length) {
-      await new Promise(function(r) { setTimeout(r, 250); });
+      await new Promise(function(r) { setTimeout(r, 200); });
     }
   }
 
@@ -122,7 +168,9 @@ async function buildMomentumUniverse(statusFn) {
     tickers: top100
   };
   saveMomentumCache(cacheData);
-  statusFn('Done! Top ' + top100.length + ' momentum stocks identified.');
+
+  var failNote = failCount > 0 ? ' (' + failCount + ' tickers skipped due to errors)' : '';
+  statusFn('Done! Top ' + top100.length + ' momentum stocks identified.' + failNote);
   return cacheData;
 }
 
@@ -228,7 +276,7 @@ async function runBreakoutScan(statusFn) {
   for (var i = 0; i < tickers.length; i += batchSize) {
     var batch = tickers.slice(i, i + batchSize);
     var promises = batch.map(function(ticker) {
-      return getDailyBars(ticker, 60).then(function(bars) {
+      return getDailyBarsRetry(ticker, 60).then(function(bars) {
         return { ticker: ticker, bars: bars };
       }).catch(function() { return null; });
     });
@@ -240,11 +288,11 @@ async function runBreakoutScan(statusFn) {
       if (setup && setup.score >= 40) setups.push(setup);
     });
 
-    if (i % 20 === 0 && i > 0) {
-      statusFn('Scanning... (' + Math.min(i + batchSize, tickers.length) + '/' + tickers.length + ')');
-    }
+    var progress = Math.min(i + batchSize, tickers.length);
+    statusFn('Scanning for setups... ' + progress + '/' + tickers.length);
+
     if (i + batchSize < tickers.length) {
-      await new Promise(function(r) { setTimeout(r, 250); });
+      await new Promise(function(r) { setTimeout(r, 200); });
     }
   }
 
@@ -412,27 +460,33 @@ function renderScanner() {
   html += '<div class="section-title" style="margin:0;"><span class="dot" style="background:var(--blue)"></span> Momentum Scanner</div>';
   html += '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Qullamaggie + Zanger methodology · ' + dataFreshness + '</div>';
   html += '</div>';
-  html += '<div style="display:flex;gap:6px;">';
-  html += '<button onclick="refreshMomentumUI()" id="refresh-universe-btn" class="refresh-btn" style="padding:6px 14px;">' + (isFresh ? 'Refresh Top 100' : '⟳ Update Top 100') + '</button>';
-  html += '<button onclick="runScanUI()" id="run-scan-btn" class="refresh-btn" style="padding:6px 14px;">Scan for Setups</button>';
-  html += '</div></div>';
-
-  // ── STATUS BAR ──
-  html += '<div id="scanner-status" style="font-size:14px;color:var(--text-muted);margin-bottom:12px;min-height:16px;">';
-  if (cache) html += 'Top 100 updated ' + cacheDate + ' · ' + cache.count + ' stocks';
-  else html += 'No momentum list cached yet. Click "Update Top 100" to build it.';
+  html += '<button onclick="runFullScanUI()" id="scan-btn" class="refresh-btn" style="padding:8px 20px;font-weight:700;">Scan</button>';
   html += '</div>';
 
-  // ── SCAN RESULTS ──
+  // ── PROGRESS BAR (hidden by default) ──
+  html += '<div id="scanner-progress-wrap" style="display:none;margin-bottom:14px;">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">';
+  html += '<span id="scanner-status" style="font-size:14px;color:var(--text-muted);">Starting scan...</span>';
+  html += '<span id="scanner-pct" style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">0%</span>';
+  html += '</div>';
+  html += '<div style="height:4px;background:var(--bg-secondary);border-radius:2px;overflow:hidden;">';
+  html += '<div id="scanner-progress-bar" style="width:0%;height:100%;background:var(--blue);border-radius:2px;transition:width 0.3s ease;"></div>';
+  html += '</div></div>';
+
+  // ── STATUS (when no progress bar) ──
+  html += '<div id="scanner-status-idle" style="font-size:14px;color:var(--text-muted);margin-bottom:12px;min-height:16px;">';
+  if (cache) html += 'Last scanned ' + cacheDate + ' · ' + cache.count + ' stocks';
+  else html += 'No scan data yet. Click Scan to find momentum stocks and breakout setups.';
+  html += '</div>';
+
+  // ── SCAN RESULTS (setups at top) ──
   html += '<div id="scan-results">';
   if (scanResults && scanResults.setups && scanResults.setups.length > 0) {
     html += renderScanResults(scanResults);
-  } else if (cache && cache.tickers) {
-    html += '<div class="card" style="padding:24px;text-align:center;color:var(--text-muted);font-size:14px;">Top 100 loaded. Click <strong>Scan for Setups</strong> to find breakout candidates.</div>';
   }
   html += '</div>';
 
-  // ── TOP 100 LIST (collapsible) ──
+  // ── TOP 100 LIST (collapsible, below setups) ──
   html += '<div style="margin-top:16px;">';
   var listCollapsed = localStorage.getItem('mac_top100_collapsed') === 'true';
   html += '<div onclick="toggleTop100()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;margin-bottom:8px;">';
@@ -443,7 +497,7 @@ function renderScanner() {
   if (cache && cache.tickers && cache.tickers.length > 0) {
     html += renderTop100List(cache.tickers);
   } else {
-    html += '<div class="card" style="padding:20px;text-align:center;color:var(--text-muted);font-size:14px;">No data yet. Click "Update Top 100" above.</div>';
+    html += '<div class="card" style="padding:20px;text-align:center;color:var(--text-muted);font-size:14px;">No data yet. Click Scan above.</div>';
   }
   html += '</div></div>';
 
@@ -589,56 +643,79 @@ function renderTop100List(tickers) {
   return html;
 }
 
-async function refreshMomentumUI() {
-  var btn = document.getElementById('refresh-universe-btn');
-  var status = document.getElementById('scanner-status');
-  if (btn) { btn.disabled = true; btn.textContent = 'Building...'; }
+// ==================== SINGLE SCAN BUTTON ====================
+// One click: builds universe (if stale) + runs breakout scan
 
-  try {
-    await buildMomentumUniverse(function(msg) {
-      if (status) status.textContent = msg;
-    });
-    renderScanner();
-  } catch(e) {
-    if (status) status.innerHTML = '<span style="color:var(--red);">Error: ' + e.message + '</span>';
-  }
-  if (btn) { btn.disabled = false; btn.textContent = 'Refresh Top 100'; }
-}
-
-async function runScanUI() {
-  var btn = document.getElementById('run-scan-btn');
-  var status = document.getElementById('scanner-status');
+async function runFullScanUI() {
+  var btn = document.getElementById('scan-btn');
+  var statusEl = document.getElementById('scanner-status');
+  var pctEl = document.getElementById('scanner-pct');
+  var barEl = document.getElementById('scanner-progress-bar');
+  var progressWrap = document.getElementById('scanner-progress-wrap');
+  var idleStatus = document.getElementById('scanner-status-idle');
   var resultsEl = document.getElementById('scan-results');
-  if (btn) { btn.disabled = true; btn.textContent = 'Scanning...'; }
 
-  // Auto-refresh universe if stale
-  if (!isMomentumCacheFresh()) {
-    try {
-      await buildMomentumUniverse(function(msg) {
-        if (status) status.textContent = 'Building universe: ' + msg;
-      });
-    } catch(e) {
-      if (status) status.innerHTML = '<span style="color:var(--red);">Failed to build universe: ' + e.message + '</span>';
-      if (btn) { btn.disabled = false; btn.textContent = 'Scan for Setups'; }
-      return;
-    }
+  if (btn) { btn.disabled = true; btn.textContent = 'Scanning...'; }
+  if (progressWrap) progressWrap.style.display = 'block';
+  if (idleStatus) idleStatus.style.display = 'none';
+
+  function updateProgress(msg, pct) {
+    if (statusEl) statusEl.textContent = msg;
+    if (pct !== undefined && pctEl) pctEl.textContent = pct + '%';
+    if (pct !== undefined && barEl) barEl.style.width = pct + '%';
   }
 
   try {
-    var results = await runBreakoutScan(function(msg) {
-      if (status) status.textContent = msg;
+    // Step 1: Build universe (always refresh for latest data)
+    updateProgress('Building momentum universe...', 0);
+    await buildMomentumUniverse(function(msg) {
+      // Parse progress from status messages like "Scoring... 500/3024 (17%)"
+      var match = msg.match(/(\d+)%/);
+      var pct = match ? Math.round(parseInt(match[1]) * 0.7) : undefined; // Universe building = 0-70%
+      updateProgress(msg, pct);
     });
+
+    // Step 2: Run breakout scan
+    updateProgress('Scanning for breakout setups...', 72);
+    var results = await runBreakoutScan(function(msg) {
+      var match = msg.match(/(\d+)\/(\d+)/);
+      if (match) {
+        var pct = 72 + Math.round(parseInt(match[1]) / parseInt(match[2]) * 28); // Scan = 72-100%
+        updateProgress(msg, Math.min(pct, 99));
+      } else {
+        updateProgress(msg);
+      }
+    });
+
+    updateProgress('Done!', 100);
+
+    // Render results
     if (resultsEl) resultsEl.innerHTML = renderScanResults(results);
-    // Also refresh the full scanner to update top 100 list
+
+    // Update top 100 list
     var cache = getMomentumCache();
-    if (cache) {
-      var cacheDate = new Date(cache.ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
-      if (status) status.textContent = 'Found ' + results.setups.length + ' setups · Top 100 from ' + cacheDate;
+    var top100Body = document.getElementById('top100-body');
+    if (top100Body && cache && cache.tickers) {
+      top100Body.innerHTML = renderTop100List(cache.tickers);
     }
+
+    // Update idle status for next time
+    setTimeout(function() {
+      if (progressWrap) progressWrap.style.display = 'none';
+      if (idleStatus) {
+        var cacheDate = new Date(cache.ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+        idleStatus.textContent = 'Last scanned ' + cacheDate + ' · ' + results.setups.length + ' setups · ' + cache.count + ' stocks';
+        idleStatus.style.display = 'block';
+      }
+    }, 2000);
+
   } catch(e) {
-    if (status) status.innerHTML = '<span style="color:var(--red);">Scan error: ' + e.message + '</span>';
+    updateProgress('Error: ' + e.message, 0);
+    if (barEl) barEl.style.background = 'var(--red)';
+    if (statusEl) statusEl.style.color = 'var(--red)';
   }
-  if (btn) { btn.disabled = false; btn.textContent = 'Scan for Setups'; }
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Scan'; }
 }
 
 function toggleTop100() {

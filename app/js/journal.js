@@ -361,7 +361,7 @@ function renderRecapCalendar() {
 
   // Header
   gridHTML += '<div style="display:grid;grid-template-columns:repeat(5,1fr) 100px;gap:6px;margin-bottom:6px;">';
-  ['Mon','Tue','Wed','Thu','Fri','Week'].forEach(function(d) {
+  ['Mon','Tue','Wed','Thu','Fri',''].forEach(function(d) {
     gridHTML += '<div style="text-align:center;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;padding:4px 0;">' + d + '</div>';
   });
   gridHTML += '</div>';
