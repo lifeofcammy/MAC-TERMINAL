@@ -1,4 +1,5 @@
 // ==================== daily-scanner ====================
+// Auto-deployed via GitHub Actions
 // Supabase Edge Function that runs the full momentum scan server-side.
 // Uses the Polygon paid API key (stored as a secret) to scan ~3000 stocks,
 // score them, find breakout setups, and store results in the scan_results table.
