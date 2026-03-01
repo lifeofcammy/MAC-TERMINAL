@@ -364,7 +364,11 @@ async function renderOverview() {
   }
   if(hasHighImpactEvent&&live) regimeDetail+=' ⚠ '+eventName+' today — volatility expected.';
 
-  html += '<div style="background:'+regimeBg+';border:1px solid '+regimeBorder+';border-radius:14px;padding:14px 20px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;">';
+  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
+  html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text-primary);">Market Regime</div>';
+  html += '</div>';
+  html += '<div style="background:'+regimeBg+';padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;">';
   html += '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">';
   html += '<span style="font-size:18px;color:'+regimeColor+';">'+regimeIcon+'</span>';
   html += '<div style="min-width:0;">';
@@ -392,11 +396,17 @@ async function renderOverview() {
   }
   html += '</div></div>';
   html += '</div>';
+  html += '</div>';
 
   // ════ 4. MARKET SNAPSHOT (tight row: SPY QQQ IWM DIA VIX DXY) ════
   var dataFreshness = getDataFreshnessLabel();
-  html += '<div style="display:flex;justify-content:flex-end;margin-bottom:4px;"><span style="font-size:10px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span></div>';
-  html += '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px;">';
+  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
+  html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text-primary);">Market Snapshot</div>';
+  html += '<span style="font-size:10px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
+  html += '</div>';
+  html += '<div style="padding:12px 16px;">';
+  html += '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">';
   var snapItems = [
     {ticker:'SPY',label:'S&P 500',data:spyData},
     {ticker:'QQQ',label:'Nasdaq',data:qqqData},
@@ -417,6 +427,8 @@ async function renderOverview() {
     html += '<div style="font-size:10px;font-weight:700;color:'+color+';margin-top:2px;">'+pct(d.pct)+'</div>';
     html += '</div>';
   });
+  html += '</div>';
+  html += '</div>';
   html += '</div>';
 
   // ════ 5. STOCK BREADTH (advancers/decliners from ~90 stock universe) ════
