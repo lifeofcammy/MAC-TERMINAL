@@ -64,9 +64,9 @@ function renderAnalysis() {
     var isWeekday = dow >= 1 && dow <= 5;
     var isPastOrToday = d <= new Date();
     contentEl.innerHTML = '<div class="card" style="padding:40px;text-align:center;">' +
-      '<div style="font-size:20px;margin-bottom:16px;color:var(--text-muted);">◉</div>' +
-      '<div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">No market analysis for this date</div>' +
-      '<div style="font-size:11px;color:var(--text-muted);max-width:450px;margin:0 auto;line-height:1.6;">Click "Generate" to auto-scan this day\'s biggest movers, sector rotations, and key themes using market data and AI.</div>' +
+      '<div style="font-size:16px;margin-bottom:16px;color:var(--text-muted);">◉</div>' +
+      '<div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">No market analysis for this date</div>' +
+      '<div style="font-size:10px;color:var(--text-muted);max-width:450px;margin:0 auto;line-height:1.6;">Click "Generate" to auto-scan this day\'s biggest movers, sector rotations, and key themes using market data and AI.</div>' +
       (isWeekday && isPastOrToday ?
         '<button onclick="autoGenerateAnalysis(\'' + analysisCurrentDate + '\')" id="auto-gen-btn" style="margin-top:16px;padding:10px 24px;border-radius:8px;border:1px solid var(--blue);background:rgba(37,99,235,0.1);color:var(--blue);cursor:pointer;font-size:12px;font-weight:700;font-family:\'Inter\',sans-serif;">Generate Analysis</button>' +
         '<div id="auto-gen-status" style="margin-top:8px;font-size:10px;color:var(--text-muted);"></div>'
@@ -91,7 +91,7 @@ function renderAnalysis() {
     { id: 'an-mindset', label: '\u{1F9E0} Mindset' }
   ];
   subTabs.forEach(function(t) {
-    html += '<button onclick="showAnalysisPanel(\'' + t.id + '\')" class="an-pill' + (t.active ? ' an-pill-active' : '') + '" data-panel="' + t.id + '" style="padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:' + (t.active ? 'var(--blue)' : 'var(--bg-card)') + ';color:' + (t.active ? '#fff' : 'var(--text-muted)') + ';font-size:11px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;transition:all 0.15s ease;white-space:nowrap;">' + t.label + '</button>';
+    html += '<button onclick="showAnalysisPanel(\'' + t.id + '\')" class="an-pill' + (t.active ? ' an-pill-active' : '') + '" data-panel="' + t.id + '" style="padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:' + (t.active ? 'var(--blue)' : 'var(--bg-card)') + ';color:' + (t.active ? '#fff' : 'var(--text-muted)') + ';font-size:10px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;transition:all 0.15s ease;white-space:nowrap;">' + t.label + '</button>';
   });
   html += '</div>';
 
@@ -103,7 +103,7 @@ function renderAnalysis() {
   if (analysis.marketContext) {
     html += '<div class="card" style="padding:16px 20px;margin-bottom:14px;border-left:4px solid var(--blue);">';
     html += '<div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">MARKET CONTEXT</div>';
-    html += '<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">' + analysis.marketContext + '</div>';
+    html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.6;">' + analysis.marketContext + '</div>';
     html += '</div>';
   }
 
@@ -113,10 +113,10 @@ function renderAnalysis() {
     var topLoser = analysis.movers.reduce(function(a, b) { return b.changePct < a.changePct ? b : a; });
 
     html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">';
-    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Movers</div><div style="font-size:24px;font-weight:800;color:var(--text-primary);">' + analysis.movers.length + '</div></div>';
-    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Catchable</div><div style="font-size:24px;font-weight:800;color:var(--green);">' + catchableCount + '</div></div>';
-    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Gainer</div><div style="font-size:14px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">' + topGainer.ticker + ' +' + topGainer.changePct.toFixed(1) + '%</div></div>';
-    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Loser</div><div style="font-size:14px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + topLoser.ticker + ' ' + topLoser.changePct.toFixed(1) + '%</div></div>';
+    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Movers</div><div style="font-size:16px;font-weight:800;color:var(--text-primary);">' + analysis.movers.length + '</div></div>';
+    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Catchable</div><div style="font-size:16px;font-weight:800;color:var(--green);">' + catchableCount + '</div></div>';
+    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Gainer</div><div style="font-size:12px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">' + topGainer.ticker + ' +' + topGainer.changePct.toFixed(1) + '%</div></div>';
+    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Loser</div><div style="font-size:12px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + topLoser.ticker + ' ' + topLoser.changePct.toFixed(1) + '%</div></div>';
     html += '</div>';
   }
 
@@ -147,9 +147,9 @@ function renderAnalysis() {
     var sco = mso.score >= 8 ? 'var(--green)' : mso.score >= 5 ? 'var(--amber)' : 'var(--red)';
     html += '<div class="card" style="padding:16px;border-left:3px solid ' + sco + '">';
     html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">';
-    html += '<div style="width:44px;height:44px;border-radius:50%;background:' + sco + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-weight:900;font-size:20px;color:#fff;">' + mso.score + '</span></div>';
+    html += '<div style="width:44px;height:44px;border-radius:50%;background:' + sco + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-weight:900;font-size:16px;color:#fff;">' + mso.score + '</span></div>';
     html += '<div><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-primary);">Discipline ' + mso.score + '/10</div>';
-    if (mso.scoreNote) html += '<div style="font-size:9px;color:var(--text-muted);margin-top:2px;line-height:1.4;">' + mso.scoreNote + '</div>';
+    if (mso.scoreNote) html += '<div style="font-size:10px;color:var(--text-muted);margin-top:2px;line-height:1.4;">' + mso.scoreNote + '</div>';
     html += '</div></div>';
     if (mso.violations && mso.violations.length > 0) {
       mso.violations.forEach(function(v) {
@@ -176,18 +176,18 @@ function renderAnalysis() {
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
     analysis.movers.forEach(function(m) {
       var mc = m.changePct >= 0 ? 'var(--green)' : 'var(--red)';
-      var cb = m.catchable === 'yes' ? '<span style="font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);">CATCHABLE</span>'
-        : m.catchable === 'partial' ? '<span style="font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--amber-bg);color:var(--amber);">PARTIALLY</span>'
-        : '<span style="font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.12);color:var(--text-muted);">NEWS-DRIVEN</span>';
+      var cb = m.catchable === 'yes' ? '<span style="font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);">CATCHABLE</span>'
+        : m.catchable === 'partial' ? '<span style="font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--amber-bg);color:var(--amber);">PARTIALLY</span>'
+        : '<span style="font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.12);color:var(--text-muted);">NEWS-DRIVEN</span>';
       html += '<div class="card" style="padding:16px;">';
       html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">';
-      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:15px;">' + m.ticker + '</span>';
-      html += '<span style="font-weight:800;color:' + mc + ';font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + (m.changePct >= 0 ? '+' : '') + m.changePct.toFixed(1) + '%</span>';
+      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:12px;">' + m.ticker + '</span>';
+      html += '<span style="font-weight:800;color:' + mc + ';font-family:\'JetBrains Mono\',monospace;font-size:12px;">' + (m.changePct >= 0 ? '+' : '') + m.changePct.toFixed(1) + '%</span>';
       html += cb;
-      if (m.sector) html += '<span style="font-size:8px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;">' + m.sector + '</span>';
+      if (m.sector) html += '<span style="font-size:10px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;">' + m.sector + '</span>';
       html += '</div>';
       html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.6;margin-bottom:6px;">' + m.why + '</div>';
-      if (m.lesson) html += '<div style="font-size:9px;color:var(--blue);font-weight:600;line-height:1.5;">\u2192 ' + m.lesson + '</div>';
+      if (m.lesson) html += '<div style="font-size:10px;color:var(--blue);font-weight:600;line-height:1.5;">\u2192 ' + m.lesson + '</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -203,23 +203,23 @@ function renderAnalysis() {
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
     analysis.probabilityMap.forEach(function(p) {
       var pc = p.probability >= 75 ? 'var(--green)' : p.probability >= 60 ? 'var(--amber)' : 'var(--text-muted)';
-      var tb = p.tier === 1 ? '<span style="font-size:7px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--purple-bg);color:var(--purple);">T1</span>'
-        : p.tier === 2 ? '<span style="font-size:7px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--blue-bg);color:var(--blue);">T2</span>'
-        : '<span style="font-size:7px;font-weight:800;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.1);color:var(--text-muted);">W</span>';
+      var tb = p.tier === 1 ? '<span style="font-size:10px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--purple-bg);color:var(--purple);">T1</span>'
+        : p.tier === 2 ? '<span style="font-size:10px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--blue-bg);color:var(--blue);">T2</span>'
+        : '<span style="font-size:10px;font-weight:800;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.1);color:var(--text-muted);">W</span>';
       var di = p.direction === 'long' ? '\u2191' : p.direction === 'short' ? '\u2193' : '\u2195';
       var dc = p.direction === 'long' ? 'var(--green)' : p.direction === 'short' ? 'var(--red)' : 'var(--amber)';
       html += '<div class="card" style="padding:16px;position:relative;overflow:hidden;">';
       html += '<div style="position:absolute;bottom:0;left:0;height:3px;width:' + p.probability + '%;background:' + pc + ';border-radius:0 2px 0 0;"></div>';
       html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">';
-      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:15px;">' + p.ticker + '</span>';
+      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:12px;">' + p.ticker + '</span>';
       html += '<span style="font-weight:800;color:' + pc + ';font-family:\'JetBrains Mono\',monospace;font-size:16px;">' + p.probability + '%</span>';
-      html += '<span style="color:' + dc + ';font-size:14px;font-weight:900;">' + di + '</span>';
+      html += '<span style="color:' + dc + ';font-size:12px;font-weight:900;">' + di + '</span>';
       html += tb;
-      if (p.catalyst) html += '<span style="font-size:7px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + p.catalyst + '</span>';
+      if (p.catalyst) html += '<span style="font-size:10px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + p.catalyst + '</span>';
       html += '</div>';
       html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.55;margin-bottom:6px;">' + p.thesis.substring(0, 180) + (p.thesis.length > 180 ? '...' : '') + '</div>';
-      if (p.keyLevels) html += '<div style="font-size:9px;color:var(--purple);font-weight:600;font-family:\'JetBrains Mono\',monospace;margin-bottom:3px;">\u{1F4CD} ' + p.keyLevels + '</div>';
-      if (p.optionsPlay) html += '<div style="font-size:9px;color:var(--blue);font-weight:600;">\u{1F4B0} ' + p.optionsPlay.substring(0, 120) + (p.optionsPlay.length > 120 ? '...' : '') + '</div>';
+      if (p.keyLevels) html += '<div style="font-size:10px;color:var(--purple);font-weight:600;font-family:\'JetBrains Mono\',monospace;margin-bottom:3px;">\u{1F4CD} ' + p.keyLevels + '</div>';
+      if (p.optionsPlay) html += '<div style="font-size:10px;color:var(--blue);font-weight:600;">\u{1F4B0} ' + p.optionsPlay.substring(0, 120) + (p.optionsPlay.length > 120 ? '...' : '') + '</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -245,7 +245,7 @@ function renderAnalysis() {
         html += '<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;background:var(--bg-secondary);color:var(--text-secondary);font-family:\'JetBrains Mono\',monospace;">' + t + '</span>';
       });
       html += '</div>';
-      html += '<div style="font-size:9px;color:var(--text-muted);line-height:1.5;">' + w.note + '</div>';
+      html += '<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">' + w.note + '</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -273,9 +273,9 @@ function renderAnalysis() {
     var scc = ms.score >= 8 ? 'var(--green)' : ms.score >= 5 ? 'var(--amber)' : 'var(--red)';
     html += '<div class="card" style="padding:20px;text-align:center;margin-bottom:14px;">';
     html += '<div style="width:72px;height:72px;border-radius:50%;background:' + scc + ';display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px;">';
-    html += '<span style="font-weight:900;font-size:32px;color:#fff;">' + ms.score + '</span></div>';
-    html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">DISCIPLINE SCORE: ' + ms.score + '/10</div>';
-    if (ms.scoreNote) html += '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6;">' + ms.scoreNote + '</div>';
+    html += '<span style="font-weight:900;font-size:16px;color:#fff;">' + ms.score + '</span></div>';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--text-primary);">DISCIPLINE SCORE: ' + ms.score + '/10</div>';
+    if (ms.scoreNote) html += '<div style="font-size:10px;color:var(--text-muted);margin-top:6px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6;">' + ms.scoreNote + '</div>';
     html += '</div>';
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--red);">';
@@ -347,9 +347,9 @@ function renderRecentEntries(parentEl) {
   html += '<div class="section-title" style="margin:0;"><span class="dot" style="background:var(--blue)"></span> Recent Analysis Entries</div>';
   html += '<div style="display:flex;gap:6px;">';
   if(missingCount > 0) {
-    html += '<button onclick="backfillAnalysis(7)" id="backfill-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(37,99,235,0.08);color:var(--blue);cursor:pointer;font-size:9px;font-weight:700;font-family:\'Inter\',sans-serif;">Fill Missing ('+missingCount+')</button>';
+    html += '<button onclick="backfillAnalysis(7)" id="backfill-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(37,99,235,0.08);color:var(--blue);cursor:pointer;font-size:10px;font-weight:700;font-family:\'Inter\',sans-serif;">Fill Missing ('+missingCount+')</button>';
   }
-  html += '<button onclick="backfillAnalysis(14)" id="backfill-2wk-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--purple);background:rgba(124,58,237,0.08);color:var(--purple);cursor:pointer;font-size:9px;font-weight:700;font-family:\'Inter\',sans-serif;">Look Back 2 Weeks</button>';
+  html += '<button onclick="backfillAnalysis(14)" id="backfill-2wk-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--purple);background:rgba(124,58,237,0.08);color:var(--purple);cursor:pointer;font-size:10px;font-weight:700;font-family:\'Inter\',sans-serif;">Look Back 2 Weeks</button>';
   html += '</div></div>';
   html += '<div id="backfill-status" style="font-size:10px;color:var(--text-muted);margin-bottom:6px;"></div>';
   html += '<div class="card" style="padding:0;overflow:hidden;">';
@@ -369,7 +369,7 @@ function renderRecentEntries(parentEl) {
       var topMover = moverCount > 0 ? a.movers[0].ticker + ' ' + (a.movers[0].changePct >= 0 ? '+' : '') + a.movers[0].changePct.toFixed(1) + '%' : '';
       var topColor = moverCount > 0 && a.movers[0].changePct >= 0 ? 'var(--green)' : 'var(--red)';
 
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:11px;' + (isActive ? 'background:rgba(59,130,246,0.08);' : '') + '" onclick="analysisCurrentDate=\'' + date + '\';renderAnalysis();">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:10px;' + (isActive ? 'background:rgba(59,130,246,0.08);' : '') + '" onclick="analysisCurrentDate=\'' + date + '\';renderAnalysis();">';
       html += '<span style="color:var(--text-secondary);font-weight:' + (isActive ? '700' : '400') + ';">' + dayName + '</span>';
       html += '<span style="font-size:10px;color:var(--text-muted);">' + moverCount + ' movers</span>';
       if (topMover) html += '<span style="font-weight:700;color:' + topColor + ';font-family:\'JetBrains Mono\',monospace;font-size:10px;">' + topMover + '</span>';
@@ -751,7 +751,7 @@ function addChatMessage(role, text) {
   avatar.textContent = isUser ? 'U' : 'AI';
 
   var bubble = document.createElement('div');
-  bubble.style.cssText = 'flex:1;font-size:11px;line-height:1.6;color:var(--text-secondary);padding:8px 12px;border-radius:8px;white-space:pre-wrap;' +
+  bubble.style.cssText = 'flex:1;font-size:10px;line-height:1.6;color:var(--text-secondary);padding:8px 12px;border-radius:8px;white-space:pre-wrap;' +
     (isUser ? 'background:var(--bg-secondary);' : 'background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.15);');
   bubble.textContent = text;
 
