@@ -131,6 +131,7 @@ body {
 /* Tabs */
 .tabs {
   display: flex;
+  justify-content: center;
   gap: 0;
   padding: 0 32px;
   background: var(--bg-primary);

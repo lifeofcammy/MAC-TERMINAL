@@ -486,7 +486,7 @@ async function renderOverview() {
   try{var themeKey='mac_themes_'+new Date().toISOString().split('T')[0];var themeData=localStorage.getItem(themeKey);if(themeData)cachedThemes=JSON.parse(themeData);}catch(e){}
   if(cachedThemes&&cachedThemes.movers){html+=renderThemesHTML(cachedThemes,cachedThemes.ts);}
   else if(cachedThemes&&cachedThemes.themes){html+=renderLegacyThemesHTML(cachedThemes.themes,cachedThemes.ts);}
-  else{html += '<div style="font-size:10px;color:var(--text-muted);">Click "Generate" to see today\'s biggest movers and the news behind them.</div>';}
+  else{html += '<div style="font-size:10px;color:var(--text-muted);">'+(getAnthropicKey()?'Auto-loading themes...':'Add Anthropic API key (gear icon) to auto-generate themes.')+'</div>';}
   html += '</div></div>';
   html += '</div>'; // close Catalysts+Themes card
 
@@ -533,6 +533,10 @@ async function renderOverview() {
   loadEconCalendar();
   // Load watchlist live prices async
   loadWatchlistPrices();
+  // Auto-generate themes if no cache and API key exists
+  if(!cachedThemes && getAnthropicKey()){
+    setTimeout(function(){ generateThemes(); }, 500);
+  }
 }
 
 // ==================== WATCHLIST PRICE LOADER ====================
@@ -581,19 +585,52 @@ function toggleMindset() {
   try{localStorage.setItem('mcc_mindset_collapsed',h?'false':'true');}catch(e){}
 }
 
-// ==================== RENDER THEMES HTML (new format: movers + why) ====================
+// ==================== RENDER THEMES HTML (new format: movers + why + industries) ====================
 function renderThemesHTML(data, cacheTs) {
   var html='';var time=new Date(cacheTs).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
-  html += '<div style="font-size:9px;color:var(--text-muted);margin-bottom:10px;">Updated '+time+' · <a href="#" onclick="localStorage.removeItem(\'mac_themes_\'+new Date().toISOString().split(\'T\')[0]);renderOverview();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
+  html += '<div style="font-size:9px;color:var(--text-muted);margin-bottom:10px;">Updated '+time+' · <a href="#" onclick="localStorage.removeItem(\'mac_themes_\'+new Date().toISOString().split(\'T\')[0]);generateThemes();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
 
   // Market narrative (if present)
   if(data.narrative){
     html += '<div style="font-size:11px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:6px;border-left:3px solid var(--blue);">' + data.narrative.replace(/</g,'&lt;') + '</div>';
   }
 
+  // ── INDUSTRY HEAT CHECK (show first for quick scan) ──
+  if(data.industries && data.industries.length>0){
+    html += '<div style="font-size:9px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Industry Heat Check</div>';
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">';
+    data.industries.forEach(function(ind){
+      var isUp=ind.direction==='up';
+      var c=isUp?'var(--green)':'var(--red)';
+      var bg=isUp?'rgba(16,185,129,0.06)':'rgba(239,68,68,0.06)';
+      var arrow=isUp?'▲':'▼';
+      html += '<div style="background:'+bg+';border:1px solid '+c+'20;border-radius:8px;padding:8px 12px;min-width:140px;flex:1;max-width:220px;">';
+      html += '<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">';
+      html += '<span style="font-size:10px;color:'+c+';font-weight:800;">'+arrow+'</span>';
+      html += '<span style="font-size:10px;font-weight:800;color:var(--text-primary);">'+((ind.name||'').replace(/</g,'&lt;'))+'</span>';
+      html += '</div>';
+      if(ind.tickers && ind.tickers.length>0){
+        html += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:3px;">';
+        ind.tickers.forEach(function(t){html += '<span style="font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+t+'</span>';});
+        html += '</div>';
+      }
+      if(ind.note) html += '<div style="font-size:8px;color:var(--text-muted);line-height:1.3;">'+((ind.note||'').replace(/</g,'&lt;'))+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
   var movers = data.movers || [];
   var winners = movers.filter(function(m){return m.direction==='up';});
   var losers = movers.filter(function(m){return m.direction==='down';});
+
+  // Helper: render sector/industry badge
+  function sectorBadge(m){
+    var s='';
+    if(m.industry) s += '<span style="font-size:8px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(124,58,237,0.08);color:var(--purple);margin-left:auto;">' + (m.industry||'').replace(/</g,'&lt;') + '</span>';
+    else if(m.sector) s += '<span style="font-size:8px;font-weight:600;padding:1px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;">' + (m.sector||'').replace(/</g,'&lt;') + '</span>';
+    return s;
+  }
 
   // Winners
   if(winners.length>0){
@@ -604,6 +641,7 @@ function renderThemesHTML(data, cacheTs) {
       html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
       html += '<span style="font-size:13px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + m.ticker + '</span>';
       html += '<span style="font-size:12px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">+' + Math.abs(m.pct).toFixed(1) + '%</span>';
+      html += sectorBadge(m);
       html += '</div>';
       html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.5;">' + (m.reason||'').replace(/</g,'&lt;') + '</div>';
       if(m.tags && m.tags.length>0){
@@ -625,6 +663,7 @@ function renderThemesHTML(data, cacheTs) {
       html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
       html += '<span style="font-size:13px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + m.ticker + '</span>';
       html += '<span style="font-size:12px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + (m.pct<0?'':'-') + Math.abs(m.pct).toFixed(1) + '%</span>';
+      html += sectorBadge(m);
       html += '</div>';
       html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.5;">' + (m.reason||'').replace(/</g,'&lt;') + '</div>';
       if(m.tags && m.tags.length>0){
@@ -763,8 +802,8 @@ async function generateThemes() {
 
     if(prog)prog.textContent='AI analyzing movers...';
 
-    // Step 5: Ask Claude to explain WHY each moved
-    var prompt='You are a professional market analyst. Here are today\'s biggest stock movers with their associated headlines.\n\nMarket Indices: '+marketCtx+'\n\nBiggest Movers:\n'+moverContext+'\n\nGeneral Headlines:\n'+generalNews.slice(0,8).join('\n')+'\n\nYour task:\n1. For each significant mover, write a 1-2 sentence explanation of WHY it moved (the catalyst).\n2. Group the day\'s action into 2-3 overarching themes (e.g., "AI Infrastructure Boom", "Earnings Season Winners", "Macro Fears").\n3. Write a 1-sentence market narrative summary.\n\nReturn JSON ONLY in this exact format:\n{\n  "narrative": "One sentence market summary",\n  "movers": [\n    {"ticker": "DELL", "pct": 21.8, "direction": "up", "reason": "Crushed Q4 earnings...", "tags": ["Earnings", "AI"]},\n    {"ticker": "DUOL", "pct": -14.0, "direction": "down", "reason": "Weak forward guidance...", "tags": ["Earnings"]}\n  ],\n  "themes": [\n    {"title": "AI Infrastructure Spending Accelerates", "description": "DELL and... drove gains as AI capex surges."}\n  ]\n}\n\nRules:\n- Only include movers that moved >2% and have a clear catalyst.\n- "direction" must be "up" or "down".\n- "pct" should be the actual percentage change (positive number for up, negative for down).\n- "tags" are short category labels like "Earnings", "M&A", "Guidance", "Macro", "AI", etc.\n- Keep reasons concise and trader-focused. No fluff.\n- Return ONLY the JSON object, no other text.';
+    // Step 5: Ask Claude to explain WHY each moved + industry breakdown
+    var prompt='You are a professional market analyst. Here are today\'s biggest stock movers with their associated headlines.\n\nMarket Indices: '+marketCtx+'\n\nBiggest Movers:\n'+moverContext+'\n\nGeneral Headlines:\n'+generalNews.slice(0,8).join('\n')+'\n\nYour task:\n1. For each significant mover, write a 1-2 sentence explanation of WHY it moved (the catalyst). Include its SECTOR and specific INDUSTRY.\n2. Group the day\'s action into 2-3 overarching themes (e.g., "AI Infrastructure Boom", "Earnings Season Winners", "Macro Fears").\n3. Write a 1-sentence market narrative summary.\n4. Create an industry heat check — which specific industries are hot/cold today.\n\nReturn JSON ONLY in this exact format:\n{\n  "narrative": "One sentence market summary",\n  "movers": [\n    {"ticker": "DELL", "pct": 21.8, "direction": "up", "reason": "Crushed Q4 earnings...", "sector": "Technology", "industry": "Hardware/Servers", "tags": ["Earnings", "AI"]},\n    {"ticker": "DUOL", "pct": -14.0, "direction": "down", "reason": "Weak forward guidance...", "sector": "Technology", "industry": "EdTech/SaaS", "tags": ["Earnings"]}\n  ],\n  "themes": [\n    {"title": "AI Infrastructure Spending Accelerates", "description": "DELL and... drove gains as AI capex surges."}\n  ],\n  "industries": [\n    {"name": "Semiconductors", "direction": "up", "tickers": ["NVDA","AMD","AVGO"], "note": "AI chip demand driving broad strength"},\n    {"name": "Cybersecurity", "direction": "down", "tickers": ["CRWD","ZS"], "note": "AI disruption fears weighing"}\n  ]\n}\n\nRules:\n- Only include movers that moved >2% and have a clear catalyst.\n- "direction" must be "up" or "down".\n- "pct" should be the actual percentage change (positive number for up, negative for down).\n- "sector" is the broad GICS sector (Technology, Healthcare, Financials, etc.).\n- "industry" is the specific sub-industry (Semiconductors, Cybersecurity, SaaS, E-commerce, Biotech, etc.).\n- "tags" are short category labels like "Earnings", "M&A", "Guidance", "Macro", "AI", etc.\n- "industries" array: group movers by their specific industry, show direction and brief note. Include 3-6 industries.\n- Keep everything concise and trader-focused. No fluff.\n- Return ONLY the JSON object, no other text.';
 
     var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2048,messages:[{role:'user',content:prompt}]})});
     if(!r.ok)throw new Error('API '+r.status);
@@ -874,13 +913,17 @@ function renderAutoEconCal(el, grouped, ts) {
     return;
   }
 
+  // Horizontal layout: days side by side
+  var cols=sortedDays.length;
+  html += '<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:8px;">';
+
   sortedDays.forEach(function(day){
     var dt=new Date(day+'T12:00:00');
     var dayLabel=dayNames[dt.getDay()]+' '+dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});
     var isToday=day===today;
 
-    html += '<div style="margin-bottom:8px;'+(isToday?'background:var(--bg-secondary);border-radius:6px;padding:6px 8px;border:1px solid var(--border);':'')+'">';
-    html += '<div style="font-size:8px;font-weight:700;color:'+(isToday?'var(--blue)':'var(--text-muted)')+';text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">'+(isToday?'\u25CF ':'')+dayLabel+(isToday?' (Today)':'')+'</div>';
+    html += '<div style="min-width:0;'+(isToday?'background:var(--bg-secondary);border-radius:6px;padding:8px;border:1px solid var(--border);':'padding:8px 4px;')+'">';
+    html += '<div style="font-size:8px;font-weight:700;color:'+(isToday?'var(--blue)':'var(--text-muted)')+';text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;text-align:center;white-space:nowrap;">'+(isToday?'\u25CF ':'')+dayLabel+(isToday?' (Today)':'')+'</div>';
 
     grouped[day].forEach(function(ev){
       var isHigh=ev.impact==='High';
@@ -890,22 +933,24 @@ function renderAutoEconCal(el, grouped, ts) {
         try{var evDate=new Date(ev.date);if(!isNaN(evDate.getTime())){time=evDate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});}}catch(e){}
       }
 
-      html += '<div style="display:flex;gap:5px;align-items:flex-start;margin-bottom:3px;font-size:9px;">';
+      html += '<div style="display:flex;gap:4px;align-items:flex-start;margin-bottom:4px;font-size:9px;">';
       html += '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:'+dot+';flex-shrink:0;margin-top:3px;"></span>';
-      if(time) html += '<span style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:8px;white-space:nowrap;min-width:52px;">'+time+'</span>';
-      html += '<span style="color:var(--text-primary);font-weight:600;">'+((ev.title||'').replace(/</g,'&lt;'))+'</span>';
+      html += '<div style="min-width:0;">';
+      if(time) html += '<div style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:7px;white-space:nowrap;">'+time+'</div>';
+      html += '<div style="color:var(--text-primary);font-weight:600;font-size:9px;line-height:1.3;">'+((ev.title||'').replace(/</g,'&lt;'))+'</div>';
 
       // Forecast / Previous
       var details=[];
       if(ev.forecast!==undefined&&ev.forecast!==null&&ev.forecast!=='') details.push('F: '+ev.forecast);
       if(ev.previous!==undefined&&ev.previous!==null&&ev.previous!=='') details.push('P: '+ev.previous);
-      if(details.length>0) html += ' <span style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:8px;">'+details.join(' \xb7 ')+'</span>';
+      if(details.length>0) html += '<div style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:7px;">'+details.join(' \xb7 ')+'</div>';
 
-      html += '</div>';
+      html += '</div></div>';
     });
     html += '</div>';
   });
+  html += '</div>';
 
-  html += '<div style="margin-top:4px;font-size:8px;color:var(--text-muted);">Updated '+new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})+' \xb7 <a href="#" onclick="localStorage.removeItem(\'mac_econ_cal_auto_\'+function(){var t=new Date(),d=t.getDay(),m=new Date(t);m.setDate(t.getDate()-(d===0?6:d-1));return m.toISOString().split(\'T\')[0];}());loadEconCalendar();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
+  html += '<div style="margin-top:6px;font-size:8px;color:var(--text-muted);">Updated '+new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})+' \xb7 <a href="#" onclick="localStorage.removeItem(\'mac_econ_cal_auto_\'+function(){var t=new Date(),d=t.getDay(),m=new Date(t);m.setDate(t.getDate()-(d===0?6:d-1));return m.toISOString().split(\'T\')[0];}());loadEconCalendar();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
   el.innerHTML=html;
 }
