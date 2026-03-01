@@ -835,7 +835,8 @@ async function loadEconCalendar() {
   el.innerHTML='<div style="font-size:9px;color:var(--text-muted);">Fetching calendar...</div>';
 
   try {
-    var resp=await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json');
+    // Fetch through Vercel rewrite to avoid CORS (same-origin request)
+    var resp=await fetch('/api/econ-calendar');
     if(!resp.ok) throw new Error('HTTP '+resp.status);
     var data=await resp.json();
 

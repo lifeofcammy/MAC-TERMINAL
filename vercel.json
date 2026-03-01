@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/econ-calendar",
+      "destination": "https://nfs.faireconomy.media/ff_calendar_thisweek.json"
+    }
+  ]
+}
