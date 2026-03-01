@@ -14,120 +14,12 @@
   <link rel="stylesheet" href="style.css">
   <style>
     /* ================================================================
-       MAC Terminal — Landing Page v3
+       MAC Terminal — Landing Page v4 (Minimal, one-screen)
        ================================================================ */
 
-    .container {
-      max-width: var(--content-wide);
-      margin-inline: auto;
-      padding-inline: var(--space-6);
-    }
-    .container-narrow {
-      max-width: var(--content-default);
-      margin-inline: auto;
-      padding-inline: var(--space-6);
-    }
+    body { background: var(--color-bg); }
 
-    /* ── Buttons ── */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-2);
-      padding: var(--space-3) var(--space-6);
-      border-radius: var(--radius-full);
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      white-space: nowrap;
-      border: 2px solid transparent;
-      transition:
-        background var(--transition-interactive),
-        color var(--transition-interactive),
-        box-shadow var(--transition-interactive),
-        transform var(--transition-interactive),
-        border-color var(--transition-interactive);
-    }
-    .btn-primary {
-      background: var(--color-primary);
-      color: #FFFFFF;
-      border-color: var(--color-primary);
-    }
-    .btn-primary:hover {
-      background: var(--color-primary-hover);
-      border-color: var(--color-primary-hover);
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-md);
-    }
-    .btn-primary:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
-
-    .btn-ghost {
-      background: transparent;
-      color: var(--color-text);
-      border-color: var(--color-border);
-    }
-    .btn-ghost:hover {
-      background: var(--color-surface);
-      border-color: var(--color-text-muted);
-      transform: translateY(-1px);
-    }
-
-    .btn-lg {
-      padding: var(--space-4) var(--space-8);
-      font-size: var(--text-base);
-    }
-
-    /* ── Pill badge ── */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-1);
-      padding: var(--space-1) var(--space-3);
-      border-radius: var(--radius-full);
-      font-size: var(--text-xs);
-      font-weight: 600;
-      font-family: var(--font-body);
-      letter-spacing: 0.02em;
-    }
-    .badge-blue    { background: var(--color-primary-highlight); color: var(--color-primary); }
-    .badge-green   { background: var(--color-success-highlight); color: var(--color-success); }
-    .badge-gold    { background: var(--color-warning-highlight); color: var(--color-warning); }
-
-    /* ── Section spacing ── */
-    .section {
-      padding-block: clamp(var(--space-12), 6vw, var(--space-20));
-    }
-    .section-alt { background: var(--color-surface); }
-    .section-overline {
-      font-family: var(--font-body);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--color-primary);
-      margin-bottom: var(--space-3);
-    }
-    .section-heading {
-      font-family: var(--font-display);
-      font-size: var(--text-2xl);
-      color: var(--color-text);
-      margin-bottom: var(--space-4);
-      line-height: 1.1;
-    }
-    .section-subheading {
-      font-family: var(--font-body);
-      font-size: var(--text-lg);
-      color: var(--color-text-muted);
-      max-width: 56ch;
-    }
-    .section-header { margin-bottom: var(--space-10); }
-    .section-header.centered { text-align: center; }
-    .section-header.centered .section-subheading { margin-inline: auto; }
-
-    /* ──────────────────────────────────────────────────
-       NAV
-    ────────────────────────────────────────────────── */
+    /* ── Nav ── */
     .nav {
       position: sticky;
       top: 0;
@@ -142,17 +34,15 @@
       align-items: center;
       justify-content: space-between;
       height: 56px;
-      max-width: var(--content-wide);
+      max-width: 960px;
       margin-inline: auto;
       padding-inline: var(--space-6);
-      gap: var(--space-6);
     }
     .nav-logo {
       display: flex;
       align-items: center;
       gap: var(--space-2);
       text-decoration: none;
-      flex-shrink: 0;
     }
     .nav-logo-mark {
       width: 28px;
@@ -170,28 +60,10 @@
       color: var(--color-text);
       line-height: 1;
     }
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: var(--space-1);
-      list-style: none;
-    }
-    .nav-links a {
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      font-weight: 500;
-      color: var(--color-text-muted);
-      text-decoration: none;
-      padding: var(--space-2) var(--space-3);
-      border-radius: var(--radius-md);
-      transition: color var(--transition-interactive), background var(--transition-interactive);
-    }
-    .nav-links a:hover { color: var(--color-text); background: var(--color-surface); }
     .nav-right {
       display: flex;
       align-items: center;
       gap: var(--space-3);
-      flex-shrink: 0;
     }
     .nav-theme-toggle {
       display: flex;
@@ -204,74 +76,61 @@
       border-radius: var(--radius-full);
       color: var(--color-text-muted);
       cursor: pointer;
-      transition: background var(--transition-interactive), color var(--transition-interactive);
-      flex-shrink: 0;
+      transition: background 180ms ease, color 180ms ease;
     }
     .nav-theme-toggle:hover { background: var(--color-surface-2); color: var(--color-text); }
 
-    /* Mobile nav */
-    .nav-hamburger {
-      display: none;
-      flex-direction: column;
-      gap: 5px;
-      width: 36px;
-      height: 36px;
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      cursor: pointer;
-    }
-    .nav-hamburger span {
-      display: block;
-      width: 18px;
-      height: 2px;
-      background: var(--color-text-muted);
-      border-radius: 2px;
-    }
-    .nav-drawer {
-      display: none;
-      position: fixed;
-      top: 56px;
-      left: 0; right: 0;
-      background: var(--color-bg);
-      border-bottom: 1px solid var(--color-divider);
-      padding: var(--space-6);
-      z-index: 199;
-      flex-direction: column;
       gap: var(--space-2);
-      box-shadow: var(--shadow-lg);
-    }
-    .nav-drawer.open { display: flex; }
-    .nav-drawer a {
+      padding: var(--space-3) var(--space-6);
+      border-radius: var(--radius-full);
       font-family: var(--font-body);
-      font-size: var(--text-base);
-      font-weight: 500;
-      color: var(--color-text);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      cursor: pointer;
       text-decoration: none;
-      padding: var(--space-3) var(--space-4);
-      border-radius: var(--radius-lg);
-      transition: background var(--transition-interactive);
+      white-space: nowrap;
+      border: 2px solid transparent;
+      transition: all 180ms ease;
     }
-    .nav-drawer a:hover { background: var(--color-surface); }
-    .nav-drawer .btn { width: 100%; justify-content: center; margin-top: var(--space-3); }
-
-    @media (max-width: 768px) {
-      .nav-links, .nav-right .btn { display: none; }
-      .nav-hamburger { display: flex; }
+    .btn-primary {
+      background: var(--color-primary);
+      color: #FFFFFF;
+      border-color: var(--color-primary);
+    }
+    .btn-primary:hover {
+      background: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+    .btn-lg {
+      padding: var(--space-4) var(--space-10);
+      font-size: var(--text-base);
     }
 
-    /* ──────────────────────────────────────────────────
-       HERO — Centered, compact
-    ────────────────────────────────────────────────── */
+    /* ── Hero ── */
     .hero {
       text-align: center;
-      padding-block: clamp(var(--space-12), 6vw, var(--space-20)) clamp(var(--space-8), 4vw, var(--space-12));
+      padding: clamp(60px, 10vw, 120px) var(--space-6) clamp(40px, 6vw, 80px);
+      max-width: 720px;
+      margin-inline: auto;
+    }
+    .hero-overline {
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-primary);
+      margin-bottom: var(--space-3);
     }
     .hero-headline {
       font-family: var(--font-display);
-      font-size: clamp(2.2rem, 1rem + 4vw, 3.8rem);
+      font-size: clamp(2.4rem, 1rem + 4.5vw, 3.8rem);
       color: var(--color-text);
       line-height: 1.08;
       letter-spacing: -0.02em;
@@ -281,84 +140,47 @@
       font-style: italic;
       color: var(--color-primary);
     }
-    .hero-motto {
-      font-family: var(--font-body);
-      font-size: var(--text-base);
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--color-primary);
-      margin-bottom: var(--space-3);
-    }
     .hero-sub {
       font-family: var(--font-body);
       font-size: var(--text-lg);
       color: var(--color-text-muted);
-      max-width: 52ch;
+      max-width: 48ch;
       margin-inline: auto;
       line-height: 1.6;
-      margin-bottom: var(--space-6);
+      margin-bottom: var(--space-8);
     }
-    .hero-ctas {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-3);
-      align-items: center;
-      justify-content: center;
+    .hero-cta {
       margin-bottom: var(--space-4);
     }
-    .hero-proof {
-      display: flex;
-      align-items: center;
-      gap: var(--space-3);
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .hero-proof-dot {
-      width: 4px; height: 4px;
-      background: var(--color-text-faint);
-      border-radius: var(--radius-full);
-    }
-    .hero-proof span {
+    .hero-fine {
       font-family: var(--font-body);
-      font-size: var(--text-sm);
-      color: var(--color-text-muted);
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
     }
 
-    /* ──────────────────────────────────────────────────
-       FEATURES — The star of the page
-    ────────────────────────────────────────────────── */
-    .features-grid {
+    /* ── Three Features (inline row) ── */
+    .features {
+      max-width: 960px;
+      margin-inline: auto;
+      padding: 0 var(--space-6) clamp(60px, 8vw, 100px);
+    }
+    .features-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: var(--space-6);
+      gap: var(--space-5);
     }
-    .feature-card {
-      background: var(--color-bg);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-xl);
-      padding: var(--space-6);
-      box-shadow: var(--shadow-sm);
-      display: flex;
-      flex-direction: column;
-      transition:
-        box-shadow var(--transition-interactive),
-        transform var(--transition-interactive),
-        border-color var(--transition-interactive);
-    }
-    .feature-card:hover {
-      box-shadow: var(--shadow-md);
-      transform: translateY(-3px);
-      border-color: var(--color-primary-highlight);
+    .feature {
+      text-align: center;
+      padding: var(--space-6) var(--space-4);
     }
     .feature-icon {
-      width: 44px; height: 44px;
+      width: 48px;
+      height: 48px;
       border-radius: var(--radius-lg);
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: var(--space-3);
-    }
-    .feature-badge {
-      margin-bottom: var(--space-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto var(--space-3);
     }
     .feature-title {
       font-family: var(--font-display);
@@ -371,364 +193,35 @@
       font-size: var(--text-sm);
       color: var(--color-text-muted);
       line-height: 1.65;
-      margin-bottom: var(--space-4);
     }
 
-    /* ── Feature Preview Mockup ── */
-    .feature-preview {
-      background: #0F172A;
-      border-radius: var(--radius-lg);
-      padding: var(--space-3) var(--space-4);
-      margin-top: auto;
-      overflow: hidden;
-    }
-    .preview-bar {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-      margin-bottom: var(--space-3);
-      padding-bottom: var(--space-2);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
-    .preview-dot {
-      width: 6px; height: 6px;
-      border-radius: var(--radius-full);
-    }
-    .preview-dot-r { background: #F87171; }
-    .preview-dot-y { background: #FBBF24; }
-    .preview-dot-g { background: #4ADE80; }
-    .preview-bar-title {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 9px;
-      font-weight: 500;
-      color: rgba(255,255,255,0.4);
-      margin-left: var(--space-1);
+    @media (max-width: 640px) {
+      .features-row { grid-template-columns: 1fr; max-width: 360px; margin-inline: auto; }
     }
 
-    /* Scanner preview rows */
-    .preview-scanner-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 4px 0;
-    }
-    .preview-scanner-row + .preview-scanner-row {
-      border-top: 1px solid rgba(255,255,255,0.04);
-    }
-    .preview-ticker {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      font-weight: 500;
-      color: #F1F5F9;
-      width: 38px;
-    }
-    .preview-pattern {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 9px;
-      color: rgba(255,255,255,0.45);
-    }
-    .preview-change {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      font-weight: 500;
-      text-align: right;
-      width: 44px;
-    }
-    .preview-up { color: #4ADE80; }
-    .preview-down { color: #F87171; }
-
-    /* Trade review preview */
-    .preview-trade-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: var(--space-2);
-    }
-    .preview-trade-ticker {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      font-weight: 500;
-      color: #F1F5F9;
-    }
-    .preview-trade-result {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      font-weight: 500;
-      padding: 1px 6px;
-      border-radius: var(--radius-sm);
-    }
-    .preview-trade-win { background: rgba(74,222,128,0.15); color: #4ADE80; }
-    .preview-ai-feedback {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 9px;
-      color: rgba(255,255,255,0.5);
-      line-height: 1.5;
-    }
-    .preview-ai-label {
-      color: #60A5FA;
-      font-weight: 500;
-    }
-
-    /* Market themes preview */
-    .preview-theme-row {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-      padding: 3px 0;
-    }
-    .preview-theme-row + .preview-theme-row {
-      border-top: 1px solid rgba(255,255,255,0.04);
-    }
-    .preview-theme-indicator {
-      width: 4px;
-      height: 16px;
-      border-radius: 2px;
-      flex-shrink: 0;
-    }
-    .preview-theme-name {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 9px;
-      color: rgba(255,255,255,0.6);
-      flex: 1;
-    }
-    .preview-theme-bar-track {
-      width: 50px;
-      height: 4px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .preview-theme-bar-fill {
-      height: 100%;
-      border-radius: 2px;
-    }
-
-    @media (max-width: 900px) {
-      .features-grid { grid-template-columns: 1fr; max-width: 480px; margin-inline: auto; }
-    }
-
-    /* ──────────────────────────────────────────────────
-       PRICING — Monthly only, no toggle
-    ────────────────────────────────────────────────── */
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: var(--space-5);
-      align-items: start;
-    }
-    .pricing-card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-2xl);
-      padding: var(--space-6);
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-4);
-      transition: box-shadow var(--transition-interactive), transform var(--transition-interactive);
-    }
-    .pricing-card:hover { box-shadow: var(--shadow-md); }
-    .pricing-card.featured {
-      border-color: var(--color-primary);
-      background: var(--color-bg);
-      box-shadow: var(--shadow-lg);
-      transform: scale(1.02);
-      position: relative;
-    }
-    .pricing-card.featured:hover { transform: scale(1.02) translateY(-2px); }
-    .pricing-plan-name {
-      font-family: var(--font-body);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--color-text-muted);
-    }
-    .pricing-price-row {
-      display: flex;
-      align-items: baseline;
-      gap: var(--space-1);
-    }
-    .pricing-currency {
-      font-family: var(--font-body);
-      font-size: var(--text-base);
-      font-weight: 600;
-      color: var(--color-text-muted);
-    }
-    .pricing-amount {
-      font-family: var(--font-display);
-      font-size: clamp(2rem, 3.5vw, 3rem);
-      color: var(--color-text);
-      line-height: 1;
-    }
-    .pricing-period {
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      color: var(--color-text-faint);
-    }
-    .pricing-desc {
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      color: var(--color-text-muted);
-    }
-    .pricing-divider { border: none; border-top: 1px solid var(--color-divider); }
-    .pricing-features {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-2);
-    }
-    .pricing-features li {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--space-2);
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      color: var(--color-text-muted);
-    }
-    .pricing-check { color: var(--color-success); flex-shrink: 0; margin-top: 2px; }
-    .pricing-cta { margin-top: auto; }
-    .pricing-cta .btn { width: 100%; justify-content: center; }
-
-    @media (max-width: 900px) {
-      .pricing-grid { grid-template-columns: 1fr; max-width: 400px; margin-inline: auto; }
-      .pricing-card.featured { transform: none; }
-      .pricing-card.featured:hover { transform: translateY(-2px); }
-    }
-
-    /* ──────────────────────────────────────────────────
-       FAQ
-    ────────────────────────────────────────────────── */
-    .faq-list {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-3);
-      max-width: var(--content-default);
-      margin-inline: auto;
-    }
-    .faq-item {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-xl);
-      overflow: hidden;
-    }
-    .faq-question {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-4);
-      padding: var(--space-4) var(--space-5);
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      font-weight: 600;
-      color: var(--color-text);
-      cursor: pointer;
-      text-align: left;
-      transition: background var(--transition-interactive);
-    }
-    .faq-question:hover { background: var(--color-surface-2); }
-    .faq-chevron {
-      flex-shrink: 0;
-      color: var(--color-text-muted);
-      transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .faq-item.open .faq-chevron { transform: rotate(180deg); }
-    .faq-answer {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 350ms cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .faq-item.open .faq-answer { max-height: 200px; }
-    .faq-answer-inner {
-      padding: 0 var(--space-5) var(--space-4);
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      color: var(--color-text-muted);
-      line-height: 1.7;
-    }
-
-    /* ──────────────────────────────────────────────────
-       CTA
-    ────────────────────────────────────────────────── */
-    .cta-section {
-      background: var(--color-primary);
-      padding-block: clamp(var(--space-12), 6vw, var(--space-20));
+    /* ── Footer (simple) ── */
+    .footer {
+      border-top: 1px solid var(--color-divider);
+      padding: var(--space-5) var(--space-6);
       text-align: center;
     }
-    .cta-heading {
-      font-family: var(--font-display);
-      font-size: var(--text-xl);
-      color: #fff;
-      margin-bottom: var(--space-3);
-    }
-    .cta-sub {
-      font-family: var(--font-body);
-      font-size: var(--text-base);
-      color: rgba(255,255,255,0.75);
-      margin-bottom: var(--space-6);
-      margin-inline: auto;
-      max-width: 48ch;
-    }
-    .btn-white {
-      background: #fff;
-      color: var(--color-primary);
-      border-color: #fff;
-      font-size: var(--text-base);
-      padding: var(--space-3) var(--space-8);
-    }
-    .btn-white:hover {
-      background: rgba(255,255,255,0.9);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    }
-    .cta-fine {
-      margin-top: var(--space-3);
-      font-family: var(--font-body);
-      font-size: var(--text-xs);
-      color: rgba(255,255,255,0.5);
-    }
-
-    /* ──────────────────────────────────────────────────
-       FOOTER — Simple one-row
-    ────────────────────────────────────────────────── */
-    .footer {
-      background: var(--color-surface);
-      border-top: 1px solid var(--color-divider);
-      padding-block: var(--space-6);
-    }
-    .footer-inner {
+    .footer-links {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: var(--space-4);
-    }
-    .footer-logo {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-      text-decoration: none;
-    }
-    .footer-logo-name {
-      font-family: var(--font-display);
-      font-size: var(--text-sm);
-      color: var(--color-text);
-    }
-    .footer-links-row {
-      display: flex;
-      align-items: center;
+      justify-content: center;
       gap: var(--space-4);
       list-style: none;
+      margin-bottom: var(--space-3);
       flex-wrap: wrap;
     }
-    .footer-links-row a {
+    .footer-links a {
       font-family: var(--font-body);
       font-size: var(--text-xs);
       color: var(--color-text-muted);
       text-decoration: none;
-      transition: color var(--transition-interactive);
+      transition: color 180ms ease;
     }
-    .footer-links-row a:hover { color: var(--color-text); }
+    .footer-links a:hover { color: var(--color-text); }
     .footer-copy {
       font-family: var(--font-body);
       font-size: var(--text-xs);
@@ -740,7 +233,7 @@
 <body>
 
   <!-- NAV -->
-  <nav class="nav" role="navigation" aria-label="Main navigation">
+  <nav class="nav">
     <div class="nav-inner">
       <a href="#" class="nav-logo">
         <div class="nav-logo-mark">
@@ -750,366 +243,83 @@
         </div>
         <span class="nav-logo-text">MAC Terminal</span>
       </a>
-
-      <ul class="nav-links" role="list">
-        <li><a href="#features">Features</a></li>
-        <li><a href="#pricing">Pricing</a></li>
-        <li><a href="#faq">FAQ</a></li>
-      </ul>
-
       <div class="nav-right">
         <button class="nav-theme-toggle" data-theme-toggle aria-label="Switch to dark mode">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
           </svg>
         </button>
-        <a href="/app/" class="btn btn-primary" style="display:none" id="nav-cta-desktop">Get Started Free</a>
+        <a href="/app/" class="btn btn-primary">Get Started Free</a>
       </div>
-
-      <button class="nav-hamburger" aria-label="Open menu" id="hamburger">
-        <span></span><span></span><span></span>
-      </button>
     </div>
   </nav>
-  <div class="nav-drawer" id="nav-drawer" role="dialog" aria-label="Navigation menu">
-    <a href="#features">Features</a>
-    <a href="#pricing">Pricing</a>
-    <a href="#faq">FAQ</a>
-    <a href="/app/" class="btn btn-primary">Get Started Free</a>
-  </div>
-
 
   <main>
-  <!-- ══════════════════════════════════════════
-       HERO — Centered & compact
-  ═══════════════════════════════════════════ -->
-  <section class="hero">
-    <div class="container-narrow">
-      <p class="hero-motto">Simplify Your Trading.</p>
+
+    <!-- HERO -->
+    <section class="hero">
+      <p class="hero-overline">Simplify Your Trading</p>
       <h1 class="hero-headline">
         Your <em>Complete</em> Trading<br>Command Center.
       </h1>
       <p class="hero-sub">
-        Morning market overview. Smart scanners. AI trade review. Everything you need in one clean dashboard — nothing you don't.
+        Morning overview. Smart scanners. AI trade review. Everything you need in one dashboard — nothing you don't.
       </p>
-      <div class="hero-ctas">
-        <a href="/app/" class="btn btn-primary btn-lg">Get Started Free →</a>
-        <a href="#features" class="btn btn-ghost btn-lg">See Features</a>
+      <div class="hero-cta">
+        <a href="/app/" class="btn btn-primary btn-lg">Try It Free →</a>
       </div>
-      <div class="hero-proof">
-        <span>Free tier available</span>
-        <span class="hero-proof-dot"></span>
-        <span>No credit card required</span>
-        <span class="hero-proof-dot"></span>
-        <span>Cancel anytime</span>
-      </div>
-    </div>
-  </section>
+      <p class="hero-fine">No credit card required · Free forever</p>
+    </section>
 
+    <!-- THREE FEATURES -->
+    <section class="features">
+      <div class="features-row">
 
-  <!-- ══════════════════════════════════════════
-       3 FEATURES — With mini previews
-  ═══════════════════════════════════════════ -->
-  <section class="section section-alt" id="features">
-    <div class="container">
-      <div class="section-header centered">
-        <p class="section-overline">The Platform</p>
-        <h2 class="section-heading">Everything You Need. Nothing You Don't.</h2>
-      </div>
-
-      <div class="features-grid">
-
-        <!-- Tool 1: Market Command Center (Overview tab) -->
-        <div class="feature-card" style="border-top: 3px solid var(--color-primary);">
+        <div class="feature">
           <div class="feature-icon" style="background: var(--color-primary-highlight); color: var(--color-primary);">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
             </svg>
           </div>
-          <h3 class="feature-title">Market Command Center</h3>
-          <p class="feature-desc">Your morning dashboard. Market regime, breadth, sector heatmap, economic calendar, top headlines, and AI-generated themes — all at a glance.</p>
-
-          <!-- Mini Preview -->
-          <div class="feature-preview">
-            <div class="preview-bar">
-              <span class="preview-dot preview-dot-r"></span>
-              <span class="preview-dot preview-dot-y"></span>
-              <span class="preview-dot preview-dot-g"></span>
-              <span class="preview-bar-title">overview</span>
-            </div>
-            <div style="display:flex;gap:8px;margin-bottom:6px;">
-              <div style="flex:1;background:rgba(16,185,129,0.08);border-radius:4px;padding:4px 6px;text-align:center;">
-                <div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:rgba(255,255,255,0.4);text-transform:uppercase;">Regime</div>
-                <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#4ADE80;">Risk On</div>
-              </div>
-              <div style="flex:1;background:rgba(96,165,250,0.08);border-radius:4px;padding:4px 6px;text-align:center;">
-                <div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:rgba(255,255,255,0.4);text-transform:uppercase;">Breadth</div>
-                <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#60A5FA;">72%</div>
-              </div>
-              <div style="flex:1;background:rgba(251,191,36,0.08);border-radius:4px;padding:4px 6px;text-align:center;">
-                <div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:rgba(255,255,255,0.4);text-transform:uppercase;">VIX</div>
-                <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#FBBF24;">Stable</div>
-              </div>
-            </div>
-            <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;">
-              <div style="width:72%;background:#4ADE80;"></div>
-              <div style="width:28%;background:#F87171;"></div>
-            </div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:rgba(255,255,255,0.3);margin-top:3px;">9/12 sectors green</div>
-          </div>
+          <h3 class="feature-title">Market Overview</h3>
+          <p class="feature-desc">Market regime, breadth, sector heatmap, economic calendar, and AI-generated themes — all at a glance.</p>
         </div>
 
-        <!-- Tool 2: Smart Scanners (Action Center tab) -->
-        <div class="feature-card" style="border-top: 3px solid var(--color-success);">
+        <div class="feature">
           <div class="feature-icon" style="background: var(--color-success-highlight); color: var(--color-success);">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
           </div>
           <h3 class="feature-title">Smart Scanners</h3>
-          <p class="feature-desc">Scan your universe for VCP patterns, compression setups, and flat bases. Auto-scored ideas with entry, stop, and target levels built in.</p>
-
-          <!-- Mini Preview -->
-          <div class="feature-preview">
-            <div class="preview-bar">
-              <span class="preview-dot preview-dot-r"></span>
-              <span class="preview-dot preview-dot-y"></span>
-              <span class="preview-dot preview-dot-g"></span>
-              <span class="preview-bar-title">scanner — vcp</span>
-            </div>
-            <div class="preview-scanner-row">
-              <span class="preview-ticker">NVDA</span>
-              <span class="preview-pattern">VCP T3</span>
-              <span class="preview-change preview-up">+4.2%</span>
-            </div>
-            <div class="preview-scanner-row">
-              <span class="preview-ticker">PLTR</span>
-              <span class="preview-pattern">Compression</span>
-              <span class="preview-change preview-up">+2.8%</span>
-            </div>
-            <div class="preview-scanner-row">
-              <span class="preview-ticker">CRWD</span>
-              <span class="preview-pattern">Flat Base</span>
-              <span class="preview-change preview-up">+1.5%</span>
-            </div>
-            <div class="preview-scanner-row">
-              <span class="preview-ticker">APP</span>
-              <span class="preview-pattern">Shakeout</span>
-              <span class="preview-change preview-down">-0.3%</span>
-            </div>
-          </div>
+          <p class="feature-desc">Scan for VCP patterns, compression setups, and flat bases. Auto-scored with entry, stop, and target levels.</p>
         </div>
 
-        <!-- Tool 3: AI Trade Review (Trade Journal + Analysis) -->
-        <div class="feature-card" style="border-top: 3px solid var(--color-warning);">
+        <div class="feature">
           <div class="feature-icon" style="background: var(--color-warning-highlight); color: var(--color-warning);">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
             </svg>
           </div>
           <h3 class="feature-title">AI Trade Journal</h3>
-          <p class="feature-desc">Log every trade. AI analyzes your entries, exits, sizing, and P&amp;L. Spots patterns in your performance and coaches you to improve.</p>
-
-          <!-- Mini Preview -->
-          <div class="feature-preview">
-            <div class="preview-bar">
-              <span class="preview-dot preview-dot-r"></span>
-              <span class="preview-dot preview-dot-y"></span>
-              <span class="preview-dot preview-dot-g"></span>
-              <span class="preview-bar-title">trade journal</span>
-            </div>
-            <div class="preview-trade-header">
-              <span class="preview-trade-ticker">AAPL — Long</span>
-              <span class="preview-trade-result preview-trade-win">+$340</span>
-            </div>
-            <div class="preview-ai-feedback">
-              <span class="preview-ai-label">AI:</span> Good entry on volume breakout. Consider tightening stop after first target hit. Risk/reward was 3.2:1 — above your avg of 2.1:1.
-            </div>
-          </div>
+          <p class="feature-desc">Log trades, get AI analysis on entries, exits, and P&L. Spots patterns and coaches you to improve.</p>
         </div>
 
       </div>
-    </div>
-  </section>
+    </section>
 
-
-  <!-- ══════════════════════════════════════════
-       PRICING — Monthly only, no toggle
-  ═══════════════════════════════════════════ -->
-  <section class="section" id="pricing">
-    <div class="container-narrow">
-      <div class="section-header centered">
-        <p class="section-overline">Pricing</p>
-        <h2 class="section-heading">Simple, Transparent Pricing</h2>
-      </div>
-
-      <div class="pricing-grid">
-
-        <!-- FREE -->
-        <div class="pricing-card">
-          <span class="pricing-plan-name">Free</span>
-          <div class="pricing-price-row">
-            <span class="pricing-currency">$</span>
-            <span class="pricing-amount">0</span>
-            <span class="pricing-period">/mo</span>
-          </div>
-          <p class="pricing-desc">Get started and explore the platform.</p>
-          <hr class="pricing-divider">
-          <ul class="pricing-features">
-            <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Up to 50 trades/month</li>
-            <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Basic scanner access</li>
-            <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Market overview dashboard</li>
-            <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>1 watchlist</li>
-          </ul>
-          <div class="pricing-cta">
-            <a href="/app/" class="btn btn-ghost">Start Free</a>
-          </div>
-        </div>
-
-        <!-- PRO -->
-        <div class="pricing-card featured">
-          <div style="display:flex; align-items:center; justify-content:space-between;">
-            <span class="pricing-plan-name">Pro</span>
-            <span class="badge badge-blue">Most Popular</span>
-          </div>
-          <div class="pricing-price-row">
-            <span class="pricing-currency">$</span>
-            <span class="pricing-amount">29</span>
-            <span class="pricing-period">/mo</span>
-          </div>
-          <p class="pricing-desc">The full toolkit for serious traders.</p>
-          <hr class="pricing-divider">
-          <ul class="pricing-features">
-            <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Unlimited trades</li>
-            <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Full scanner suite</li>
-            <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Options flow data</li>
-            <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>10 watchlists</li>
-            <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Email support</li>
-          </ul>
-          <div class="pricing-cta">
-            <a href="/app/" class="btn btn-primary">Upgrade to Pro</a>
-          </div>
-        </div>
-
-        <!-- ELITE -->
-        <div class="pricing-card">
-          <span class="pricing-plan-name">Elite</span>
-          <div class="pricing-price-row">
-            <span class="pricing-currency">$</span>
-            <span class="pricing-amount">59</span>
-            <span class="pricing-period">/mo</span>
-          </div>
-          <p class="pricing-desc">Every edge, for professional traders.</p>
-          <hr class="pricing-divider">
-          <ul class="pricing-features">
-            <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Everything in Pro</li>
-            <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>AI-powered insights</li>
-            <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Advanced pattern detection</li>
-            <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Unlimited watchlists &amp; custom alerts</li>
-            <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Priority support</li>
-          </ul>
-          <div class="pricing-cta">
-            <a href="/app/" class="btn btn-primary">Upgrade to Elite</a>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-
-  <!-- ══════════════════════════════════════════
-       FAQ
-  ═══════════════════════════════════════════ -->
-  <section class="section section-alt" id="faq">
-    <div class="container-narrow">
-      <div class="section-header centered">
-        <p class="section-overline">FAQ</p>
-        <h2 class="section-heading">Questions? Answers.</h2>
-      </div>
-
-      <div class="faq-list">
-        <div class="faq-item">
-          <button class="faq-question" aria-expanded="false">
-            <span>What is MAC Terminal?</span>
-            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="faq-answer" role="region">
-            <p class="faq-answer-inner">MAC Terminal is an all-in-one trading dashboard that combines smart scanners, AI trade review, and market theme analysis into a single toolkit. Built for active traders who want to find setups faster, improve their edge, and stay ahead of market flow.</p>
-          </div>
-        </div>
-        <div class="faq-item">
-          <button class="faq-question" aria-expanded="false">
-            <span>What's included in the free plan?</span>
-            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="faq-answer" role="region">
-            <p class="faq-answer-inner">The free plan gives you access to basic scanners, the market overview dashboard, up to 50 trades per month, and 1 watchlist. It's a great way to explore the platform before upgrading.</p>
-          </div>
-        </div>
-        <div class="faq-item">
-          <button class="faq-question" aria-expanded="false">
-            <span>Do I need my own API keys?</span>
-            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="faq-answer" role="region">
-            <p class="faq-answer-inner">No. All paid plans include full API access. Market data, options flow, and AI analysis are all built in. Free tier users get limited access with some rate limiting.</p>
-          </div>
-        </div>
-        <div class="faq-item">
-          <button class="faq-question" aria-expanded="false">
-            <span>Can I cancel anytime?</span>
-            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="faq-answer" role="region">
-            <p class="faq-answer-inner">Yes. All plans are month-to-month with no long-term commitment. Cancel with a single click. Your data stays accessible and you won't be charged again.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-
-  <!-- ══════════════════════════════════════════
-       CTA
-  ═══════════════════════════════════════════ -->
-  <section class="cta-section">
-    <div class="container-narrow">
-      <h2 class="cta-heading">Simplify Your Trading.</h2>
-      <p class="cta-sub">Market overview. Smart scanners. AI trade journal. All in one dashboard.</p>
-      <a href="/app/" class="btn btn-white">Get Started Free →</a>
-      <p class="cta-fine">No credit card required · Free plan available forever</p>
-    </div>
-  </section>
   </main>
-
 
   <!-- FOOTER -->
   <footer class="footer">
-    <div class="container">
-      <div class="footer-inner">
-        <a href="#" class="footer-logo">
-          <div class="nav-logo-mark" style="width:24px;height:24px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-            </svg>
-          </div>
-          <span class="footer-logo-name">MAC Terminal</span>
-        </a>
-        <ul class="footer-links-row">
-          <li><a href="#features">Features</a></li>
-          <li><a href="#pricing">Pricing</a></li>
-          <li><a href="#faq">FAQ</a></li>
-          <li><a href="terms.html">Terms</a></li>
-          <li><a href="privacy.html">Privacy</a></li>
-          <li><a href="disclaimer.html">Disclaimer</a></li>
-          <li><a href="https://docs.google.com/forms/d/e/1FAIpQLSen-JL8VLKqSDt3hkkbqihnItxiVHc4El1o0uEis1i3Y2xOUg/viewform" target="_blank">Feedback</a></li>
-        </ul>
-        <p class="footer-copy">© 2026 MAC Terminal. Not financial advice.</p>
-      </div>
-    </div>
+    <ul class="footer-links">
+      <li><a href="terms.html">Terms</a></li>
+      <li><a href="privacy.html">Privacy</a></li>
+      <li><a href="disclaimer.html">Disclaimer</a></li>
+      <li><a href="https://docs.google.com/forms/d/e/1FAIpQLSen-JL8VLKqSDt3hkkbqihnItxiVHc4El1o0uEis1i3Y2xOUg/viewform" target="_blank">Feedback</a></li>
+    </ul>
+    <p class="footer-copy">© 2026 MAC Terminal. Not financial advice.</p>
   </footer>
-
 
   <!-- JAVASCRIPT -->
   <script>
@@ -1134,46 +344,6 @@
         updateToggles();
       }));
     })();
-
-    // Mobile menu
-    (function() {
-      const h = document.getElementById('hamburger');
-      const d = document.getElementById('nav-drawer');
-      h.addEventListener('click', () => d.classList.toggle('open'));
-      d.querySelectorAll('a').forEach(a => a.addEventListener('click', () => d.classList.remove('open')));
-    })();
-
-    // Nav CTA
-    document.addEventListener('DOMContentLoaded', function() {
-      const c = document.getElementById('nav-cta-desktop');
-      if (c) c.style.display = '';
-    });
-
-    // FAQ accordion
-    document.querySelectorAll('.faq-question').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const item = btn.closest('.faq-item');
-        const isOpen = item.classList.contains('open');
-        document.querySelectorAll('.faq-item.open').forEach(el => {
-          el.classList.remove('open');
-          el.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
-        });
-        if (!isOpen) {
-          item.classList.add('open');
-          btn.setAttribute('aria-expanded', 'true');
-        }
-      });
-    });
-
-    // Smooth scroll
-    document.querySelectorAll('a[href^="#"]').forEach(a => {
-      a.addEventListener('click', function(e) {
-        const href = this.getAttribute('href');
-        if (href === '#') return;
-        const target = document.querySelector(href);
-        if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
-      });
-    });
   </script>
 
 </body>

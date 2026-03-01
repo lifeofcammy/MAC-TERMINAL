@@ -197,7 +197,7 @@ body {
 
 /* Section title */
 .section-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 400;
   font-family: 'DM Serif Display', Georgia, serif;
   margin: 28px 0 14px 0;
@@ -495,4 +495,15 @@ details[open] summary { color: var(--blue) !important; }
 
   /* Analysis: sub-nav pills smaller */
   #analysis-subnav .an-pill { padding: 5px 10px !important; font-size: 12px !important; }
+}
+
+/* ── Dashboard Font Size Bump ── */
+/* Card headers: centered, larger */
+.card-header-bar {
+  font-size: 20px;
+  font-weight: 400;
+  font-family: 'DM Serif Display', Georgia, serif;
+  color: var(--text-primary);
+  text-align: center;
+  flex: 1;
 }

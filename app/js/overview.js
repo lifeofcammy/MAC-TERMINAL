@@ -224,7 +224,7 @@ async function renderOverview() {
 
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;border-left:3px solid var(--amber);border-radius:14px;">';
   html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;user-select:none;">';
-  html += '<div style="display:flex;align-items:center;justify-content:center;gap:8px;"><span style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;">Morning Mindset</span></div>';
+  html += '<div style="display:flex;align-items:center;justify-content:center;gap:8px;"><span class="card-header-bar">Morning Mindset</span></div>';
   html += '<span id="mindset-arrow" style="font-size:12px;color:var(--text-muted);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
   html += '</div>';
   // Today's Focus — ALWAYS visible
@@ -247,7 +247,7 @@ async function renderOverview() {
   // ════ 2. WATCHLIST (right under Morning Mindset) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Watchlist</div>';
+  html += '<div class="card-header-bar">Watchlist</div>';
   var wList = getWatchlist();
   html += '<div style="display:flex;align-items:center;gap:8px;">';
   if(wList.length>0) html += '<button onclick="clearWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Clear All</button>';
@@ -363,7 +363,7 @@ async function renderOverview() {
 
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Market Regime</div>';
+  html += '<div class="card-header-bar">Market Regime</div>';
   html += '</div>';
   html += '<div style="padding:14px 20px;display:flex;align-items:flex-start;gap:12px;">';
   html += '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+regimeColor+';margin-top:4px;flex-shrink:0;"></span>';
@@ -396,7 +396,7 @@ async function renderOverview() {
   // ════ 4. MARKET SNAPSHOT (tight row: SPY QQQ IWM DIA VIX DXY) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Market Snapshot</div>';
+  html += '<div class="card-header-bar">Market Snapshot</div>';
   html += '<span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
   html += '</div>';
   html += '<div style="padding:12px 16px;">';
@@ -433,7 +433,7 @@ async function renderOverview() {
     var adFlatW = 100-adGreenW-adRedW;
     html += '<div class="card" style="padding:16px 20px;margin-bottom:14px;">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
-    html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Stock Breadth</div>';
+    html += '<div class="card-header-bar">Stock Breadth</div>';
     html += '<div style="font-size:14px;color:var(--text-muted);">'+adStocksUp+' advancing · '+adStocksDown+' declining'+(adStocksFlat>0?' · '+adStocksFlat+' flat':'')+'</div>';
     html += '</div>';
     html += '<div style="display:flex;height:20px;border-radius:6px;overflow:hidden;background:var(--bg-secondary);">';
@@ -451,7 +451,7 @@ async function renderOverview() {
   // ════ 6. TODAY'S CATALYSTS + THEMES ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Today\'s Catalysts & Themes</div>';
+  html += '<div class="card-header-bar">Today\'s Catalysts & Themes</div>';
   html += '<div style="font-size:12px;color:var(--text-muted);">'+tsLabel(ts)+'</div>';
   html += '</div>';
   // Econ calendar
@@ -500,7 +500,7 @@ async function renderOverview() {
   var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')==='true';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
-  html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Sector Heatmap</div>';
+  html += '<div class="card-header-bar">Sector Heatmap</div>';
   html += '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'▶':'▼')+'</span></div>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
@@ -525,7 +525,7 @@ async function renderOverview() {
   // ════ 8. TOP IDEAS (from scanners) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Top Ideas</div>';
+  html += '<div class="card-header-bar">Top Ideas</div>';
   html += '<button onclick="runQuickScan()" id="quick-scan-btn" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Scan</button>';
   html += '</div>';
   html += '<div id="top-ideas-content" style="padding:12px 16px;">';

@@ -527,7 +527,7 @@ function renderScanResults(data) {
   var html = '';
 
   html += '<div style="font-size:14px;color:var(--text-muted);margin-bottom:8px;">Scanned ' + time + ' · ' + setups.length + ' setups found</div>';
-  html += '<div class="sc-results-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;">';
+  html += '<div class="sc-results-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start;">';
 
   setups.forEach(function(s, idx) {
     var scoreColor = s.score >= 75 ? 'var(--green)' : 'var(--text-muted)';
