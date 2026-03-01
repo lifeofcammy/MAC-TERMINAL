@@ -74,7 +74,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 18px 32px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px solid var(--blue);
   background: var(--bg-primary);
   position: sticky;
   top: 0;
@@ -233,6 +233,7 @@ body {
 .card {
   background: var(--bg-card);
   border: none;
+  border-top: 3px solid var(--blue);
   border-radius: 14px;
   padding: 24px;
   transition: all 0.2s ease;

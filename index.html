@@ -281,6 +281,15 @@
       font-style: italic;
       color: var(--color-primary);
     }
+    .hero-motto {
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-primary);
+      margin-bottom: var(--space-3);
+    }
     .hero-sub {
       font-family: var(--font-body);
       font-size: var(--text-lg);
@@ -776,11 +785,12 @@
   ═══════════════════════════════════════════ -->
   <section class="hero">
     <div class="container-narrow">
+      <p class="hero-motto">Simplify Your Trading.</p>
       <h1 class="hero-headline">
-        Three <em>Powerful</em> Tools.<br>One Trading Dashboard.
+        Your <em>Complete</em> Trading<br>Command Center.
       </h1>
       <p class="hero-sub">
-        Scanners to find setups. AI that reviews your trades. Market theme analysis to guide your flow. All in one dashboard.
+        Morning market overview. Smart scanners. AI trade review. Everything you need in one clean dashboard — nothing you don't.
       </p>
       <div class="hero-ctas">
         <a href="/app/" class="btn btn-primary btn-lg">Get Started Free →</a>
@@ -809,15 +819,55 @@
 
       <div class="features-grid">
 
-        <!-- Tool 1: Scanners -->
+        <!-- Tool 1: Market Command Center (Overview tab) -->
         <div class="feature-card" style="border-top: 3px solid var(--color-primary);">
           <div class="feature-icon" style="background: var(--color-primary-highlight); color: var(--color-primary);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">Market Command Center</h3>
+          <p class="feature-desc">Your morning dashboard. Market regime, breadth, sector heatmap, economic calendar, top headlines, and AI-generated themes — all at a glance.</p>
+
+          <!-- Mini Preview -->
+          <div class="feature-preview">
+            <div class="preview-bar">
+              <span class="preview-dot preview-dot-r"></span>
+              <span class="preview-dot preview-dot-y"></span>
+              <span class="preview-dot preview-dot-g"></span>
+              <span class="preview-bar-title">overview</span>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:6px;">
+              <div style="flex:1;background:rgba(16,185,129,0.08);border-radius:4px;padding:4px 6px;text-align:center;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:rgba(255,255,255,0.4);text-transform:uppercase;">Regime</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#4ADE80;">Risk On</div>
+              </div>
+              <div style="flex:1;background:rgba(96,165,250,0.08);border-radius:4px;padding:4px 6px;text-align:center;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:rgba(255,255,255,0.4);text-transform:uppercase;">Breadth</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#60A5FA;">72%</div>
+              </div>
+              <div style="flex:1;background:rgba(251,191,36,0.08);border-radius:4px;padding:4px 6px;text-align:center;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:rgba(255,255,255,0.4);text-transform:uppercase;">VIX</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#FBBF24;">Stable</div>
+              </div>
+            </div>
+            <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;">
+              <div style="width:72%;background:#4ADE80;"></div>
+              <div style="width:28%;background:#F87171;"></div>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:rgba(255,255,255,0.3);margin-top:3px;">9/12 sectors green</div>
+          </div>
+        </div>
+
+        <!-- Tool 2: Smart Scanners (Action Center tab) -->
+        <div class="feature-card" style="border-top: 3px solid var(--color-success);">
+          <div class="feature-icon" style="background: var(--color-success-highlight); color: var(--color-success);">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
           </div>
           <h3 class="feature-title">Smart Scanners</h3>
-          <p class="feature-desc">Scan thousands of stocks in real time for VCP patterns, compression setups, shakeout reversals, and flat bases.</p>
+          <p class="feature-desc">Scan your universe for VCP patterns, compression setups, and flat bases. Auto-scored ideas with entry, stop, and target levels built in.</p>
 
           <!-- Mini Preview -->
           <div class="feature-preview">
@@ -850,15 +900,15 @@
           </div>
         </div>
 
-        <!-- Tool 2: AI Trade Review -->
-        <div class="feature-card" style="border-top: 3px solid var(--color-success);">
-          <div class="feature-icon" style="background: var(--color-success-highlight); color: var(--color-success);">
+        <!-- Tool 3: AI Trade Review (Trade Journal + Analysis) -->
+        <div class="feature-card" style="border-top: 3px solid var(--color-warning);">
+          <div class="feature-icon" style="background: var(--color-warning-highlight); color: var(--color-warning);">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
             </svg>
           </div>
-          <h3 class="feature-title">AI Trade Review</h3>
-          <p class="feature-desc">AI analyzes every trade — entry, exit, sizing, and outcome. It spots your patterns and coaches you to improve.</p>
+          <h3 class="feature-title">AI Trade Journal</h3>
+          <p class="feature-desc">Log every trade. AI analyzes your entries, exits, sizing, and P&amp;L. Spots patterns in your performance and coaches you to improve.</p>
 
           <!-- Mini Preview -->
           <div class="feature-preview">
@@ -866,7 +916,7 @@
               <span class="preview-dot preview-dot-r"></span>
               <span class="preview-dot preview-dot-y"></span>
               <span class="preview-dot preview-dot-g"></span>
-              <span class="preview-bar-title">trade review</span>
+              <span class="preview-bar-title">trade journal</span>
             </div>
             <div class="preview-trade-header">
               <span class="preview-trade-ticker">AAPL — Long</span>
@@ -874,47 +924,6 @@
             </div>
             <div class="preview-ai-feedback">
               <span class="preview-ai-label">AI:</span> Good entry on volume breakout. Consider tightening stop after first target hit. Risk/reward was 3.2:1 — above your avg of 2.1:1.
-            </div>
-          </div>
-        </div>
-
-        <!-- Tool 3: AI Market Themes -->
-        <div class="feature-card" style="border-top: 3px solid var(--color-warning);">
-          <div class="feature-icon" style="background: var(--color-warning-highlight); color: var(--color-warning);">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-            </svg>
-          </div>
-          <h3 class="feature-title">AI Market Themes</h3>
-          <p class="feature-desc">AI reads the market — sector rotation, momentum shifts, and macro signals. Know where money is flowing.</p>
-
-          <!-- Mini Preview -->
-          <div class="feature-preview">
-            <div class="preview-bar">
-              <span class="preview-dot preview-dot-r"></span>
-              <span class="preview-dot preview-dot-y"></span>
-              <span class="preview-dot preview-dot-g"></span>
-              <span class="preview-bar-title">market themes</span>
-            </div>
-            <div class="preview-theme-row">
-              <span class="preview-theme-indicator" style="background: #4ADE80;"></span>
-              <span class="preview-theme-name">AI / Semis</span>
-              <div class="preview-theme-bar-track"><div class="preview-theme-bar-fill" style="width:88%; background: #4ADE80;"></div></div>
-            </div>
-            <div class="preview-theme-row">
-              <span class="preview-theme-indicator" style="background: #60A5FA;"></span>
-              <span class="preview-theme-name">Cybersecurity</span>
-              <div class="preview-theme-bar-track"><div class="preview-theme-bar-fill" style="width:72%; background: #60A5FA;"></div></div>
-            </div>
-            <div class="preview-theme-row">
-              <span class="preview-theme-indicator" style="background: #FBBF24;"></span>
-              <span class="preview-theme-name">Energy</span>
-              <div class="preview-theme-bar-track"><div class="preview-theme-bar-fill" style="width:45%; background: #FBBF24;"></div></div>
-            </div>
-            <div class="preview-theme-row">
-              <span class="preview-theme-indicator" style="background: #F87171;"></span>
-              <span class="preview-theme-name">Biotech</span>
-              <div class="preview-theme-bar-track"><div class="preview-theme-bar-fill" style="width:28%; background: #F87171;"></div></div>
             </div>
           </div>
         </div>
@@ -1066,8 +1075,8 @@
   ═══════════════════════════════════════════ -->
   <section class="cta-section">
     <div class="container-narrow">
-      <h2 class="cta-heading">Ready to Trade Smarter?</h2>
-      <p class="cta-sub">Smart scanners. AI trade review. Market theme analysis. All in one dashboard.</p>
+      <h2 class="cta-heading">Simplify Your Trading.</h2>
+      <p class="cta-sub">Market overview. Smart scanners. AI trade journal. All in one dashboard.</p>
       <a href="/app/" class="btn btn-white">Get Started Free →</a>
       <p class="cta-fine">No credit card required · Free plan available forever</p>
     </div>
