@@ -1,2 +1,7 @@
-[project]
-id = "urpblscayyeadecozgvo"
+project_id = "urpblscayyeadecozgvo"
+
+[functions.ai-proxy]
+verify_jwt = true
+
+[functions.daily-scanner]
+verify_jwt = false
