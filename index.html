@@ -199,6 +199,69 @@
       .features-row { grid-template-columns: 1fr; max-width: 360px; margin-inline: auto; }
     }
 
+    /* ── Dashboard Preview ── */
+    .preview {
+      max-width: 960px;
+      margin-inline: auto;
+      padding: 0 var(--space-6) clamp(60px, 8vw, 100px);
+      text-align: center;
+    }
+    .preview-label {
+      font-family: var(--font-body);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-primary);
+      margin-bottom: var(--space-3);
+    }
+    .preview-heading {
+      font-family: var(--font-display);
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      color: var(--color-text);
+      margin-bottom: var(--space-6);
+    }
+    .preview-tabs {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-2);
+      margin-bottom: var(--space-6);
+    }
+    .preview-tab {
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      padding: var(--space-2) var(--space-5);
+      border-radius: var(--radius-full);
+      border: 2px solid var(--color-border);
+      background: transparent;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all 180ms ease;
+    }
+    .preview-tab.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: #fff;
+    }
+    .preview-tab:hover:not(.active) {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+    .preview-img-wrap {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 4px 24px oklch(0 0 0 / 0.08), 0 1px 4px oklch(0 0 0 / 0.04);
+      border: 1px solid var(--color-border);
+    }
+    .preview-img-wrap img {
+      width: 100%;
+      display: block;
+    }
+    .preview-img-wrap img.hidden {
+      display: none;
+    }
+
     /* ── Footer (simple) ── */
     .footer {
       border-top: 1px solid var(--color-divider);
@@ -308,6 +371,20 @@
       </div>
     </section>
 
+    <!-- Dashboard Preview -->
+    <section class="preview">
+      <p class="preview-label">See It In Action</p>
+      <h2 class="preview-heading">Everything You Need, One Dashboard</h2>
+      <div class="preview-tabs">
+        <button class="preview-tab active" onclick="switchPreview('overview')">Overview</button>
+        <button class="preview-tab" onclick="switchPreview('scanner')">Scanner</button>
+      </div>
+      <div class="preview-img-wrap">
+        <img id="preview-overview" src="images/preview-overview.jpg" alt="MAC Terminal Overview — Morning Mindset, Watchlist, Market Regime, Market Snapshot">
+        <img id="preview-scanner" src="images/preview-scanner.jpg" alt="MAC Terminal Momentum Scanner — VCP setups with scores and trade levels" class="hidden">
+      </div>
+    </section>
+
   </main>
 
   <!-- FOOTER -->
@@ -323,6 +400,15 @@
 
   <!-- JAVASCRIPT -->
   <script>
+    // Preview tab switcher
+    function switchPreview(tab) {
+      document.getElementById('preview-overview').classList.toggle('hidden', tab !== 'overview');
+      document.getElementById('preview-scanner').classList.toggle('hidden', tab !== 'scanner');
+      document.querySelectorAll('.preview-tab').forEach(function(btn) {
+        btn.classList.toggle('active', btn.textContent.toLowerCase() === tab);
+      });
+    }
+
     // Theme toggle
     (function() {
       const toggles = document.querySelectorAll('[data-theme-toggle]');
