@@ -363,7 +363,7 @@ function analyzeSetup(ticker, bars) {
           var postH = Math.max.apply(null, postGapHighs);
           var postL = Math.min.apply(null, postGapLows);
           var postRange = ((postH - postL) / price) * 100;
-          if (postRange < 5) return null; // Pinned to deal price
+          if (postRange < 3.5) return null; // Pinned to deal price
         }
       }
     }
