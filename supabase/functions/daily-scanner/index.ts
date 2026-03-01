@@ -178,7 +178,7 @@ function analyzeSetup(ticker: string, bars: any[]) {
           const postH = Math.max(...postGapHighs)
           const postL = Math.min(...postGapLows)
           const postRange = ((postH - postL) / price) * 100
-          if (postRange < 3) return null
+          if (postRange < 8) return null
         }
       }
     }
