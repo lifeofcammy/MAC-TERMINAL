@@ -321,7 +321,7 @@ Deno.serve(async (req) => {
 
     // Step 3: Score in batches
     const scored: any[] = []
-    const batchSize = 10
+    const batchSize = 25
     let failCount = 0
 
     for (let i = 0; i < filtered.length; i += batchSize) {
@@ -354,9 +354,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Small delay
       if (i + batchSize < filtered.length) {
-        await new Promise(resolve => setTimeout(resolve, 200))
+        await new Promise(resolve => setTimeout(resolve, 50))
       }
     }
 
@@ -365,8 +364,8 @@ Deno.serve(async (req) => {
 
     // Step 4: Breakout scan on top 100
     const setups: any[] = []
-    for (let i = 0; i < top100.length; i += 5) {
-      const batch = top100.slice(i, i + 5)
+    for (let i = 0; i < top100.length; i += 15) {
+      const batch = top100.slice(i, i + 15)
       const promises = batch.map(async (stock) => {
         try {
           const bars = await getDailyBars(stock.ticker, 60, polygonKey)
@@ -381,8 +380,8 @@ Deno.serve(async (req) => {
         const setup = analyzeSetup(r.ticker, r.bars)
         if (setup) setups.push(setup)
       }
-      if (i + 5 < top100.length) {
-        await new Promise(resolve => setTimeout(resolve, 200))
+      if (i + 15 < top100.length) {
+        await new Promise(resolve => setTimeout(resolve, 50))
       }
     }
 

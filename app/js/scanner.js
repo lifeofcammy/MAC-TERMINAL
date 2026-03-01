@@ -712,7 +712,7 @@ async function runFullScanUI() {
   }
 
   try {
-    // ── STRATEGY: Try server cache first, then server scan, then client fallback ──
+    // ── STRATEGY: Try server cache first, then fall back to fast client scan ──
     
     // Step 1: Check if Supabase already has today's results
     updateProgress('Checking for cached results...', 5);
@@ -746,40 +746,11 @@ async function runFullScanUI() {
       return;
     }
     
-    // Step 2: No cache — trigger server-side scan
-    updateProgress('Running server-side scan (this takes a few minutes)...', 10);
-    var serverResult = await triggerServerScan();
+    // Step 2: No server cache — run client-side scan directly (faster than waiting for server)
+    // Also trigger server scan in background for next time
+    triggerServerScan().catch(function() {});
     
-    if (serverResult && !serverResult.error) {
-      // Server scan completed — fetch the results
-      updateProgress('Server scan complete. Loading results...', 90);
-      var freshData = await getServerScanResults();
-      if (freshData && freshData.momentum_universe && freshData.breakout_setups) {
-        var momentum2 = freshData.momentum_universe;
-        var setups2 = freshData.breakout_setups;
-        saveMomentumCache(momentum2);
-        try { localStorage.setItem(SCANNER_RESULTS_KEY, JSON.stringify(setups2)); } catch(e) {}
-        
-        updateProgress('Done!', 100);
-        if (resultsEl) resultsEl.innerHTML = renderScanResults(setups2);
-        var top100Body2 = document.getElementById('top100-body');
-        if (top100Body2 && momentum2 && momentum2.tickers) {
-          top100Body2.innerHTML = renderTop100List(momentum2.tickers);
-        }
-        setTimeout(function() {
-          if (progressWrap) progressWrap.style.display = 'none';
-          if (idleStatus) {
-            idleStatus.textContent = 'Server scan · ' + (setups2.setups ? setups2.setups.length : 0) + ' setups · ' + (momentum2.count || 0) + ' stocks';
-            idleStatus.style.display = 'block';
-          }
-        }, 1500);
-        if (btn) { btn.disabled = false; btn.textContent = 'Scan'; }
-        return;
-      }
-    }
-    
-    // Step 3: Server unavailable — fall back to client-side scan
-    updateProgress('Server unavailable. Running client-side scan...', 0);
+    updateProgress('Scanning...', 0);
     await buildMomentumUniverse(function(msg) {
       // Parse progress from status messages like "Scoring... 500/3024 (17%)"
       var match = msg.match(/(\d+)%/);
@@ -787,7 +758,7 @@ async function runFullScanUI() {
       updateProgress(msg, pct);
     });
 
-    // Step 2: Run breakout scan
+    // Run breakout scan
     updateProgress('Scanning for breakout setups...', 72);
     var results = await runBreakoutScan(function(msg) {
       var match = msg.match(/(\d+)\/(\d+)/);
