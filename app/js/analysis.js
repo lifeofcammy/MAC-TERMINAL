@@ -387,9 +387,9 @@ async function autoGenerateAnalysis(dateStr) {
   var status = document.getElementById('auto-gen-status');
   if(btn){btn.disabled=true;btn.textContent='Generating...';}
 
-  var anthropicKey=getAnthropicKey();
-  if(!anthropicKey){
-    if(status)status.innerHTML='<span style="color:var(--amber);">Anthropic API key required. Go to Settings (gear icon) to add it.</span>';
+  // AI calls go through server-side proxy (no client key needed)
+  if(!window._currentSession || !window._currentSession.access_token){
+    if(status)status.innerHTML='<span style="color:var(--amber);">You must be logged in to generate analysis.</span>';
     if(btn){btn.disabled=false;btn.textContent='Generate Analysis';}
     return;
   }
@@ -539,9 +539,7 @@ async function autoGenerateAnalysis(dateStr) {
       '- Keep everything concise and trader-focused. No fluff.\n'+
       '- Return ONLY the JSON object.';
 
-    var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4096,messages:[{role:'user',content:prompt}]})});
-    if(!r.ok){var errBody=null;try{errBody=await r.json();}catch(e){}var errMsg=(errBody&&errBody.error&&errBody.error.message)?errBody.error.message:'HTTP '+r.status;throw new Error(errMsg);}
-    var data=await r.json();
+    var data=await callAIProxy({model:'claude-sonnet-4-20250514',max_tokens:4096,messages:[{role:'user',content:prompt}]});
     var text=data.content&&data.content[0]?data.content[0].text:'';
     var jsonMatch=text.match(/\{[\s\S]*\}/);if(!jsonMatch)throw new Error('Could not parse AI response');
     var result=JSON.parse(jsonMatch[0]);
@@ -560,8 +558,8 @@ async function autoGenerateAnalysis(dateStr) {
 
 // ==================== SILENT AUTO-GENERATE (for backfill, no DOM updates) ====================
 async function autoGenerateAnalysisSilent(dateStr) {
-  var anthropicKey=getAnthropicKey();
-  if(!anthropicKey) throw new Error('Anthropic API key required');
+  // AI calls go through server-side proxy
+  if(!window._currentSession || !window._currentSession.access_token) throw new Error('You must be logged in');
 
   var universe=['SPY','QQQ','IWM','DIA','AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AMD','AVGO','CRM','NFLX','COIN','SNOW','PLTR','DKNG','UBER','SQ','SHOP','NET','CRWD','MU','MRVL','ANET','PANW','NOW','ADBE','ORCL','LLY','UNH','JPM','GS','V','MA','BAC','XOM','CVX','CAT','DE','LMT','BA','MSTR','SOFI','HOOD','RKLB','APP','HIMS','ARM','SMCI','TSM','ASML','WMT','COST','TGT','DIS','PYPL','INTC','DELL','PARA','DUOL','ZS','AXP','RIVN','NIO','BABA','SPOT','RBLX','ABNB','DASH','TTD','ROKU','PINS','SNAP'];
   var sectorETFs=['XLK','XLF','XLE','XLV','XLY','XLI','XLRE','XLU','XLB','XLC','XLP','SMH'];
@@ -643,9 +641,7 @@ async function autoGenerateAnalysisSilent(dateStr) {
 
   var prompt='You are a professional market analyst. Generate a full end-of-day analysis for '+dateStr+'.\n\nSPY change: '+(spyChg>=0?'+':'')+spyChg.toFixed(2)+'%\n\nSECTOR PERFORMANCE:\n'+sectorContext+'\n\nBIGGEST MOVERS:\n'+moverContext+'\n\nGenerate a complete analysis in this EXACT JSON format. Return ONLY the JSON object:\n{\n  "marketContext": "2-3 sentence summary of the day. What drove the session. Key headlines.",\n  "movers": [\n    {"ticker": "DELL", "changePct": 21.8, "sector": "Technology", "catchable": "yes|partial|no", "why": "1-2 sentences on what caused the move", "lesson": "1-2 sentences — what a trader should learn from this"}\n  ],\n  "sectorRotation": "MONEY FLOWING INTO: ... MONEY FLOWING OUT OF: ... NOTABLE: ...",\n  "patterns": "DEVELOPING: bullet points of multi-day patterns building. FADING: patterns losing steam.",\n  "missed": "Opportunities that were catchable but may have been missed. Actionable lessons.",\n  "tomorrowWatch": "Priority setups for tomorrow. Specific tickers, levels, and strategies.",\n  "probabilityMap": [\n    {"ticker": "CRWD", "probability": 75, "tier": 1, "direction": "long|short|both", "catalyst": "short label", "thesis": "2-3 sentences", "keyLevels": "Support: $X | Resistance: $Y", "optionsPlay": "specific options strategy"}\n  ],\n  "watchlist": [\n    {"theme": "Theme Name", "status": "active|watch|fading", "tickers": ["TICK1","TICK2"], "note": "Why this theme matters"}\n  ],\n  "mindset": {"score": 7, "scoreNote": "Brief note on discipline", "violations": [{"rule": "Rule name", "detail": "what happened"}], "wins": ["What went right"]}\n}\n\nRULES:\n- Include 6-10 movers (biggest absolute % changes with clear catalysts)\n- "catchable" = yes if the setup was visible pre-market or early session, partial if needed fast reaction, no if purely news-driven\n- probabilityMap: 4-6 tickers ranked by probability of 3%+ move TOMORROW\n- watchlist: 3-5 thematic groupings\n- For mindset: since we dont know the users trades, give a general score of 7 with note "Auto-generated — update with your actual trades"\n- Keep everything concise and trader-focused. No fluff.\n- Return ONLY the JSON object.';
 
-  var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4096,messages:[{role:'user',content:prompt}]})});
-  if(!r.ok){var errBody=null;try{errBody=await r.json();}catch(e){}var errMsg=(errBody&&errBody.error&&errBody.error.message)?errBody.error.message:'HTTP '+r.status;throw new Error(errMsg);}
-  var data=await r.json();
+  var data=await callAIProxy({model:'claude-sonnet-4-20250514',max_tokens:4096,messages:[{role:'user',content:prompt}]});
   var text=data.content&&data.content[0]?data.content[0].text:'';
   var jsonMatch=text.match(/\{[\s\S]*\}/);if(!jsonMatch) throw new Error('Could not parse AI response');
   var result=JSON.parse(jsonMatch[0]);
@@ -745,9 +741,9 @@ async function sendAnalysisChat() {
   var msg = input.value.trim();
   if (!msg) return;
 
-  var apiKey = getAnthropicKey();
-  if (!apiKey) {
-    addChatMessage('assistant', '→ Please enter your Anthropic API key above first. Get one at console.anthropic.com/settings/keys');
+  var apiKey = true; // AI calls go through server proxy now
+  if (!window._currentSession || !window._currentSession.access_token) {
+    addChatMessage('assistant', '→ Please log in to use the AI chat feature.');
     return;
   }
 
@@ -797,44 +793,28 @@ async function sendAnalysisChat() {
   analysisChatHistory.push({ role: 'user', content: msg });
 
   try {
-    var response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: 'You are Claude, embedded in a trader\'s MAC Terminal (Market Action Center) dashboard on the Analysis tab.\n\n' +
+    var response = await callAIProxy({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: 'You are Claude, embedded in a trader\'s MAC Terminal (Market Action Center) dashboard on the Analysis tab.\n\n' +
           'The trader uses options strategies including put spreads and covered calls. Morning setups before 10am tend to have highest win rates.\n' +
           'Key rules: Stick to your system. Avoid impulsive trades. Cash is a position.\n\n' +
           'RESPONSE RULES:\n- Keep responses concise (2-4 short paragraphs max)\n- Be specific with tickers, strikes, and levels\n- Reference the analysis data\n- Think like a trading partner\n- If asked about setups, give actionable entry/exit/risk\n\n' +
           'TODAY\'S ANALYSIS:\n' + contextStr + patternData,
-        messages: analysisChatHistory
-      })
+      messages: analysisChatHistory
     });
 
-    if (!response.ok) {
-      var errData = await response.json().catch(function() { return {}; });
-      var errMsg = errData.error?.message || response.statusText || 'Unknown error';
-      throw new Error(response.status + ': ' + errMsg);
-    }
-
-    var data = await response.json();
-    var reply = data.content && data.content[0] ? data.content[0].text : 'No response received.';
+    var reply = response.content && response.content[0] ? response.content[0].text : 'No response received.';
 
     analysisChatHistory.push({ role: 'assistant', content: reply });
     typingBubble.textContent = reply;
 
   } catch(e) {
     typingBubble.textContent = 'Error: ' + e.message;
-    if (e.message.includes('401')) {
-      typingBubble.textContent += '\n\nYour API key appears invalid. Check it at console.anthropic.com/settings/keys';
+    if (e.message.includes('401') || e.message.includes('logged in')) {
+      typingBubble.textContent += '\n\nPlease log in to use AI features.';
     } else if (e.message.includes('CORS') || e.message.includes('Failed to fetch')) {
-      typingBubble.textContent += '\n\nCORS error. Make sure you\'re using a valid API key with the anthropic-dangerous-direct-browser-access header enabled.';
+      typingBubble.textContent += '\n\nNetwork error. Check your connection and try again.';
     }
     // Remove failed message from history
     analysisChatHistory.pop();

@@ -660,6 +660,34 @@ function renderTop100List(tickers) {
   return html;
 }
 
+// ==================== SUPABASE SCAN CACHE ====================
+// Check if today's scan results exist in Supabase (shared across all users)
+
+async function getServerScanResults() {
+  var sb = window.supabaseClient;
+  if (!sb) return null;
+  var lastDay = getLastTradingDay();
+  try {
+    var resp = await sb.from('scan_results').select('*').eq('scan_date', lastDay).maybeSingle();
+    if (resp.data) return resp.data;
+  } catch(e) { console.warn('[scanner] Supabase cache check failed:', e); }
+  return null;
+}
+
+async function triggerServerScan() {
+  // Trigger the Edge Function to run the scan server-side
+  try {
+    var resp = await fetch('https://urpblscayyeadecozgvo.supabase.co/functions/v1/daily-scanner', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return await resp.json();
+  } catch(e) {
+    console.warn('[scanner] Server scan trigger failed:', e);
+    return null;
+  }
+}
+
 // ==================== SINGLE SCAN BUTTON ====================
 // One click: builds universe (if stale) + runs breakout scan
 
@@ -683,8 +711,74 @@ async function runFullScanUI() {
   }
 
   try {
-    // Step 1: Build universe (always refresh for latest data)
-    updateProgress('Building momentum universe...', 0);
+    // ── STRATEGY: Try server cache first, then server scan, then client fallback ──
+    
+    // Step 1: Check if Supabase already has today's results
+    updateProgress('Checking for cached results...', 5);
+    var serverData = await getServerScanResults();
+    
+    if (serverData && serverData.momentum_universe && serverData.breakout_setups) {
+      // Server has today's results — load them instantly
+      updateProgress('Loading cached results...', 80);
+      var momentum = serverData.momentum_universe;
+      var setups = serverData.breakout_setups;
+      
+      // Save to localStorage for offline access
+      saveMomentumCache(momentum);
+      try { localStorage.setItem(SCANNER_RESULTS_KEY, JSON.stringify(setups)); } catch(e) {}
+      
+      updateProgress('Done! (from server cache)', 100);
+      if (resultsEl) resultsEl.innerHTML = renderScanResults(setups);
+      var top100Body = document.getElementById('top100-body');
+      if (top100Body && momentum && momentum.tickers) {
+        top100Body.innerHTML = renderTop100List(momentum.tickers);
+      }
+      
+      setTimeout(function() {
+        if (progressWrap) progressWrap.style.display = 'none';
+        if (idleStatus) {
+          idleStatus.textContent = 'Loaded from server · ' + (setups.setups ? setups.setups.length : 0) + ' setups · ' + (momentum.count || 0) + ' stocks';
+          idleStatus.style.display = 'block';
+        }
+      }, 1500);
+      if (btn) { btn.disabled = false; btn.textContent = 'Scan'; }
+      return;
+    }
+    
+    // Step 2: No cache — trigger server-side scan
+    updateProgress('Running server-side scan (this takes a few minutes)...', 10);
+    var serverResult = await triggerServerScan();
+    
+    if (serverResult && !serverResult.error) {
+      // Server scan completed — fetch the results
+      updateProgress('Server scan complete. Loading results...', 90);
+      var freshData = await getServerScanResults();
+      if (freshData && freshData.momentum_universe && freshData.breakout_setups) {
+        var momentum2 = freshData.momentum_universe;
+        var setups2 = freshData.breakout_setups;
+        saveMomentumCache(momentum2);
+        try { localStorage.setItem(SCANNER_RESULTS_KEY, JSON.stringify(setups2)); } catch(e) {}
+        
+        updateProgress('Done!', 100);
+        if (resultsEl) resultsEl.innerHTML = renderScanResults(setups2);
+        var top100Body2 = document.getElementById('top100-body');
+        if (top100Body2 && momentum2 && momentum2.tickers) {
+          top100Body2.innerHTML = renderTop100List(momentum2.tickers);
+        }
+        setTimeout(function() {
+          if (progressWrap) progressWrap.style.display = 'none';
+          if (idleStatus) {
+            idleStatus.textContent = 'Server scan · ' + (setups2.setups ? setups2.setups.length : 0) + ' setups · ' + (momentum2.count || 0) + ' stocks';
+            idleStatus.style.display = 'block';
+          }
+        }, 1500);
+        if (btn) { btn.disabled = false; btn.textContent = 'Scan'; }
+        return;
+      }
+    }
+    
+    // Step 3: Server unavailable — fall back to client-side scan
+    updateProgress('Server unavailable. Running client-side scan...', 0);
     await buildMomentumUniverse(function(msg) {
       // Parse progress from status messages like "Scoring... 500/3024 (17%)"
       var match = msg.match(/(\d+)%/);
@@ -745,13 +839,18 @@ function toggleTop100() {
 }
 
 
-// ==================== AUTO-REFRESH ON PAGE LOAD ====================
-// If momentum cache is stale, auto-refresh in background
+// ==================== AUTO-LOAD ON PAGE LOAD ====================
+// Check server for cached results; if none, check localStorage
 (function() {
-  if (!isMomentumCacheFresh()) {
-    // Delay to let the page load first
-    setTimeout(function() {
-      buildMomentumUniverse(function() {}).catch(function() {});
-    }, 5000);
-  }
+  setTimeout(async function() {
+    try {
+      var serverData = await getServerScanResults();
+      if (serverData && serverData.momentum_universe) {
+        saveMomentumCache(serverData.momentum_universe);
+        if (serverData.breakout_setups) {
+          try { localStorage.setItem(SCANNER_RESULTS_KEY, JSON.stringify(serverData.breakout_setups)); } catch(e) {}
+        }
+      }
+    } catch(e) {}
+  }, 3000);
 })();

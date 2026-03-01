@@ -39,15 +39,13 @@
         <input type="password" id="settings-alpha-key" placeholder="Enter your Alpha Vantage key..." onblur="saveSettingsKey('alpha')" onkeydown="if(event.key==='Enter')saveSettingsKey('alpha')" style="width:100%;box-sizing:border-box;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-primary);" />
       </div>
 
-      <!-- Anthropic -->
+      <!-- AI Coaching -->
       <div style="margin-bottom:20px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <span style="font-size:14px;font-weight:700;color:var(--text-primary);">Anthropic (Claude AI)</span>
-          <span style="font-size:12px;padding:2px 6px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);font-weight:700;">OPTIONAL</span>
-          <span id="anthropic-key-status" style="font-size:14px;margin-left:auto;"></span>
+          <span style="font-size:14px;font-weight:700;color:var(--text-primary);">AI Analysis & Coaching</span>
+          <span style="font-size:12px;padding:2px 6px;border-radius:3px;background:var(--green-bg);color:var(--green);font-weight:700;">INCLUDED</span>
         </div>
-        <div style="font-size:14px;color:var(--text-muted);margin-bottom:6px;">Powers AI Analysis & Trade Coaching. Get a key at <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--blue);">console.anthropic.com</a></div>
-        <input type="password" id="settings-anthropic-key" placeholder="Enter your Anthropic API key..." onblur="saveSettingsKey('anthropic')" onkeydown="if(event.key==='Enter')saveSettingsKey('anthropic')" style="width:100%;box-sizing:border-box;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-primary);" />
+        <div style="font-size:14px;color:var(--text-muted);line-height:1.6;">AI-powered analysis and trade coaching is built in. No API key needed — it runs through our secure server.</div>
       </div>
 
       <div style="display:flex;gap:10px;margin-top:24px;">
@@ -55,7 +53,7 @@
       </div>
 
       <div style="margin-top:16px;padding:12px;background:var(--bg-secondary);border-radius:8px;font-size:14px;color:var(--text-muted);line-height:1.6;">
-        <strong>🔒 Privacy:</strong> Your API keys are stored only in your browser's localStorage. They are never sent to any server except the official API endpoints (Polygon, Alpha Vantage, Anthropic). MAC Terminal has no backend — everything runs client-side.
+        <strong>🔒 Privacy:</strong> Your Polygon and Alpha Vantage keys are stored in your browser's localStorage. AI features run through our secure server — no AI keys needed on your end.
       </div>
     </div>
   </div>`;
@@ -74,13 +72,11 @@ function loadSettingsKeys() {
   try {
     var pk = localStorage.getItem('mac_polygon_key') || '';
     var ak = localStorage.getItem('mac_alpha_key') || '';
-    var ck = localStorage.getItem('mtp_anthropic_key') || '';
+    var ck = '';
     document.getElementById('settings-polygon-key').value = pk;
     document.getElementById('settings-alpha-key').value = ak;
-    document.getElementById('settings-anthropic-key').value = ck;
     updateKeyStatus('polygon', pk);
     updateKeyStatus('alpha', ak);
-    updateKeyStatus('anthropic', ck);
   } catch(e) {}
 }
 
@@ -90,19 +86,12 @@ function saveSettingsKey(type) {
     var val = document.getElementById(inputId).value.trim();
     if (type === 'polygon') localStorage.setItem('mac_polygon_key', val);
     else if (type === 'alpha') localStorage.setItem('mac_alpha_key', val);
-    else if (type === 'anthropic') {
-      localStorage.setItem('mtp_anthropic_key', val);
-      // Also update the analysis panel key input if it exists
-      var ak = document.getElementById('analysis-api-key');
-      if (ak) ak.value = val;
-    }
     updateKeyStatus(type, val);
     // Cloud sync
     if (typeof dbSaveUserSettings === 'function' && typeof getUser === 'function' && getUser()) {
       var s = {};
       if (type === 'polygon') s.polygon_key = val;
       else if (type === 'alpha') s.alpha_key = val;
-      else if (type === 'anthropic') s.anthropic_key = val;
       dbSaveUserSettings(s).catch(function(e) {});
     }
   } catch(e) {}

@@ -492,7 +492,7 @@ async function renderOverview() {
   try{var themeKey='mac_themes_'+new Date().toISOString().split('T')[0];var themeData=localStorage.getItem(themeKey);if(themeData)cachedThemes=JSON.parse(themeData);}catch(e){}
   if(cachedThemes&&cachedThemes.movers){html+=renderThemesHTML(cachedThemes,cachedThemes.ts);}
   else if(cachedThemes&&cachedThemes.themes){html+=renderLegacyThemesHTML(cachedThemes.themes,cachedThemes.ts);}
-  else{html += '<div style="font-size:14px;color:var(--text-muted);">'+(getAnthropicKey()?'Auto-loading themes...':'Add Anthropic API key (gear icon) to auto-generate themes.')+'</div>';}
+  else{html += '<div style="font-size:14px;color:var(--text-muted);">'+(window._currentSession?'Auto-loading themes...':'Log in to auto-generate themes.')+'</div>';}
   html += '</div></div>';
   html += '</div>'; // close Catalysts+Themes card
 
@@ -539,8 +539,8 @@ async function renderOverview() {
   loadEconCalendar();
   // Load watchlist live prices async
   loadWatchlistPrices();
-  // Auto-generate themes if no cache and API key exists
-  if(!cachedThemes && getAnthropicKey()){
+  // Auto-generate themes if no cache and user is logged in
+  if(!cachedThemes && window._currentSession){
     setTimeout(function(){ generateThemes(); }, 500);
   }
 }
@@ -781,8 +781,7 @@ async function generateThemes() {
   if(!el)return;if(btn){btn.textContent='Scanning...';btn.disabled=true;}
   el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;"><span id="theme-progress">Finding biggest movers...</span></div>';
 
-  var anthropicKey=getAnthropicKey();
-  if(!anthropicKey){el.innerHTML='<div style="padding:12px;text-align:center;color:var(--amber);font-size:12px;">Anthropic API key required. Click gear icon to add.</div>';if(btn){btn.textContent='Scan';btn.disabled=false;}return;}
+  if(!window._currentSession){el.innerHTML='<div style="padding:12px;text-align:center;color:var(--amber);font-size:12px;">Log in to generate themes.</div>';if(btn){btn.textContent='Scan';btn.disabled=false;}return;}
 
   try{
     // Step 1: Scan a universe of ~80 popular tickers for biggest % movers
@@ -836,9 +835,8 @@ async function generateThemes() {
     // Step 5: Ask Claude to explain WHY each moved + industry breakdown
     var prompt='You are a professional market analyst. Here are today\'s biggest stock movers with their associated headlines.\n\nMarket Indices: '+marketCtx+'\n\nBiggest Movers:\n'+moverContext+'\n\nGeneral Headlines:\n'+generalNews.slice(0,8).join('\n')+'\n\nYour task:\n1. For each significant mover, write a 1-2 sentence explanation of WHY it moved (the catalyst). Include its SECTOR and specific INDUSTRY.\n2. Group the day\'s action into 2-3 overarching themes (e.g., "AI Infrastructure Boom", "Earnings Season Winners", "Macro Fears").\n3. Write a 1-sentence market narrative summary.\n4. Create an industry heat check — which specific industries are hot/cold today.\n\nReturn JSON ONLY in this exact format:\n{\n  "narrative": "One sentence market summary",\n  "movers": [\n    {"ticker": "DELL", "pct": 21.8, "direction": "up", "reason": "Crushed Q4 earnings...", "sector": "Technology", "industry": "Hardware/Servers", "tags": ["Earnings", "AI"]},\n    {"ticker": "DUOL", "pct": -14.0, "direction": "down", "reason": "Weak forward guidance...", "sector": "Technology", "industry": "EdTech/SaaS", "tags": ["Earnings"]}\n  ],\n  "themes": [\n    {"title": "AI Infrastructure Spending Accelerates", "description": "DELL and... drove gains as AI capex surges."}\n  ],\n  "industries": [\n    {"name": "Semiconductors", "direction": "up", "tickers": ["NVDA","AMD","AVGO"], "note": "AI chip demand driving broad strength"},\n    {"name": "Cybersecurity", "direction": "down", "tickers": ["CRWD","ZS"], "note": "AI disruption fears weighing"}\n  ]\n}\n\nRules:\n- Only include movers that moved >2% and have a clear catalyst.\n- "direction" must be "up" or "down".\n- "pct" should be the actual percentage change (positive number for up, negative for down).\n- "sector" is the broad GICS sector (Technology, Healthcare, Financials, etc.).\n- "industry" is the specific sub-industry (Semiconductors, Cybersecurity, SaaS, E-commerce, Biotech, etc.).\n- "tags" are short category labels like "Earnings", "M&A", "Guidance", "Macro", "AI", etc.\n- "industries" array: group movers by their specific industry, show direction and brief note. Include 3-6 industries.\n- Keep everything concise and trader-focused. No fluff.\n- Return ONLY the JSON object, no other text.';
 
-    var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2048,messages:[{role:'user',content:prompt}]})});
-    if(!r.ok)throw new Error('API '+r.status);
-    var data=await r.json();var text=data.content&&data.content[0]?data.content[0].text:'';
+    var data=await callAIProxy({model:'claude-sonnet-4-20250514',max_tokens:2048,messages:[{role:'user',content:prompt}]});
+    var text=data.content&&data.content[0]?data.content[0].text:'';
     var jsonMatch=text.match(/\{[\s\S]*\}/);if(!jsonMatch)throw new Error('Parse failed');
     var result=JSON.parse(jsonMatch[0]);
 

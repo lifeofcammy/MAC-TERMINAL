@@ -169,12 +169,11 @@ async function dbLoadRecapData(date) {
 // ==================== USER SETTINGS ====================
 
 async function dbSaveUserSettings(settings) {
-  // settings = { account_size, risk_pct, polygon_key, alpha_key, anthropic_key, preferences }
+  // settings = { account_size, risk_pct, polygon_key, alpha_key, preferences }
   if (settings.account_size !== undefined) try { localStorage.setItem('mcc_account', settings.account_size); } catch(e) {}
   if (settings.risk_pct !== undefined) try { localStorage.setItem('mcc_risk', settings.risk_pct); } catch(e) {}
   if (settings.polygon_key !== undefined) try { localStorage.setItem('mac_polygon_key', settings.polygon_key); } catch(e) {}
   if (settings.alpha_key !== undefined) try { localStorage.setItem('mac_alpha_key', settings.alpha_key); } catch(e) {}
-  if (settings.anthropic_key !== undefined) try { localStorage.setItem('mtp_anthropic_key', settings.anthropic_key); } catch(e) {}
   await dbUpsert('user_settings', settings);
 }
 
@@ -187,7 +186,6 @@ async function dbLoadUserSettings() {
     if (s.risk_pct) try { localStorage.setItem('mcc_risk', s.risk_pct); } catch(e) {}
     if (s.polygon_key) try { localStorage.setItem('mac_polygon_key', s.polygon_key); } catch(e) {}
     if (s.alpha_key) try { localStorage.setItem('mac_alpha_key', s.alpha_key); } catch(e) {}
-    if (s.anthropic_key) try { localStorage.setItem('mtp_anthropic_key', s.anthropic_key); } catch(e) {}
     return s;
   }
   return {
@@ -195,7 +193,6 @@ async function dbLoadUserSettings() {
     risk_pct: localStorage.getItem('mcc_risk') || '',
     polygon_key: localStorage.getItem('mac_polygon_key') || '',
     alpha_key: localStorage.getItem('mac_alpha_key') || '',
-    anthropic_key: localStorage.getItem('mtp_anthropic_key') || ''
   };
 }
 
@@ -226,7 +223,6 @@ async function migrateLocalToCloud() {
     risk_pct: localStorage.getItem('mcc_risk') || '',
     polygon_key: localStorage.getItem('mac_polygon_key') || '',
     alpha_key: localStorage.getItem('mac_alpha_key') || '',
-    anthropic_key: localStorage.getItem('mtp_anthropic_key') || ''
   });
 
   // Watchlist
