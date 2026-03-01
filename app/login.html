@@ -447,7 +447,7 @@
         showMsg(friendlyError(error));
         setLoading(false);
       } else {
-        showMsg('Account created! Check your email for a confirmation link before signing in.', 'success');
+        showMsg('Account created! A verification email has been sent — check your inbox (and spam/junk folder) for a confirmation link before signing in.', 'success');
         setLoading(false);
         // Switch back to sign-in mode after signup
         if (mode !== 'signin') toggleMode();
@@ -462,7 +462,7 @@
       return 'Incorrect email or password. Please try again.';
     }
     if (msg.includes('email not confirmed')) {
-      return 'Please confirm your email address before signing in.';
+      return 'Please confirm your email address before signing in. Check your inbox and spam/junk folder for the verification link.';
     }
     if (msg.includes('user already registered')) {
       return 'An account with that email already exists. Try signing in.';
