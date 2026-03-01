@@ -918,13 +918,14 @@ function renderAutoEconCal(el, grouped, ts) {
   var cols=sortedDays.length;
   html += '<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:8px;">';
 
-  sortedDays.forEach(function(day){
+  sortedDays.forEach(function(day,idx){
     var dt=new Date(day+'T12:00:00');
     var dayLabel=dayNames[dt.getDay()]+' '+dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});
     var isToday=day===today;
+    var altBg=idx%2===0?'var(--bg-secondary)':'var(--bg-card)';
 
-    html += '<div style="min-width:0;'+(isToday?'background:var(--bg-secondary);border-radius:6px;padding:8px;border:1px solid var(--border);':'padding:8px 4px;')+'">';
-    html += '<div style="font-size:12px;font-weight:700;color:'+(isToday?'var(--blue)':'var(--text-muted)')+';text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;text-align:center;white-space:nowrap;">'+(isToday?'\u25CF ':'')+dayLabel+(isToday?' (Today)':'')+'</div>';
+    html += '<div style="min-width:0;background:'+(isToday?'var(--blue-bg)':altBg)+';border-radius:8px;padding:10px 8px;'+(isToday?'border:1px solid var(--blue);':'border:1px solid var(--border);')+'text-align:center;">';
+    html += '<div style="font-size:12px;font-weight:700;color:'+(isToday?'var(--blue)':'var(--text-muted)')+';text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;white-space:nowrap;">'+(isToday?'\u25CF ':'')+dayLabel+(isToday?' (Today)':'')+'</div>';
 
     grouped[day].forEach(function(ev){
       var isHigh=ev.impact==='High';
@@ -934,19 +935,20 @@ function renderAutoEconCal(el, grouped, ts) {
         try{var evDate=new Date(ev.date);if(!isNaN(evDate.getTime())){time=evDate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});}}catch(e){}
       }
 
-      html += '<div style="display:flex;gap:4px;align-items:flex-start;margin-bottom:4px;font-size:12px;">';
-      html += '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:'+dot+';flex-shrink:0;margin-top:3px;"></span>';
-      html += '<div style="min-width:0;">';
-      if(time) html += '<div style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:12px;white-space:nowrap;">'+time+'</div>';
+      html += '<div style="margin-bottom:8px;">';
+      html += '<div style="display:flex;align-items:center;justify-content:center;gap:4px;">';
+      html += '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:'+dot+';flex-shrink:0;"></span>';
       html += '<div style="color:var(--text-primary);font-weight:600;font-size:14px;line-height:1.3;">'+((ev.title||'').replace(/</g,'&lt;'))+'</div>';
+      html += '</div>';
+      if(time) html += '<div style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:12px;margin-top:2px;">'+time+' ET</div>';
 
       // Forecast / Previous
       var details=[];
       if(ev.forecast!==undefined&&ev.forecast!==null&&ev.forecast!=='') details.push('F: '+ev.forecast);
       if(ev.previous!==undefined&&ev.previous!==null&&ev.previous!=='') details.push('P: '+ev.previous);
-      if(details.length>0) html += '<div style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:12px;">'+details.join(' \xb7 ')+'</div>';
+      if(details.length>0) html += '<div style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:12px;margin-top:1px;">'+details.join(' \xb7 ')+'</div>';
 
-      html += '</div></div>';
+      html += '</div>';
     });
     html += '</div>';
   });
