@@ -766,17 +766,21 @@ async function runFullScanUI() {
       return;
     }
     
-    // Step 2: No server cache — run client-side scan directly (faster than waiting for server)
+    // Step 2: No server cache — check local cache before rebuilding
     // Also trigger server scan in background for next time
     triggerServerScan().catch(function() {});
     
-    updateProgress('Scanning...', 0);
-    await buildMomentumUniverse(function(msg) {
-      // Parse progress from status messages like "Scoring... 500/3024 (17%)"
-      var match = msg.match(/(\d+)%/);
-      var pct = match ? Math.round(parseInt(match[1]) * 0.7) : undefined; // Universe building = 0-70%
-      updateProgress(msg, pct);
-    });
+    if (!isMomentumCacheFresh()) {
+      updateProgress('Building momentum universe...', 0);
+      await buildMomentumUniverse(function(msg) {
+        // Parse progress from status messages like "Scoring... 500/3024 (17%)"
+        var match = msg.match(/(\d+)%/);
+        var pct = match ? Math.round(parseInt(match[1]) * 0.7) : undefined; // Universe building = 0-70%
+        updateProgress(msg, pct);
+      });
+    } else {
+      updateProgress('Universe cached. Scanning for setups...', 70);
+    }
 
     // Run breakout scan
     updateProgress('Scanning for breakout setups...', 72);
