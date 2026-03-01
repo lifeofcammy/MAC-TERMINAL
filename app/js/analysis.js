@@ -347,7 +347,7 @@ function renderRecentEntries(parentEl) {
   html += '<div class="section-title" style="margin:0;"><span class="dot" style="background:var(--blue)"></span> Recent Analysis Entries</div>';
   html += '<div style="display:flex;gap:6px;">';
   if(missingCount > 0) {
-    html += '<button onclick="backfillAnalysis(7)" id="backfill-btn" class="refresh-btn" style="padding:4px 10px;">Fill Missing ('+missingCount+')</button>';
+    html += '<button onclick="backfillAnalysis(7)" id="backfill-btn" class="refresh-btn" style="padding:4px 10px;">Scan</button>';
   }
   html += '</div></div>';
   html += '<div id="backfill-status" style="font-size:14px;color:var(--text-muted);margin-bottom:6px;"></div>';
