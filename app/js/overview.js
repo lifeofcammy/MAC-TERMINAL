@@ -17,7 +17,7 @@ async function renderOverview() {
   var ts = getTimestamp();
   var live = isMarketOpen();
 
-  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:12px;">Loading Overview...</div>';
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:14px;">Loading Overview...</div>';
 
   // ── TICKERS TO FETCH ──
   var indexTickers = ['SPY','QQQ','IWM','DIA'];
@@ -47,7 +47,7 @@ async function renderOverview() {
     // News
     try { newsArticles = await getPolygonNews(null, 25); } catch(e) {}
   } catch(e) {
-    container.innerHTML = '<div class="card" style="text-align:center;color:var(--red);padding:30px;">Failed to load data: '+e.message+'<br><span style="font-size:10px;color:var(--text-muted);">Check your Polygon API key (gear icon).</span></div>';
+    container.innerHTML = '<div class="card" style="text-align:center;color:var(--red);padding:30px;">Failed to load data: '+e.message+'<br><span style="font-size:12px;color:var(--text-muted);">Check your Polygon API key (gear icon).</span></div>';
     return;
   }
 
@@ -226,13 +226,13 @@ async function renderOverview() {
 
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;border-left:3px solid var(--amber);border-radius:14px;">';
   html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;user-select:none;">';
-  html += '<div style="display:flex;align-items:center;justify-content:center;gap:8px;"><span style="font-size:16px;font-weight:800;">Morning Mindset</span></div>';
-  html += '<span id="mindset-arrow" style="font-size:10px;color:var(--text-muted);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
+  html += '<div style="display:flex;align-items:center;justify-content:center;gap:8px;"><span style="font-size:18px;font-weight:800;">Morning Mindset</span></div>';
+  html += '<span id="mindset-arrow" style="font-size:12px;color:var(--text-muted);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
   html += '</div>';
   // Today's Focus — ALWAYS visible
   html += '<div style="padding:0 16px 10px;"><div style="background:var(--bg-secondary);border:1px solid rgba(230,138,0,0.2);border-radius:6px;padding:10px 14px;">';
-  html += '<div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;">Today\'s Focus</div>';
-  html += '<div style="font-size:12px;font-weight:700;color:var(--text-primary);line-height:1.4;">'+dailyFocus+'</div>';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;">Today\'s Focus</div>';
+  html += '<div style="font-size:14px;font-weight:700;color:var(--text-primary);line-height:1.4;">'+dailyFocus+'</div>';
   html += '</div></div>';
   // Full rules — collapsible
   html += '<div id="mindset-body" style="'+(mindsetCollapsed?'display:none;':'')+'padding:0 16px 12px;">';
@@ -240,8 +240,8 @@ async function renderOverview() {
   mindsetRules.forEach(function(rule,i) {
     var isToday = i===todayIdx;
     html += '<div style="break-inside:avoid;padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:flex-start;'+(isToday?'background:var(--amber-bg);margin:0 -4px;padding:4px;border-radius:4px;':'')+'">';
-    html += '<span style="font-size:10px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;min-width:18px;">'+(i+1)+'.</span>';
-    html += '<span style="font-size:10px;color:'+(isToday?'var(--amber)':'var(--text-primary)')+';line-height:1.4;font-weight:'+(isToday?'700':'500')+';">'+rule+'</span>';
+    html += '<span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;min-width:18px;">'+(i+1)+'.</span>';
+    html += '<span style="font-size:12px;color:'+(isToday?'var(--amber)':'var(--text-primary)')+';line-height:1.4;font-weight:'+(isToday?'700':'500')+';">'+rule+'</span>';
     html += '</div>';
   });
   html += '</div></div></div>';
@@ -249,25 +249,25 @@ async function renderOverview() {
   // ════ 2. WATCHLIST (right under Morning Mindset) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:16px;font-weight:700;color:var(--text-primary);">Watchlist</div>';
+  html += '<div style="font-size:18px;font-weight:700;color:var(--text-primary);">Watchlist</div>';
   var wList = getWatchlist();
   html += '<div style="display:flex;align-items:center;gap:8px;">';
-  html += '<span style="font-size:10px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
-  if(wList.length>0) html += '<button onclick="clearWatchlist();renderOverview();" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:10px;color:var(--text-muted);cursor:pointer;">Clear All</button>';
+  html += '<span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
+  if(wList.length>0) html += '<button onclick="clearWatchlist();renderOverview();" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:12px;color:var(--text-muted);cursor:pointer;">Clear All</button>';
   html += '</div>';
   html += '</div>';
   // Add form
   html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-wrap:wrap;">';
-  html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
-  html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:10px;font-weight:600;color:var(--text-primary);font-family:\'Inter\',sans-serif;">';
+  html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
+  html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:12px;font-weight:600;color:var(--text-primary);font-family:\'Inter\',sans-serif;">';
   html += '<option value="long">▲ Long</option><option value="short">▼ Short</option><option value="watch">● Watch</option></select>';
-  html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="flex:1;min-width:120px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:10px;color:var(--text-primary);" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
-  html += '<button onclick="addToWatchlist();renderOverview();" style="background:var(--blue);color:white;border:none;border-radius:5px;padding:6px 14px;font-size:10px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;">+ Add</button>';
+  html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="flex:1;min-width:120px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:12px;color:var(--text-primary);" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
+  html += '<button onclick="addToWatchlist();renderOverview();" style="background:var(--blue);color:white;border:none;border-radius:5px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;">+ Add</button>';
   html += '</div>';
   // Watchlist items
   html += '<div id="watchlist-content" style="padding:10px 16px;">';
   if(wList.length===0) {
-    html += '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:10px;">No tickers. Add symbols above to track them.</div>';
+    html += '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:12px;">No tickers. Add symbols above to track them.</div>';
   } else {
     html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">';
     // We'll load data async after render
@@ -277,11 +277,11 @@ async function renderOverview() {
       html += '<div class="wl-card-'+item.ticker+'" style="box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px;border-left:3px solid '+biasColor+';position:relative;">';
       html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');renderOverview();" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">×</button>';
       html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
-      html += '<span style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">'+item.ticker+'</span>';
-      html += '<span style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
-      html += '<span class="wl-price-'+item.ticker+'" style="font-size:10px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);">Loading...</span>';
+      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">'+item.ticker+'</span>';
+      html += '<span style="font-size:12px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
+      html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);">Loading...</span>';
       html += '</div>';
-      if(item.note) html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.3;font-style:italic;">'+item.note.replace(/</g,'&lt;')+'</div>';
+      if(item.note) html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.3;font-style:italic;">'+item.note.replace(/</g,'&lt;')+'</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -366,14 +366,14 @@ async function renderOverview() {
 
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:16px;font-weight:700;color:var(--text-primary);">Market Regime</div>';
+  html += '<div style="font-size:18px;font-weight:700;color:var(--text-primary);">Market Regime</div>';
   html += '</div>';
   html += '<div style="background:'+regimeBg+';padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;">';
   html += '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">';
   html += '<span style="font-size:18px;color:'+regimeColor+';">'+regimeIcon+'</span>';
   html += '<div style="min-width:0;">';
-  html += '<div style="font-size:12px;font-weight:800;color:'+regimeColor+';">'+regimeLabel+'</div>';
-  html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
+  html += '<div style="font-size:14px;font-weight:800;color:'+regimeColor+';">'+regimeLabel+'</div>';
+  html += '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
   // Show all 4 indexes' SMA status
   var smaIndexes = [
     {name:'SPY',s10:spySma10,s20:spySma20,a10:spyAbove10,a20:spyAbove20},
@@ -390,7 +390,7 @@ async function renderOverview() {
       var neither = !idx.a10 && !idx.a20;
       var smaColor = both ? 'var(--green)' : neither ? 'var(--red)' : 'var(--amber)';
       var smaLabel = both ? 'Above Both' : neither ? 'Below Both' : 'Mixed';
-      html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+smaColor+'15;color:'+smaColor+';font-family:\'JetBrains Mono\',monospace;">'+idx.name+' '+smaLabel+'</span>';
+      html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+smaColor+'15;color:'+smaColor+';font-family:\'JetBrains Mono\',monospace;">'+idx.name+' '+smaLabel+'</span>';
     });
     html += '</div>';
   }
@@ -402,8 +402,8 @@ async function renderOverview() {
   var dataFreshness = getDataFreshnessLabel();
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:16px;font-weight:700;color:var(--text-primary);">Market Snapshot</div>';
-  html += '<span style="font-size:10px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
+  html += '<div style="font-size:18px;font-weight:700;color:var(--text-primary);">Market Snapshot</div>';
+  html += '<span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
   html += '</div>';
   html += '<div style="padding:12px 16px;">';
   html += '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">';
@@ -422,9 +422,9 @@ async function renderOverview() {
     // VIX: invert color logic (VIX up = bad)
     if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';bg=d.pct<=0?'rgba(16,185,129,0.04)':'rgba(239,68,68,0.04)';borderC=d.pct<=0?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)';}
     html += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:12px;padding:12px 14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);">';
-    html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">'+idx.label+'</div>';
-    html += '<div style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">'+(d.price?'$'+price(d.price):'—')+'</div>';
-    html += '<div style="font-size:10px;font-weight:700;color:'+color+';margin-top:2px;">'+pct(d.pct)+'</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">'+idx.label+'</div>';
+    html += '<div style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">'+(d.price?'$'+price(d.price):'—')+'</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:'+color+';margin-top:2px;">'+pct(d.pct)+'</div>';
     html += '</div>';
   });
   html += '</div>';
@@ -439,15 +439,15 @@ async function renderOverview() {
     var adFlatW = 100-adGreenW-adRedW;
     html += '<div class="card" style="padding:16px 20px;margin-bottom:14px;">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
-    html += '<div style="font-size:16px;font-weight:700;color:var(--text-primary);">Stock Breadth</div>';
-    html += '<div style="font-size:10px;color:var(--text-muted);">'+adStocksUp+' advancing · '+adStocksDown+' declining'+(adStocksFlat>0?' · '+adStocksFlat+' flat':'')+'</div>';
+    html += '<div style="font-size:18px;font-weight:700;color:var(--text-primary);">Stock Breadth</div>';
+    html += '<div style="font-size:12px;color:var(--text-muted);">'+adStocksUp+' advancing · '+adStocksDown+' declining'+(adStocksFlat>0?' · '+adStocksFlat+' flat':'')+'</div>';
     html += '</div>';
     html += '<div style="display:flex;height:20px;border-radius:6px;overflow:hidden;background:var(--bg-secondary);">';
-    if(adGreenW>0) html += '<div style="width:'+adGreenW+'%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;">'+adStocksUp+'</div>';
-    if(adFlatW>0) html += '<div style="width:'+adFlatW+'%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text-muted);">'+adStocksFlat+'</div>';
-    if(adRedW>0) html += '<div style="width:'+adRedW+'%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;">'+adStocksDown+'</div>';
+    if(adGreenW>0) html += '<div style="width:'+adGreenW+'%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;">'+adStocksUp+'</div>';
+    if(adFlatW>0) html += '<div style="width:'+adFlatW+'%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-muted);">'+adStocksFlat+'</div>';
+    if(adRedW>0) html += '<div style="width:'+adRedW+'%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;">'+adStocksDown+'</div>';
     html += '</div>';
-    html += '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--text-muted);">';
+    html += '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:12px;color:var(--text-muted);">';
     html += '<span>Breadth: '+adBreadthPct+'%</span>';
     html += '<span>'+dataFreshness+'</span>';
     html += '</div>';
@@ -457,17 +457,17 @@ async function renderOverview() {
   // ════ 6. TODAY'S CATALYSTS + THEMES ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:16px;font-weight:700;color:var(--text-primary);">Today\'s Catalysts & Themes</div>';
-  html += '<div style="font-size:10px;color:var(--text-muted);">'+tsLabel(ts)+'</div>';
+  html += '<div style="font-size:18px;font-weight:700;color:var(--text-primary);">Today\'s Catalysts & Themes</div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);">'+tsLabel(ts)+'</div>';
   html += '</div>';
   // Econ calendar
   html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);">';
-  html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Economic Calendar</div>';
-  html += '<div id="econ-cal-grid" style="font-size:10px;color:var(--text-muted);">Loading...</div>';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Economic Calendar</div>';
+  html += '<div id="econ-cal-grid" style="font-size:12px;color:var(--text-muted);">Loading...</div>';
   html += '</div>';
   // Top news headlines
   html += '<div style="padding:10px 16px;">';
-  html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Top Headlines</div>';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Top Headlines</div>';
   if(newsArticles.length>0) {
     var topNews = newsArticles.slice(0,5);
     html += '<div style="display:grid;gap:4px;">';
@@ -475,30 +475,30 @@ async function renderOverview() {
       var pubTime = new Date(article.published_utc).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
       var tickers = (article.tickers||[]).slice(0,3).join(', ');
       html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px solid var(--border);">';
-      html += '<span style="font-size:10px;color:var(--text-muted);white-space:nowrap;padding-top:2px;">'+pubTime+'</span>';
+      html += '<span style="font-size:12px;color:var(--text-muted);white-space:nowrap;padding-top:2px;">'+pubTime+'</span>';
       html += '<div style="flex:1;min-width:0;">';
-      html += '<a href="'+(article.article_url||'#')+'" target="_blank" style="font-size:10px;font-weight:600;color:var(--text-primary);text-decoration:none;line-height:1.3;">'+(article.title||'').replace(/</g,'&lt;')+'</a>';
-      if(tickers) html += ' <span style="font-size:10px;color:var(--blue);font-weight:600;">'+tickers+'</span>';
+      html += '<a href="'+(article.article_url||'#')+'" target="_blank" style="font-size:12px;font-weight:600;color:var(--text-primary);text-decoration:none;line-height:1.3;">'+(article.title||'').replace(/</g,'&lt;')+'</a>';
+      if(tickers) html += ' <span style="font-size:12px;color:var(--blue);font-weight:600;">'+tickers+'</span>';
       html += '</div></div>';
     });
     html += '</div>';
   } else {
-    html += '<div style="font-size:10px;color:var(--text-muted);">No news available.</div>';
+    html += '<div style="font-size:12px;color:var(--text-muted);">No news available.</div>';
   }
   html += '</div>';
 
   // ════ TODAY'S THEMES (inside Catalysts card) ════
   html += '<div style="padding:10px 16px;border-top:1px solid var(--border);">';
   html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
-  html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Today\'s Themes</div>';
-  html += '<button id="generate-themes-btn" onclick="generateThemes()" style="padding:4px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(37,99,235,0.08);color:var(--blue);cursor:pointer;font-size:10px;font-weight:700;font-family:\'Inter\',sans-serif;">Generate</button>';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Today\'s Themes</div>';
+  html += '<button id="generate-themes-btn" onclick="generateThemes()" style="padding:4px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(37,99,235,0.08);color:var(--blue);cursor:pointer;font-size:12px;font-weight:700;font-family:\'Inter\',sans-serif;">Generate</button>';
   html += '</div>';
   html += '<div id="themes-content">';
   var cachedThemes=null;
   try{var themeKey='mac_themes_'+new Date().toISOString().split('T')[0];var themeData=localStorage.getItem(themeKey);if(themeData)cachedThemes=JSON.parse(themeData);}catch(e){}
   if(cachedThemes&&cachedThemes.movers){html+=renderThemesHTML(cachedThemes,cachedThemes.ts);}
   else if(cachedThemes&&cachedThemes.themes){html+=renderLegacyThemesHTML(cachedThemes.themes,cachedThemes.ts);}
-  else{html += '<div style="font-size:10px;color:var(--text-muted);">'+(getAnthropicKey()?'Auto-loading themes...':'Add Anthropic API key (gear icon) to auto-generate themes.')+'</div>';}
+  else{html += '<div style="font-size:12px;color:var(--text-muted);">'+(getAnthropicKey()?'Auto-loading themes...':'Add Anthropic API key (gear icon) to auto-generate themes.')+'</div>';}
   html += '</div></div>';
   html += '</div>'; // close Catalysts+Themes card
 
@@ -506,8 +506,8 @@ async function renderOverview() {
   var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')==='true';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleHeatmap()" style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
-  html += '<div style="font-size:16px;font-weight:700;color:var(--text-primary);">Sector Heatmap</div>';
-  html += '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:10px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:10px;color:var(--text-muted);">'+(heatmapCollapsed?'▶':'▼')+'</span></div>';
+  html += '<div style="font-size:18px;font-weight:700;color:var(--text-primary);">Sector Heatmap</div>';
+  html += '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'▶':'▼')+'</span></div>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
   html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:12px 14px;">';
@@ -520,10 +520,10 @@ async function renderOverview() {
     else if(sec.dayChg>-1){chgColor='#fff';chgBg='#EF4444';}
     else{chgColor='#fff';chgBg='#DC2626';}
     html += '<div style="background:'+chgBg+';border-radius:6px;padding:10px;text-align:center;">';
-    html += '<div style="font-size:10px;font-weight:800;color:'+chgColor+';">'+sec.etf+'</div>';
-    html += '<div style="font-size:10px;color:'+chgColor+';opacity:0.8;">'+sec.name+'</div>';
-    html += '<div style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:'+chgColor+';margin-top:3px;">'+pct(sec.dayChg)+'</div>';
-    html += '<div style="font-size:10px;color:'+chgColor+';opacity:0.7;margin-top:1px;">Wk: '+pct(sec.weekPerf)+'</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:'+chgColor+';">'+sec.etf+'</div>';
+    html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.8;">'+sec.name+'</div>';
+    html += '<div style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:'+chgColor+';margin-top:3px;">'+pct(sec.dayChg)+'</div>';
+    html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.7;margin-top:1px;">Wk: '+pct(sec.weekPerf)+'</div>';
     html += '</div>';
   });
   html += '</div></div></div>';
@@ -531,14 +531,14 @@ async function renderOverview() {
   // ════ 8. TOP IDEAS (from scanners) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:16px;font-weight:700;color:var(--text-primary);">Top Ideas</div>';
-  html += '<button onclick="runQuickScan()" id="quick-scan-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--green);background:rgba(16,185,129,0.08);color:var(--green);cursor:pointer;font-size:10px;font-weight:700;font-family:\'Inter\',sans-serif;">Quick Scan</button>';
+  html += '<div style="font-size:18px;font-weight:700;color:var(--text-primary);">Top Ideas</div>';
+  html += '<button onclick="runQuickScan()" id="quick-scan-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--green);background:rgba(16,185,129,0.08);color:var(--green);cursor:pointer;font-size:12px;font-weight:700;font-family:\'Inter\',sans-serif;">Quick Scan</button>';
   html += '</div>';
   html += '<div id="top-ideas-content" style="padding:12px 16px;">';
   var cachedIdeas=null;
   try{var ideaKey='mac_top_ideas_'+new Date().toISOString().split('T')[0];var ideaData=localStorage.getItem(ideaKey);if(ideaData)cachedIdeas=JSON.parse(ideaData);}catch(e){}
   if(cachedIdeas&&cachedIdeas.ideas&&cachedIdeas.ideas.length>0){html+=renderTopIdeasHTML(cachedIdeas.ideas,cachedIdeas.ts);}
-  else{html += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:10px;">Click "Quick Scan" to find today\'s top setups.</div>';}
+  else{html += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">Click "Quick Scan" to find today\'s top setups.</div>';}
   html += '</div></div>';
 
   container.innerHTML = html;
@@ -567,7 +567,7 @@ async function loadWatchlistPrices() {
       var prev = s.prevDay ? s.prevDay.c : p;
       var pctVal = prev>0 ? ((p-prev)/prev)*100 : 0;
       var color = pctVal>=0 ? 'var(--green)' : 'var(--red)';
-      el.innerHTML = '$'+price(p)+' <span style="color:'+color+';font-size:10px;">'+pct(pctVal)+'</span>';
+      el.innerHTML = '$'+price(p)+' <span style="color:'+color+';font-size:12px;">'+pct(pctVal)+'</span>';
       el.style.color = 'var(--text-primary)';
     });
   } catch(e){}
@@ -600,16 +600,16 @@ function toggleMindset() {
 // ==================== RENDER THEMES HTML (new format: movers + why + industries) ====================
 function renderThemesHTML(data, cacheTs) {
   var html='';var time=new Date(cacheTs).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
-  html += '<div style="font-size:10px;color:var(--text-muted);margin-bottom:10px;">Updated '+time+' · <a href="#" onclick="localStorage.removeItem(\'mac_themes_\'+new Date().toISOString().split(\'T\')[0]);generateThemes();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Updated '+time+' · <a href="#" onclick="localStorage.removeItem(\'mac_themes_\'+new Date().toISOString().split(\'T\')[0]);generateThemes();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
 
   // Market narrative (if present)
   if(data.narrative){
-    html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:6px;border-left:3px solid var(--blue);">' + data.narrative.replace(/</g,'&lt;') + '</div>';
+    html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:6px;border-left:3px solid var(--blue);">' + data.narrative.replace(/</g,'&lt;') + '</div>';
   }
 
   // ── INDUSTRY HEAT CHECK (show first for quick scan) ──
   if(data.industries && data.industries.length>0){
-    html += '<div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Industry Heat Check</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Industry Heat Check</div>';
     html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">';
     data.industries.forEach(function(ind){
       var isUp=ind.direction==='up';
@@ -618,15 +618,15 @@ function renderThemesHTML(data, cacheTs) {
       var arrow=isUp?'▲':'▼';
       html += '<div style="background:'+bg+';border:1px solid '+c+'20;border-radius:8px;padding:8px 12px;min-width:140px;flex:1;max-width:220px;">';
       html += '<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">';
-      html += '<span style="font-size:10px;color:'+c+';font-weight:800;">'+arrow+'</span>';
-      html += '<span style="font-size:10px;font-weight:800;color:var(--text-primary);">'+((ind.name||'').replace(/</g,'&lt;'))+'</span>';
+      html += '<span style="font-size:12px;color:'+c+';font-weight:800;">'+arrow+'</span>';
+      html += '<span style="font-size:12px;font-weight:800;color:var(--text-primary);">'+((ind.name||'').replace(/</g,'&lt;'))+'</span>';
       html += '</div>';
       if(ind.tickers && ind.tickers.length>0){
         html += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:3px;">';
-        ind.tickers.forEach(function(t){html += '<span style="font-size:10px;font-weight:700;padding:1px 4px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+t+'</span>';});
+        ind.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:1px 4px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+t+'</span>';});
         html += '</div>';
       }
-      if(ind.note) html += '<div style="font-size:10px;color:var(--text-muted);line-height:1.3;">'+((ind.note||'').replace(/</g,'&lt;'))+'</div>';
+      if(ind.note) html += '<div style="font-size:12px;color:var(--text-muted);line-height:1.3;">'+((ind.note||'').replace(/</g,'&lt;'))+'</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -639,26 +639,26 @@ function renderThemesHTML(data, cacheTs) {
   // Helper: render sector/industry badge
   function sectorBadge(m){
     var s='';
-    if(m.industry) s += '<span style="font-size:10px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(124,58,237,0.08);color:var(--purple);margin-left:auto;">' + (m.industry||'').replace(/</g,'&lt;') + '</span>';
-    else if(m.sector) s += '<span style="font-size:10px;font-weight:600;padding:1px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;">' + (m.sector||'').replace(/</g,'&lt;') + '</span>';
+    if(m.industry) s += '<span style="font-size:12px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(124,58,237,0.08);color:var(--purple);margin-left:auto;">' + (m.industry||'').replace(/</g,'&lt;') + '</span>';
+    else if(m.sector) s += '<span style="font-size:12px;font-weight:600;padding:1px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;">' + (m.sector||'').replace(/</g,'&lt;') + '</span>';
     return s;
   }
 
   // Winners
   if(winners.length>0){
-    html += '<div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Winners</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Winners</div>';
     html += '<div style="display:grid;gap:6px;margin-bottom:12px;">';
     winners.forEach(function(m){
       html += '<div style="background:rgba(16,185,129,0.04);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);border-radius:12px;padding:12px 14px;">';
       html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
-      html += '<span style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + m.ticker + '</span>';
-      html += '<span style="font-size:12px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">+' + Math.abs(m.pct).toFixed(1) + '%</span>';
+      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + m.ticker + '</span>';
+      html += '<span style="font-size:14px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">+' + Math.abs(m.pct).toFixed(1) + '%</span>';
       html += sectorBadge(m);
       html += '</div>';
-      html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.5;">' + (m.reason||'').replace(/</g,'&lt;') + '</div>';
+      html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">' + (m.reason||'').replace(/</g,'&lt;') + '</div>';
       if(m.tags && m.tags.length>0){
         html += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;">';
-        m.tags.forEach(function(tag){html += '<span style="font-size:10px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(16,185,129,0.1);color:var(--green);">' + tag + '</span>';});
+        m.tags.forEach(function(tag){html += '<span style="font-size:12px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(16,185,129,0.1);color:var(--green);">' + tag + '</span>';});
         html += '</div>';
       }
       html += '</div>';
@@ -668,19 +668,19 @@ function renderThemesHTML(data, cacheTs) {
 
   // Losers
   if(losers.length>0){
-    html += '<div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Losers</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Losers</div>';
     html += '<div style="display:grid;gap:6px;margin-bottom:8px;">';
     losers.forEach(function(m){
       html += '<div style="background:rgba(239,68,68,0.04);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);border-radius:12px;padding:12px 14px;">';
       html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
-      html += '<span style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + m.ticker + '</span>';
-      html += '<span style="font-size:12px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + (m.pct<0?'':'-') + Math.abs(m.pct).toFixed(1) + '%</span>';
+      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + m.ticker + '</span>';
+      html += '<span style="font-size:14px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + (m.pct<0?'':'-') + Math.abs(m.pct).toFixed(1) + '%</span>';
       html += sectorBadge(m);
       html += '</div>';
-      html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.5;">' + (m.reason||'').replace(/</g,'&lt;') + '</div>';
+      html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">' + (m.reason||'').replace(/</g,'&lt;') + '</div>';
       if(m.tags && m.tags.length>0){
         html += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;">';
-        m.tags.forEach(function(tag){html += '<span style="font-size:10px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(239,68,68,0.08);color:var(--red);">' + tag + '</span>';});
+        m.tags.forEach(function(tag){html += '<span style="font-size:12px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(239,68,68,0.08);color:var(--red);">' + tag + '</span>';});
         html += '</div>';
       }
       html += '</div>';
@@ -690,14 +690,14 @@ function renderThemesHTML(data, cacheTs) {
 
   // Theme groupings (if AI grouped them)
   if(data.themes && data.themes.length>0){
-    html += '<div style="font-size:10px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;margin-top:4px;">Key Themes</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;margin-top:4px;">Key Themes</div>';
     html += '<div style="display:grid;gap:6px;">';
     data.themes.forEach(function(theme,i){
       var colors=['var(--blue)','var(--purple)','var(--cyan)'];var bgs=['rgba(37,99,235,0.05)','rgba(124,58,237,0.05)','rgba(8,145,178,0.05)'];
       var c=colors[i%colors.length],bg=bgs[i%bgs.length];
       html += '<div style="background:'+bg+';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);border-radius:10px;padding:10px 14px;border-left:3px solid '+c+'">';
-      html += '<div style="font-size:10px;font-weight:800;color:var(--text-primary);">'+(theme.title||'').replace(/</g,'&lt;')+'</div>';
-      html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.4;margin-top:2px;">'+(theme.description||'').replace(/</g,'&lt;')+'</div>';
+      html += '<div style="font-size:12px;font-weight:800;color:var(--text-primary);">'+(theme.title||'').replace(/</g,'&lt;')+'</div>';
+      html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.4;margin-top:2px;">'+(theme.description||'').replace(/</g,'&lt;')+'</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -708,17 +708,17 @@ function renderThemesHTML(data, cacheTs) {
 // Legacy renderer (for old cached data that has themes array only)
 function renderLegacyThemesHTML(themes, cacheTs) {
   var html='';var time=new Date(cacheTs).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
-  html += '<div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">Generated '+time+' · <a href="#" onclick="localStorage.removeItem(\'mac_themes_\'+new Date().toISOString().split(\'T\')[0]);renderOverview();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Generated '+time+' · <a href="#" onclick="localStorage.removeItem(\'mac_themes_\'+new Date().toISOString().split(\'T\')[0]);renderOverview();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
   html += '<div style="display:grid;gap:8px;">';
   themes.forEach(function(theme,i){
     var colors=['var(--blue)','var(--purple)','var(--cyan)'];var bgs=['rgba(37,99,235,0.05)','rgba(124,58,237,0.05)','rgba(8,145,178,0.05)'];
     var c=colors[i%colors.length],bg=bgs[i%bgs.length];
     html += '<div style="background:'+bg+';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);border-radius:12px;padding:12px 14px;border-left:3px solid '+c+'">';
-    html += '<div style="font-size:12px;font-weight:800;color:var(--text-primary);margin-bottom:3px;">'+(theme.title||'Theme '+(i+1)).replace(/</g,'&lt;')+'</div>';
-    html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.5;margin-bottom:5px;">'+(theme.description||'').replace(/</g,'&lt;')+'</div>';
+    html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);margin-bottom:3px;">'+(theme.title||'Theme '+(i+1)).replace(/</g,'&lt;')+'</div>';
+    html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:5px;">'+(theme.description||'').replace(/</g,'&lt;')+'</div>';
     if(theme.tickers&&theme.tickers.length>0){
       html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
-      theme.tickers.forEach(function(t){html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+c+'15;color:'+c+';font-family:\'JetBrains Mono\',monospace;">'+t+'</span>';});
+      theme.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+c+'15;color:'+c+';font-family:\'JetBrains Mono\',monospace;">'+t+'</span>';});
       html += '</div>';
     }
     html += '</div>';
@@ -729,7 +729,7 @@ function renderLegacyThemesHTML(themes, cacheTs) {
 // ==================== RENDER TOP IDEAS HTML ====================
 function renderTopIdeasHTML(ideas, cacheTs) {
   var html='';var time=new Date(cacheTs).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
-  html += '<div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">Last scan: '+time+'</div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Last scan: '+time+'</div>';
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">';
   ideas.forEach(function(idea){
     var sc=idea.score>=80?'var(--green)':idea.score>=60?'var(--blue)':idea.score>=40?'var(--amber)':'var(--text-muted)';
@@ -737,15 +737,15 @@ function renderTopIdeasHTML(ideas, cacheTs) {
     html += '<div style="background:'+sbg+';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px 16px;border-left:3px solid '+sc+'">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
     html += '<div style="display:flex;align-items:center;gap:6px;">';
-    html += '<span style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">'+idea.ticker+'</span>';
-    html += '<span style="font-size:10px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-secondary);">$'+(idea.price?idea.price.toFixed(2):'—')+'</span>';
+    html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">'+idea.ticker+'</span>';
+    html += '<span style="font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-secondary);">$'+(idea.price?idea.price.toFixed(2):'—')+'</span>';
     html += '</div>';
-    html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid '+sc+';font-size:10px;font-weight:900;color:'+sc+';font-family:\'JetBrains Mono\',monospace;">'+idea.score+'</div>';
+    html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid '+sc+';font-size:12px;font-weight:900;color:'+sc+';font-family:\'JetBrains Mono\',monospace;">'+idea.score+'</div>';
     html += '</div>';
-    if(idea.source) html += '<div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;">via '+idea.source+'</div>';
-    if(idea.thesis) html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.4;margin-bottom:6px;">'+idea.thesis.replace(/</g,'&lt;')+'</div>';
+    if(idea.source) html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">via '+idea.source+'</div>';
+    if(idea.thesis) html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.4;margin-bottom:6px;">'+idea.thesis.replace(/</g,'&lt;')+'</div>';
     if(idea.entry||idea.stop||idea.target){
-      html += '<div style="display:flex;gap:8px;font-size:10px;font-family:\'JetBrains Mono\',monospace;padding:4px 6px;background:var(--bg-secondary);border-radius:3px;">';
+      html += '<div style="display:flex;gap:8px;font-size:12px;font-family:\'JetBrains Mono\',monospace;padding:4px 6px;background:var(--bg-secondary);border-radius:3px;">';
       if(idea.entry) html += '<span style="color:var(--blue);">Entry $'+idea.entry+'</span>';
       if(idea.stop) html += '<span style="color:var(--red);">Stop $'+idea.stop+'</span>';
       if(idea.target) html += '<span style="color:var(--green);">Target $'+idea.target+'</span>';
@@ -760,10 +760,10 @@ function renderTopIdeasHTML(ideas, cacheTs) {
 async function generateThemes() {
   var btn=document.getElementById('generate-themes-btn'),el=document.getElementById('themes-content');
   if(!el)return;if(btn){btn.textContent='Scanning...';btn.disabled=true;}
-  el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:10px;"><span id="theme-progress">Finding biggest movers...</span></div>';
+  el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;"><span id="theme-progress">Finding biggest movers...</span></div>';
 
   var anthropicKey=getAnthropicKey();
-  if(!anthropicKey){el.innerHTML='<div style="padding:12px;text-align:center;color:var(--amber);font-size:10px;">Anthropic API key required. Click gear icon to add.</div>';if(btn){btn.textContent='Generate';btn.disabled=false;}return;}
+  if(!anthropicKey){el.innerHTML='<div style="padding:12px;text-align:center;color:var(--amber);font-size:12px;">Anthropic API key required. Click gear icon to add.</div>';if(btn){btn.textContent='Generate';btn.disabled=false;}return;}
 
   try{
     // Step 1: Scan a universe of ~80 popular tickers for biggest % movers
@@ -787,7 +787,7 @@ async function generateThemes() {
 
     // Take top ~10 movers (mix of winners and losers)
     var topMovers=ranked.slice(0,12);
-    if(topMovers.length===0){el.innerHTML='<div style="text-align:center;padding:14px;color:var(--text-muted);font-size:10px;">No significant movers found.</div>';if(btn){btn.textContent='Generate';btn.disabled=false;}return;}
+    if(topMovers.length===0){el.innerHTML='<div style="text-align:center;padding:14px;color:var(--text-muted);font-size:12px;">No significant movers found.</div>';if(btn){btn.textContent='Generate';btn.disabled=false;}return;}
 
     // Step 3: Fetch news for each mover ticker
     if(prog)prog.textContent='Fetching news for movers...';
@@ -828,7 +828,7 @@ async function generateThemes() {
     try{localStorage.setItem('mac_themes_'+new Date().toISOString().split('T')[0],JSON.stringify(result));}catch(e){}
     el.innerHTML=renderThemesHTML(result,Date.now());
   }catch(e){
-    el.innerHTML='<div style="padding:10px;color:var(--red);font-size:10px;">Failed: '+e.message+'</div>';
+    el.innerHTML='<div style="padding:10px;color:var(--red);font-size:12px;">Failed: '+e.message+'</div>';
   }
   if(btn){btn.textContent='Generate';btn.disabled=false;}
 }
@@ -837,7 +837,7 @@ async function generateThemes() {
 async function runQuickScan() {
   var btn=document.getElementById('quick-scan-btn'),el=document.getElementById('top-ideas-content');
   if(!el)return;if(btn){btn.textContent='Scanning...';btn.disabled=true;}
-  el.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:10px;">Scanning top tickers... <span id="qs-progress"></span></div>';
+  el.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px;">Scanning top tickers... <span id="qs-progress"></span></div>';
   try{
     var qt=['AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AMD','AVGO','CRM','NFLX','COIN','SNOW','PLTR','DKNG','UBER','SQ','SHOP','NET','CRWD','MU','MRVL','ANET','PANW','NOW','ADBE','ORCL','LLY','UNH','JPM','GS','V','MA','BAC','XOM','CVX','CAT','DE','LMT','BA','MSTR','SOFI','HOOD','RKLB','APP','HIMS','ARM','SMCI','TSM','ASML'];
     var allSnap={};for(var bi=0;bi<qt.length;bi+=30){try{Object.assign(allSnap,await getSnapshots(qt.slice(bi,bi+30)));}catch(e){}}
@@ -863,8 +863,8 @@ async function runQuickScan() {
     }
     ideas.sort(function(a,b){return b.score-a.score;});ideas=ideas.slice(0,4);
     try{localStorage.setItem('mac_top_ideas_'+new Date().toISOString().split('T')[0],JSON.stringify({ideas:ideas,ts:Date.now()}));}catch(e){}
-    el.innerHTML=ideas.length>0?renderTopIdeasHTML(ideas,Date.now()):'<div style="text-align:center;padding:14px;color:var(--text-muted);font-size:10px;">No strong setups found. Try full scanners.</div>';
-  }catch(e){el.innerHTML='<div style="color:var(--red);font-size:10px;">Scan failed: '+e.message+'</div>';}
+    el.innerHTML=ideas.length>0?renderTopIdeasHTML(ideas,Date.now()):'<div style="text-align:center;padding:14px;color:var(--text-muted);font-size:12px;">No strong setups found. Try full scanners.</div>';
+  }catch(e){el.innerHTML='<div style="color:var(--red);font-size:12px;">Scan failed: '+e.message+'</div>';}
   if(btn){btn.textContent='Quick Scan';btn.disabled=false;}
 }
 
@@ -883,7 +883,7 @@ async function loadEconCalendar() {
     }
   }}catch(e){}
 
-  el.innerHTML='<div style="font-size:10px;color:var(--text-muted);">Fetching calendar...</div>';
+  el.innerHTML='<div style="font-size:12px;color:var(--text-muted);">Fetching calendar...</div>';
 
   try {
     // Fetch through Vercel rewrite to avoid CORS (same-origin request)
@@ -910,7 +910,7 @@ async function loadEconCalendar() {
 
     renderAutoEconCal(el,grouped,Date.now());
   } catch(e) {
-    el.innerHTML='<div style="font-size:10px;color:var(--red);">Failed to load calendar: '+e.message+'</div>';
+    el.innerHTML='<div style="font-size:12px;color:var(--red);">Failed to load calendar: '+e.message+'</div>';
   }
 }
 
@@ -921,7 +921,7 @@ function renderAutoEconCal(el, grouped, ts) {
   var sortedDays=Object.keys(grouped).sort();
 
   if(sortedDays.length===0){
-    el.innerHTML='<div style="font-size:10px;color:var(--text-muted);">No USD Medium/High impact events this week.</div>';
+    el.innerHTML='<div style="font-size:12px;color:var(--text-muted);">No USD Medium/High impact events this week.</div>';
     return;
   }
 
@@ -935,7 +935,7 @@ function renderAutoEconCal(el, grouped, ts) {
     var isToday=day===today;
 
     html += '<div style="min-width:0;'+(isToday?'background:var(--bg-secondary);border-radius:6px;padding:8px;border:1px solid var(--border);':'padding:8px 4px;')+'">';
-    html += '<div style="font-size:10px;font-weight:700;color:'+(isToday?'var(--blue)':'var(--text-muted)')+';text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;text-align:center;white-space:nowrap;">'+(isToday?'\u25CF ':'')+dayLabel+(isToday?' (Today)':'')+'</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:'+(isToday?'var(--blue)':'var(--text-muted)')+';text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;text-align:center;white-space:nowrap;">'+(isToday?'\u25CF ':'')+dayLabel+(isToday?' (Today)':'')+'</div>';
 
     grouped[day].forEach(function(ev){
       var isHigh=ev.impact==='High';
@@ -945,17 +945,17 @@ function renderAutoEconCal(el, grouped, ts) {
         try{var evDate=new Date(ev.date);if(!isNaN(evDate.getTime())){time=evDate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});}}catch(e){}
       }
 
-      html += '<div style="display:flex;gap:4px;align-items:flex-start;margin-bottom:4px;font-size:10px;">';
+      html += '<div style="display:flex;gap:4px;align-items:flex-start;margin-bottom:4px;font-size:12px;">';
       html += '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:'+dot+';flex-shrink:0;margin-top:3px;"></span>';
       html += '<div style="min-width:0;">';
-      if(time) html += '<div style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:10px;white-space:nowrap;">'+time+'</div>';
-      html += '<div style="color:var(--text-primary);font-weight:600;font-size:10px;line-height:1.3;">'+((ev.title||'').replace(/</g,'&lt;'))+'</div>';
+      if(time) html += '<div style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:12px;white-space:nowrap;">'+time+'</div>';
+      html += '<div style="color:var(--text-primary);font-weight:600;font-size:12px;line-height:1.3;">'+((ev.title||'').replace(/</g,'&lt;'))+'</div>';
 
       // Forecast / Previous
       var details=[];
       if(ev.forecast!==undefined&&ev.forecast!==null&&ev.forecast!=='') details.push('F: '+ev.forecast);
       if(ev.previous!==undefined&&ev.previous!==null&&ev.previous!=='') details.push('P: '+ev.previous);
-      if(details.length>0) html += '<div style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:10px;">'+details.join(' \xb7 ')+'</div>';
+      if(details.length>0) html += '<div style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:12px;">'+details.join(' \xb7 ')+'</div>';
 
       html += '</div></div>';
     });
@@ -963,6 +963,6 @@ function renderAutoEconCal(el, grouped, ts) {
   });
   html += '</div>';
 
-  html += '<div style="margin-top:6px;font-size:10px;color:var(--text-muted);">Updated '+new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})+' \xb7 <a href="#" onclick="localStorage.removeItem(\'mac_econ_cal_auto_\'+function(){var t=new Date(),d=t.getDay(),m=new Date(t);m.setDate(t.getDate()-(d===0?6:d-1));return m.toISOString().split(\'T\')[0];}());loadEconCalendar();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
+  html += '<div style="margin-top:6px;font-size:12px;color:var(--text-muted);">Updated '+new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})+' \xb7 <a href="#" onclick="localStorage.removeItem(\'mac_econ_cal_auto_\'+function(){var t=new Date(),d=t.getDay(),m=new Date(t);m.setDate(t.getDate()-(d===0?6:d-1));return m.toISOString().split(\'T\')[0];}());loadEconCalendar();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
   el.innerHTML=html;
 }

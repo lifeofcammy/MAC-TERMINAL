@@ -64,13 +64,13 @@ function renderAnalysis() {
     var isWeekday = dow >= 1 && dow <= 5;
     var isPastOrToday = d <= new Date();
     contentEl.innerHTML = '<div class="card" style="padding:40px;text-align:center;">' +
-      '<div style="font-size:16px;margin-bottom:16px;color:var(--text-muted);">◉</div>' +
-      '<div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">No market analysis for this date</div>' +
-      '<div style="font-size:10px;color:var(--text-muted);max-width:450px;margin:0 auto;line-height:1.6;">Click "Generate" to auto-scan this day\'s biggest movers, sector rotations, and key themes using market data and AI.</div>' +
+      '<div style="font-size:18px;margin-bottom:16px;color:var(--text-muted);">◉</div>' +
+      '<div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">No market analysis for this date</div>' +
+      '<div style="font-size:12px;color:var(--text-muted);max-width:450px;margin:0 auto;line-height:1.6;">Click "Generate" to auto-scan this day\'s biggest movers, sector rotations, and key themes using market data and AI.</div>' +
       (isWeekday && isPastOrToday ?
-        '<button onclick="autoGenerateAnalysis(\'' + analysisCurrentDate + '\')" id="auto-gen-btn" style="margin-top:16px;padding:10px 24px;border-radius:8px;border:1px solid var(--blue);background:rgba(37,99,235,0.1);color:var(--blue);cursor:pointer;font-size:12px;font-weight:700;font-family:\'Inter\',sans-serif;">Generate Analysis</button>' +
-        '<div id="auto-gen-status" style="margin-top:8px;font-size:10px;color:var(--text-muted);"></div>'
-        : '<div style="margin-top:12px;font-size:10px;color:var(--text-muted);">' + (isWeekday ? 'Future date — analysis not yet available.' : 'Weekend — markets closed.') + '</div>') +
+        '<button onclick="autoGenerateAnalysis(\'' + analysisCurrentDate + '\')" id="auto-gen-btn" style="margin-top:16px;padding:10px 24px;border-radius:8px;border:1px solid var(--blue);background:rgba(37,99,235,0.1);color:var(--blue);cursor:pointer;font-size:14px;font-weight:700;font-family:\'Inter\',sans-serif;">Generate Analysis</button>' +
+        '<div id="auto-gen-status" style="margin-top:8px;font-size:12px;color:var(--text-muted);"></div>'
+        : '<div style="margin-top:12px;font-size:12px;color:var(--text-muted);">' + (isWeekday ? 'Future date — analysis not yet available.' : 'Weekend — markets closed.') + '</div>') +
       '</div>';
 
     // Still show recent entries and running themes below
@@ -91,7 +91,7 @@ function renderAnalysis() {
     { id: 'an-mindset', label: '\u{1F9E0} Mindset' }
   ];
   subTabs.forEach(function(t) {
-    html += '<button onclick="showAnalysisPanel(\'' + t.id + '\')" class="an-pill' + (t.active ? ' an-pill-active' : '') + '" data-panel="' + t.id + '" style="padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:' + (t.active ? 'var(--blue)' : 'var(--bg-card)') + ';color:' + (t.active ? '#fff' : 'var(--text-muted)') + ';font-size:10px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;transition:all 0.15s ease;white-space:nowrap;">' + t.label + '</button>';
+    html += '<button onclick="showAnalysisPanel(\'' + t.id + '\')" class="an-pill' + (t.active ? ' an-pill-active' : '') + '" data-panel="' + t.id + '" style="padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:' + (t.active ? 'var(--blue)' : 'var(--bg-card)') + ';color:' + (t.active ? '#fff' : 'var(--text-muted)') + ';font-size:12px;font-weight:700;cursor:pointer;font-family:\'Inter\',sans-serif;transition:all 0.15s ease;white-space:nowrap;">' + t.label + '</button>';
   });
   html += '</div>';
 
@@ -102,8 +102,8 @@ function renderAnalysis() {
 
   if (analysis.marketContext) {
     html += '<div class="card" style="padding:16px 20px;margin-bottom:14px;border-left:4px solid var(--blue);">';
-    html += '<div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">MARKET CONTEXT</div>';
-    html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.6;">' + analysis.marketContext + '</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">MARKET CONTEXT</div>';
+    html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.6;">' + analysis.marketContext + '</div>';
     html += '</div>';
   }
 
@@ -113,24 +113,24 @@ function renderAnalysis() {
     var topLoser = analysis.movers.reduce(function(a, b) { return b.changePct < a.changePct ? b : a; });
 
     html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">';
-    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Movers</div><div style="font-size:16px;font-weight:800;color:var(--text-primary);">' + analysis.movers.length + '</div></div>';
-    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Catchable</div><div style="font-size:16px;font-weight:800;color:var(--green);">' + catchableCount + '</div></div>';
-    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Gainer</div><div style="font-size:12px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">' + topGainer.ticker + ' +' + topGainer.changePct.toFixed(1) + '%</div></div>';
-    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Loser</div><div style="font-size:12px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + topLoser.ticker + ' ' + topLoser.changePct.toFixed(1) + '%</div></div>';
+    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Movers</div><div style="font-size:18px;font-weight:800;color:var(--text-primary);">' + analysis.movers.length + '</div></div>';
+    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Catchable</div><div style="font-size:18px;font-weight:800;color:var(--green);">' + catchableCount + '</div></div>';
+    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Gainer</div><div style="font-size:14px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">' + topGainer.ticker + ' +' + topGainer.changePct.toFixed(1) + '%</div></div>';
+    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Loser</div><div style="font-size:14px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + topLoser.ticker + ' ' + topLoser.changePct.toFixed(1) + '%</div></div>';
     html += '</div>';
   }
 
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
   if (analysis.sectorRotation) {
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--amber);">';
-    html += '<div style="font-size:10px;font-weight:800;color:var(--amber);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u{1F504} Sector Rotation</div>';
-    html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.65;white-space:pre-wrap;">' + analysis.sectorRotation + '</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--amber);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u{1F504} Sector Rotation</div>';
+    html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.65;white-space:pre-wrap;">' + analysis.sectorRotation + '</div>';
     html += '</div>';
   }
   if (analysis.patterns) {
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--green);">';
-    html += '<div style="font-size:10px;font-weight:800;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u{1F4C8} Developing Patterns</div>';
-    html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.65;white-space:pre-wrap;">' + analysis.patterns + '</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u{1F4C8} Developing Patterns</div>';
+    html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.65;white-space:pre-wrap;">' + analysis.patterns + '</div>';
     html += '</div>';
   }
   html += '</div>';
@@ -138,8 +138,8 @@ function renderAnalysis() {
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
   if (analysis.missed) {
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--red);">';
-    html += '<div style="font-size:10px;font-weight:800;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u{274C} Missed Opportunities</div>';
-    html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.65;white-space:pre-wrap;">' + analysis.missed + '</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u{274C} Missed Opportunities</div>';
+    html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.65;white-space:pre-wrap;">' + analysis.missed + '</div>';
     html += '</div>';
   }
   if (analysis.mindset) {
@@ -147,19 +147,19 @@ function renderAnalysis() {
     var sco = mso.score >= 8 ? 'var(--green)' : mso.score >= 5 ? 'var(--amber)' : 'var(--red)';
     html += '<div class="card" style="padding:16px;border-left:3px solid ' + sco + '">';
     html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">';
-    html += '<div style="width:44px;height:44px;border-radius:50%;background:' + sco + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-weight:900;font-size:16px;color:#fff;">' + mso.score + '</span></div>';
-    html += '<div><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-primary);">Discipline ' + mso.score + '/10</div>';
-    if (mso.scoreNote) html += '<div style="font-size:10px;color:var(--text-muted);margin-top:2px;line-height:1.4;">' + mso.scoreNote + '</div>';
+    html += '<div style="width:44px;height:44px;border-radius:50%;background:' + sco + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-weight:900;font-size:18px;color:#fff;">' + mso.score + '</span></div>';
+    html += '<div><div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-primary);">Discipline ' + mso.score + '/10</div>';
+    if (mso.scoreNote) html += '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;line-height:1.4;">' + mso.scoreNote + '</div>';
     html += '</div></div>';
     if (mso.violations && mso.violations.length > 0) {
       mso.violations.forEach(function(v) {
-        html += '<div style="font-size:10px;color:var(--red);padding:3px 0;line-height:1.4;">\u26A0 <strong>' + v.rule + '</strong> \u2014 ' + v.detail.substring(0, 120) + (v.detail.length > 120 ? '...' : '') + '</div>';
+        html += '<div style="font-size:12px;color:var(--red);padding:3px 0;line-height:1.4;">\u26A0 <strong>' + v.rule + '</strong> \u2014 ' + v.detail.substring(0, 120) + (v.detail.length > 120 ? '...' : '') + '</div>';
       });
     }
     if (mso.wins && mso.wins.length > 0) {
       html += '<div style="margin-top:6px;">';
       mso.wins.slice(0, 2).forEach(function(w) {
-        html += '<div style="font-size:10px;color:var(--green);padding:2px 0;line-height:1.4;">\u2713 ' + w.substring(0, 100) + (w.length > 100 ? '...' : '') + '</div>';
+        html += '<div style="font-size:12px;color:var(--green);padding:2px 0;line-height:1.4;">\u2713 ' + w.substring(0, 100) + (w.length > 100 ? '...' : '') + '</div>';
       });
       html += '</div>';
     }
@@ -176,18 +176,18 @@ function renderAnalysis() {
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
     analysis.movers.forEach(function(m) {
       var mc = m.changePct >= 0 ? 'var(--green)' : 'var(--red)';
-      var cb = m.catchable === 'yes' ? '<span style="font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);">CATCHABLE</span>'
-        : m.catchable === 'partial' ? '<span style="font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--amber-bg);color:var(--amber);">PARTIALLY</span>'
-        : '<span style="font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.12);color:var(--text-muted);">NEWS-DRIVEN</span>';
+      var cb = m.catchable === 'yes' ? '<span style="font-size:12px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);">CATCHABLE</span>'
+        : m.catchable === 'partial' ? '<span style="font-size:12px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--amber-bg);color:var(--amber);">PARTIALLY</span>'
+        : '<span style="font-size:12px;font-weight:700;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.12);color:var(--text-muted);">NEWS-DRIVEN</span>';
       html += '<div class="card" style="padding:16px;">';
       html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">';
-      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:12px;">' + m.ticker + '</span>';
-      html += '<span style="font-weight:800;color:' + mc + ';font-family:\'JetBrains Mono\',monospace;font-size:12px;">' + (m.changePct >= 0 ? '+' : '') + m.changePct.toFixed(1) + '%</span>';
+      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + m.ticker + '</span>';
+      html += '<span style="font-weight:800;color:' + mc + ';font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + (m.changePct >= 0 ? '+' : '') + m.changePct.toFixed(1) + '%</span>';
       html += cb;
-      if (m.sector) html += '<span style="font-size:10px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;">' + m.sector + '</span>';
+      if (m.sector) html += '<span style="font-size:12px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;">' + m.sector + '</span>';
       html += '</div>';
-      html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.6;margin-bottom:6px;">' + m.why + '</div>';
-      if (m.lesson) html += '<div style="font-size:10px;color:var(--blue);font-weight:600;line-height:1.5;">\u2192 ' + m.lesson + '</div>';
+      html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:6px;">' + m.why + '</div>';
+      if (m.lesson) html += '<div style="font-size:12px;color:var(--blue);font-weight:600;line-height:1.5;">\u2192 ' + m.lesson + '</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -199,27 +199,27 @@ function renderAnalysis() {
   // ════════════════════════════
   html += '<div id="an-heatmap" class="an-panel" style="display:none;">';
   if (analysis.probabilityMap && analysis.probabilityMap.length > 0) {
-    html += '<div style="font-size:10px;color:var(--text-muted);margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:8px;line-height:1.5;">Ranked by probability of a 3%+ move tomorrow. Based on multi-day patterns, catalyst proximity, IV levels, technical setup, and sector correlation.</div>';
+    html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:8px;line-height:1.5;">Ranked by probability of a 3%+ move tomorrow. Based on multi-day patterns, catalyst proximity, IV levels, technical setup, and sector correlation.</div>';
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
     analysis.probabilityMap.forEach(function(p) {
       var pc = p.probability >= 75 ? 'var(--green)' : p.probability >= 60 ? 'var(--amber)' : 'var(--text-muted)';
-      var tb = p.tier === 1 ? '<span style="font-size:10px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--purple-bg);color:var(--purple);">T1</span>'
-        : p.tier === 2 ? '<span style="font-size:10px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--blue-bg);color:var(--blue);">T2</span>'
-        : '<span style="font-size:10px;font-weight:800;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.1);color:var(--text-muted);">W</span>';
+      var tb = p.tier === 1 ? '<span style="font-size:12px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--purple-bg);color:var(--purple);">T1</span>'
+        : p.tier === 2 ? '<span style="font-size:12px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--blue-bg);color:var(--blue);">T2</span>'
+        : '<span style="font-size:12px;font-weight:800;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.1);color:var(--text-muted);">W</span>';
       var di = p.direction === 'long' ? '\u2191' : p.direction === 'short' ? '\u2193' : '\u2195';
       var dc = p.direction === 'long' ? 'var(--green)' : p.direction === 'short' ? 'var(--red)' : 'var(--amber)';
       html += '<div class="card" style="padding:16px;position:relative;overflow:hidden;">';
       html += '<div style="position:absolute;bottom:0;left:0;height:3px;width:' + p.probability + '%;background:' + pc + ';border-radius:0 2px 0 0;"></div>';
       html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">';
-      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:12px;">' + p.ticker + '</span>';
-      html += '<span style="font-weight:800;color:' + pc + ';font-family:\'JetBrains Mono\',monospace;font-size:16px;">' + p.probability + '%</span>';
-      html += '<span style="color:' + dc + ';font-size:12px;font-weight:900;">' + di + '</span>';
+      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + p.ticker + '</span>';
+      html += '<span style="font-weight:800;color:' + pc + ';font-family:\'JetBrains Mono\',monospace;font-size:18px;">' + p.probability + '%</span>';
+      html += '<span style="color:' + dc + ';font-size:14px;font-weight:900;">' + di + '</span>';
       html += tb;
-      if (p.catalyst) html += '<span style="font-size:10px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + p.catalyst + '</span>';
+      if (p.catalyst) html += '<span style="font-size:12px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + p.catalyst + '</span>';
       html += '</div>';
-      html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.55;margin-bottom:6px;">' + p.thesis.substring(0, 180) + (p.thesis.length > 180 ? '...' : '') + '</div>';
-      if (p.keyLevels) html += '<div style="font-size:10px;color:var(--purple);font-weight:600;font-family:\'JetBrains Mono\',monospace;margin-bottom:3px;">\u{1F4CD} ' + p.keyLevels + '</div>';
-      if (p.optionsPlay) html += '<div style="font-size:10px;color:var(--blue);font-weight:600;">\u{1F4B0} ' + p.optionsPlay.substring(0, 120) + (p.optionsPlay.length > 120 ? '...' : '') + '</div>';
+      html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.55;margin-bottom:6px;">' + p.thesis.substring(0, 180) + (p.thesis.length > 180 ? '...' : '') + '</div>';
+      if (p.keyLevels) html += '<div style="font-size:12px;color:var(--purple);font-weight:600;font-family:\'JetBrains Mono\',monospace;margin-bottom:3px;">\u{1F4CD} ' + p.keyLevels + '</div>';
+      if (p.optionsPlay) html += '<div style="font-size:12px;color:var(--blue);font-weight:600;">\u{1F4B0} ' + p.optionsPlay.substring(0, 120) + (p.optionsPlay.length > 120 ? '...' : '') + '</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -237,15 +237,15 @@ function renderAnalysis() {
       var sd = w.status === 'active' ? '\u25CF' : w.status === 'watch' ? '\u25D0' : '\u25CB';
       html += '<div class="card" style="padding:16px;">';
       html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
-      html += '<span style="color:' + sc2 + ';font-size:10px;">' + sd + '</span>';
-      html += '<span style="font-weight:800;font-size:12px;color:var(--text-primary);">' + w.theme + '</span>';
+      html += '<span style="color:' + sc2 + ';font-size:12px;">' + sd + '</span>';
+      html += '<span style="font-weight:800;font-size:14px;color:var(--text-primary);">' + w.theme + '</span>';
       html += '</div>';
       html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">';
       w.tickers.forEach(function(t) {
-        html += '<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;background:var(--bg-secondary);color:var(--text-secondary);font-family:\'JetBrains Mono\',monospace;">' + t + '</span>';
+        html += '<span style="font-size:12px;font-weight:700;padding:3px 8px;border-radius:4px;background:var(--bg-secondary);color:var(--text-secondary);font-family:\'JetBrains Mono\',monospace;">' + t + '</span>';
       });
       html += '</div>';
-      html += '<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">' + w.note + '</div>';
+      html += '<div style="font-size:12px;color:var(--text-muted);line-height:1.5;">' + w.note + '</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -258,8 +258,8 @@ function renderAnalysis() {
   html += '<div id="an-playbook" class="an-panel" style="display:none;">';
   if (analysis.tomorrowWatch) {
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--blue);background:rgba(59,130,246,0.03);">';
-    html += '<div style="font-size:10px;font-weight:800;color:var(--blue);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;">\u{1F52E} Tomorrow\'s Playbook</div>';
-    html += '<div style="font-size:10px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap;">' + analysis.tomorrowWatch + '</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;">\u{1F52E} Tomorrow\'s Playbook</div>';
+    html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap;">' + analysis.tomorrowWatch + '</div>';
     html += '</div>';
   }
   html += '</div>';
@@ -273,26 +273,26 @@ function renderAnalysis() {
     var scc = ms.score >= 8 ? 'var(--green)' : ms.score >= 5 ? 'var(--amber)' : 'var(--red)';
     html += '<div class="card" style="padding:20px;text-align:center;margin-bottom:14px;">';
     html += '<div style="width:72px;height:72px;border-radius:50%;background:' + scc + ';display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px;">';
-    html += '<span style="font-weight:900;font-size:16px;color:#fff;">' + ms.score + '</span></div>';
-    html += '<div style="font-size:12px;font-weight:800;color:var(--text-primary);">DISCIPLINE SCORE: ' + ms.score + '/10</div>';
-    if (ms.scoreNote) html += '<div style="font-size:10px;color:var(--text-muted);margin-top:6px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6;">' + ms.scoreNote + '</div>';
+    html += '<span style="font-weight:900;font-size:18px;color:#fff;">' + ms.score + '</span></div>';
+    html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">DISCIPLINE SCORE: ' + ms.score + '/10</div>';
+    if (ms.scoreNote) html += '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6;">' + ms.scoreNote + '</div>';
     html += '</div>';
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--red);">';
-    html += '<div style="font-size:10px;font-weight:800;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u26A0\uFE0F Violations</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u26A0\uFE0F Violations</div>';
     if (ms.violations && ms.violations.length > 0) {
       ms.violations.forEach(function(v) {
-        html += '<div style="font-size:10px;color:var(--text-secondary);padding:6px 0;border-bottom:1px solid var(--border);line-height:1.5;"><strong style="color:var(--red);">' + v.rule + '</strong><br>' + v.detail + '</div>';
+        html += '<div style="font-size:12px;color:var(--text-secondary);padding:6px 0;border-bottom:1px solid var(--border);line-height:1.5;"><strong style="color:var(--red);">' + v.rule + '</strong><br>' + v.detail + '</div>';
       });
     } else {
-      html += '<div style="font-size:10px;color:var(--green);padding:8px 0;">\u2713 Clean session</div>';
+      html += '<div style="font-size:12px;color:var(--green);padding:8px 0;">\u2713 Clean session</div>';
     }
     html += '</div>';
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--green);">';
-    html += '<div style="font-size:10px;font-weight:800;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u2713 What Worked</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u2713 What Worked</div>';
     if (ms.wins && ms.wins.length > 0) {
       ms.wins.forEach(function(w) {
-        html += '<div style="font-size:10px;color:var(--text-secondary);padding:6px 0;border-bottom:1px solid var(--border);line-height:1.5;">' + w + '</div>';
+        html += '<div style="font-size:12px;color:var(--text-secondary);padding:6px 0;border-bottom:1px solid var(--border);line-height:1.5;">' + w + '</div>';
       });
     }
     html += '</div>';
@@ -347,17 +347,17 @@ function renderRecentEntries(parentEl) {
   html += '<div class="section-title" style="margin:0;"><span class="dot" style="background:var(--blue)"></span> Recent Analysis Entries</div>';
   html += '<div style="display:flex;gap:6px;">';
   if(missingCount > 0) {
-    html += '<button onclick="backfillAnalysis(7)" id="backfill-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(37,99,235,0.08);color:var(--blue);cursor:pointer;font-size:10px;font-weight:700;font-family:\'Inter\',sans-serif;">Fill Missing ('+missingCount+')</button>';
+    html += '<button onclick="backfillAnalysis(7)" id="backfill-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(37,99,235,0.08);color:var(--blue);cursor:pointer;font-size:12px;font-weight:700;font-family:\'Inter\',sans-serif;">Fill Missing ('+missingCount+')</button>';
   }
-  html += '<button onclick="backfillAnalysis(14)" id="backfill-2wk-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--purple);background:rgba(124,58,237,0.08);color:var(--purple);cursor:pointer;font-size:10px;font-weight:700;font-family:\'Inter\',sans-serif;">Look Back 2 Weeks</button>';
+  html += '<button onclick="backfillAnalysis(14)" id="backfill-2wk-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--purple);background:rgba(124,58,237,0.08);color:var(--purple);cursor:pointer;font-size:12px;font-weight:700;font-family:\'Inter\',sans-serif;">Look Back 2 Weeks</button>';
   html += '</div></div>';
-  html += '<div id="backfill-status" style="font-size:10px;color:var(--text-muted);margin-bottom:6px;"></div>';
+  html += '<div id="backfill-status" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;"></div>';
   html += '<div class="card" style="padding:0;overflow:hidden;">';
 
   // Show existing entries (or placeholders for last 7 weekdays if none exist)
   var entriesToShow = allDates.slice(0, 15);
   if(entriesToShow.length === 0) {
-    html += '<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:10px;">No entries yet. Click a button above to auto-generate.</div>';
+    html += '<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:12px;">No entries yet. Click a button above to auto-generate.</div>';
   } else {
     entriesToShow.forEach(function(date) {
       var a = getAnalysis(date);
@@ -369,10 +369,10 @@ function renderRecentEntries(parentEl) {
       var topMover = moverCount > 0 ? a.movers[0].ticker + ' ' + (a.movers[0].changePct >= 0 ? '+' : '') + a.movers[0].changePct.toFixed(1) + '%' : '';
       var topColor = moverCount > 0 && a.movers[0].changePct >= 0 ? 'var(--green)' : 'var(--red)';
 
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:10px;' + (isActive ? 'background:rgba(59,130,246,0.08);' : '') + '" onclick="analysisCurrentDate=\'' + date + '\';renderAnalysis();">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:12px;' + (isActive ? 'background:rgba(59,130,246,0.08);' : '') + '" onclick="analysisCurrentDate=\'' + date + '\';renderAnalysis();">';
       html += '<span style="color:var(--text-secondary);font-weight:' + (isActive ? '700' : '400') + ';">' + dayName + '</span>';
-      html += '<span style="font-size:10px;color:var(--text-muted);">' + moverCount + ' movers</span>';
-      if (topMover) html += '<span style="font-weight:700;color:' + topColor + ';font-family:\'JetBrains Mono\',monospace;font-size:10px;">' + topMover + '</span>';
+      html += '<span style="font-size:12px;color:var(--text-muted);">' + moverCount + ' movers</span>';
+      if (topMover) html += '<span style="font-weight:700;color:' + topColor + ';font-family:\'JetBrains Mono\',monospace;font-size:12px;">' + topMover + '</span>';
       html += '</div>';
     });
   }
@@ -746,12 +746,12 @@ function addChatMessage(role, text) {
 
   var isUser = role === 'user';
   var avatar = document.createElement('div');
-  avatar.style.cssText = 'width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;' +
+  avatar.style.cssText = 'width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;' +
     (isUser ? 'background:var(--green-bg);color:var(--green);' : 'background:rgba(59,130,246,0.15);color:var(--blue);');
   avatar.textContent = isUser ? 'U' : 'AI';
 
   var bubble = document.createElement('div');
-  bubble.style.cssText = 'flex:1;font-size:10px;line-height:1.6;color:var(--text-secondary);padding:8px 12px;border-radius:8px;white-space:pre-wrap;' +
+  bubble.style.cssText = 'flex:1;font-size:12px;line-height:1.6;color:var(--text-secondary);padding:8px 12px;border-radius:8px;white-space:pre-wrap;' +
     (isUser ? 'background:var(--bg-secondary);' : 'background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.15);');
   bubble.textContent = text;
 
