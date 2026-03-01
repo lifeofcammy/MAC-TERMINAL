@@ -377,12 +377,12 @@ function renderScanner() {
   html += '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Qullamaggie + Zanger methodology · ' + dataFreshness + '</div>';
   html += '</div>';
   html += '<div style="display:flex;gap:6px;">';
-  html += '<button onclick="refreshMomentumUI()" id="refresh-universe-btn" style="padding:6px 14px;border-radius:6px;border:1px solid ' + (isFresh ? 'var(--border)' : 'var(--amber)') + ';background:' + (isFresh ? 'var(--bg-card)' : 'rgba(245,158,11,0.08)') + ';color:' + (isFresh ? 'var(--text-secondary)' : 'var(--amber)') + ';cursor:pointer;font-size:12px;font-weight:700;">' + (isFresh ? 'Refresh Top 100' : '⟳ Update Top 100') + '</button>';
-  html += '<button onclick="runScanUI()" id="run-scan-btn" style="padding:6px 14px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-size:12px;font-weight:700;">Scan for Setups</button>';
+  html += '<button onclick="refreshMomentumUI()" id="refresh-universe-btn" class="refresh-btn" style="padding:6px 14px;">' + (isFresh ? 'Refresh Top 100' : '⟳ Update Top 100') + '</button>';
+  html += '<button onclick="runScanUI()" id="run-scan-btn" class="refresh-btn" style="padding:6px 14px;">Scan for Setups</button>';
   html += '</div></div>';
 
   // ── STATUS BAR ──
-  html += '<div id="scanner-status" style="font-size:12px;color:var(--text-muted);margin-bottom:12px;min-height:16px;">';
+  html += '<div id="scanner-status" style="font-size:14px;color:var(--text-muted);margin-bottom:12px;min-height:16px;">';
   if (cache) html += 'Top 100 updated ' + cacheDate + ' · ' + cache.count + ' stocks';
   else html += 'No momentum list cached yet. Click "Update Top 100" to build it.';
   html += '</div>';
@@ -392,7 +392,7 @@ function renderScanner() {
   if (scanResults && scanResults.setups && scanResults.setups.length > 0) {
     html += renderScanResults(scanResults);
   } else if (cache && cache.tickers) {
-    html += '<div class="card" style="padding:24px;text-align:center;color:var(--text-muted);font-size:12px;">Top 100 loaded. Click <strong>Scan for Setups</strong> to find breakout candidates.</div>';
+    html += '<div class="card" style="padding:24px;text-align:center;color:var(--text-muted);font-size:14px;">Top 100 loaded. Click <strong>Scan for Setups</strong> to find breakout candidates.</div>';
   }
   html += '</div>';
 
@@ -407,7 +407,7 @@ function renderScanner() {
   if (cache && cache.tickers && cache.tickers.length > 0) {
     html += renderTop100List(cache.tickers);
   } else {
-    html += '<div class="card" style="padding:20px;text-align:center;color:var(--text-muted);font-size:12px;">No data yet. Click "Update Top 100" above.</div>';
+    html += '<div class="card" style="padding:20px;text-align:center;color:var(--text-muted);font-size:14px;">No data yet. Click "Update Top 100" above.</div>';
   }
   html += '</div></div>';
 
@@ -419,7 +419,7 @@ function renderScanResults(data) {
   var time = new Date(data.ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   var html = '';
 
-  html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Scanned ' + time + ' · ' + setups.length + ' setups found</div>';
+  html += '<div style="font-size:14px;color:var(--text-muted);margin-bottom:8px;">Scanned ' + time + ' · ' + setups.length + ' setups found</div>';
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;">';
 
   setups.forEach(function(s, idx) {
@@ -439,12 +439,12 @@ function renderScanResults(data) {
 
     // Description
     if (s.description) {
-      html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:8px;">' + s.description + '</div>';
+      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:8px;">' + s.description + '</div>';
     }
 
     // Component bars
     var comps = s.components;
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;">';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:14px;">';
     html += renderComponentBar('Tightness', comps.tightness, 30, scoreColor);
     html += renderComponentBar('Vol Dry-Up', comps.volumeDryUp, 25, scoreColor);
     html += renderComponentBar('Breakout', comps.breakoutProximity, 25, scoreColor);
@@ -490,14 +490,14 @@ function renderTop100List(tickers) {
     var pct50Color = (t.pct50d || 0) >= 0 ? 'var(--green)' : 'var(--red)';
     var bg = idx % 2 === 0 ? '' : 'background:var(--bg-secondary);';
 
-    html += '<div style="display:grid;grid-template-columns:40px 70px 80px 65px 65px 55px 55px;gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:12px;' + bg + 'align-items:center;">';
-    html += '<span style="color:var(--text-muted);font-size:12px;">' + (idx + 1) + '</span>';
+    html += '<div style="display:grid;grid-template-columns:40px 70px 80px 65px 65px 55px 55px;gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:14px;' + bg + 'align-items:center;">';
+    html += '<span style="color:var(--text-muted);font-size:14px;">' + (idx + 1) + '</span>';
     html += '<span style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + t.ticker + '</span>';
     html += '<span style="font-family:\'JetBrains Mono\',monospace;color:var(--text-secondary);">$' + t.price.toFixed(2) + '</span>';
     html += '<span style="font-weight:700;color:' + pct20Color + ';font-family:\'JetBrains Mono\',monospace;">' + (t.pct20d >= 0 ? '+' : '') + t.pct20d + '%</span>';
     html += '<span style="font-weight:700;color:' + pct50Color + ';font-family:\'JetBrains Mono\',monospace;">' + (t.pct50d >= 0 ? '+' : '') + (t.pct50d || 0) + '%</span>';
-    html += '<span style="font-size:12px;color:var(--text-muted);">' + t.distFromHigh + '% off</span>';
-    html += '<span style="font-size:12px;color:' + (t.aboveSMAs === '3/3' ? 'var(--green)' : 'var(--text-muted)') + ';">' + t.aboveSMAs + '</span>';
+    html += '<span style="font-size:14px;color:var(--text-muted);">' + t.distFromHigh + '% off</span>';
+    html += '<span style="font-size:14px;color:' + (t.aboveSMAs === '3/3' ? 'var(--green)' : 'var(--text-muted)') + ';">' + t.aboveSMAs + '</span>';
     html += '</div>';
   });
 

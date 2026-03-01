@@ -9,8 +9,8 @@
   --border: #E2E8F0;
   --border2: #CBD5E1;
   --text-primary: #0F172A;
-  --text-secondary: #475569;
-  --text-muted: #94A3B8;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
   --shadow-sm: 0 1px 2px oklch(0.2 0.05 250 / 0.06);
   --shadow-md: 0 4px 12px oklch(0.2 0.05 250 / 0.08), 0 1px 2px oklch(0.2 0.05 250 / 0.04);
   --shadow-lg: 0 8px 32px oklch(0.2 0.05 250 / 0.10), 0 2px 6px oklch(0.2 0.05 250 / 0.06);
@@ -39,8 +39,8 @@
   --border: #1E293B;
   --border2: #334155;
   --text-primary: #F1F5F9;
-  --text-secondary: #94A3B8;
-  --text-muted: #475569;
+  --text-secondary: #CBD5E1;
+  --text-muted: #64748B;
   --shadow-sm: 0 1px 2px oklch(0.05 0.03 250 / 0.4);
   --shadow-md: 0 4px 12px oklch(0.05 0.03 250 / 0.5), 0 1px 2px oklch(0.05 0.03 250 / 0.3);
   --shadow-lg: 0 8px 32px oklch(0.05 0.03 250 / 0.6), 0 2px 6px oklch(0.05 0.03 250 / 0.4);
@@ -104,8 +104,8 @@ body {
   box-shadow: 0 2px 8px rgba(37,99,235,0.25);
 }
 
-.header-title { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; font-size: 16px; color: var(--text-primary); letter-spacing: normal; text-transform: none; }
-.header-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; }
+.header-title { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; font-size: 18px; color: var(--text-primary); }
+.header-sub { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; font-size: 18px; color: var(--text-primary); margin-top: 0; }
 
 .header-right {
   display: flex;
@@ -116,21 +116,21 @@ body {
 .last-updated { font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
 
 .refresh-btn {
-  background: var(--bg-card);
-  border: 1px solid var(--border2);
-  color: var(--text-secondary);
+  background: rgba(37,99,235,0.08);
+  border: 1px solid var(--blue);
+  color: var(--blue);
   padding: 7px 14px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 6px;
   transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.refresh-btn:hover { background: var(--bg-secondary); border-color: var(--border2); box-shadow: var(--shadow-md); transform: translateY(-1px); }
-.refresh-btn:active { transform: translateY(0); box-shadow: none; }
+.refresh-btn:hover { background: rgba(37,99,235,0.15); transform: translateY(-1px); }
+.refresh-btn:active { transform: translateY(0); }
 .refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 

@@ -44,7 +44,7 @@
     <button class="refresh-btn" onclick="toggleSettings()" title="API Keys & Settings" style="padding:7px 10px;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSen-JL8VLKqSDt3hkkbqihnItxiVHc4El1o0uEis1i3Y2xOUg/viewform" target="_blank" class="refresh-btn" title="Send Feedback" style="padding:7px 10px;text-decoration:none;border-color:rgba(124,58,237,0.3);color:var(--purple,#7C3AED);">
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSen-JL8VLKqSDt3hkkbqihnItxiVHc4El1o0uEis1i3Y2xOUg/viewform" target="_blank" class="refresh-btn" title="Send Feedback" style="padding:7px 10px;text-decoration:none;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     </a>
     <button class="theme-toggle-btn" id="themeToggle" title="Toggle dark mode">
@@ -52,7 +52,7 @@
       <svg id="theme-icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
     </button>
     <span id="user-email" style="font-size:11px;color:var(--text-muted);font-weight:500;"></span>
-    <button class="refresh-btn" onclick="logoutUser()" title="Sign Out" style="padding:7px 10px;">Sign Out</button>
+    <button class="refresh-btn" onclick="logoutUser()" title="Sign Out">Sign Out</button>
   </div>
 </div>
 
@@ -84,8 +84,8 @@
           <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Click any day · Drop a file or paste to log trades</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <button onclick="recapExportAll()" style="background:var(--bg-card);border:1px solid var(--border);color:var(--blue);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:11px;font-weight:600;" title="Export all trade recap data to JSON file">↑ Export</button>
-          <button onclick="document.getElementById('recap-import-file').click()" style="background:var(--bg-card);border:1px solid var(--border);color:var(--green);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:11px;font-weight:600;" title="Import trade recap data from JSON file">↓ Import</button>
+          <button onclick="recapExportAll()" class="refresh-btn" style="padding:6px 12px;" title="Export all trade recap data to JSON file">↑ Export</button>
+          <button onclick="document.getElementById('recap-import-file').click()" class="refresh-btn" style="padding:6px 12px;" title="Import trade recap data from JSON file">↓ Import</button>
           <input type="file" id="recap-import-file" accept=".json" style="display:none;" onchange="recapImportAll(event)">
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -110,8 +110,8 @@
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <button onclick="recapClear()" class="refresh-btn" style="border-color:rgba(239,68,68,0.3);color:var(--red);">Clear</button>
-          <button onclick="recapExportPDF()" id="recap-export-btn" style="display:none;background:var(--green);border:none;color:#fff;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:700;">Save Recap</button>
+          <button onclick="recapClear()" class="refresh-btn">Clear</button>
+          <button onclick="recapExportPDF()" id="recap-export-btn" style="display:none;" class="refresh-btn">Save Recap</button>
         </div>
       </div>
 
@@ -136,7 +136,7 @@
             <textarea id="recap-paste" rows="8" placeholder="Paste trade data here..." style="width:100%;font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-secondary);resize:vertical;line-height:1.5;"></textarea>
           </div>
 
-          <button onclick="recapAnalyze()" style="width:100%;background:var(--green);border:none;color:#fff;border-radius:8px;padding:12px;font-weight:800;font-size:14px;letter-spacing:.05em;cursor:pointer;">ANALYZE TRADES</button>
+          <button onclick="recapAnalyze()" class="refresh-btn" style="width:100%;padding:12px;font-size:14px;">ANALYZE TRADES</button>
         </div>
 
         <!-- RIGHT: Analysis output -->

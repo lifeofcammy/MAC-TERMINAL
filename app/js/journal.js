@@ -418,7 +418,7 @@ function renderRecapCalendar() {
       '<div style="width:1px;height:30px;background:var(--border);"></div>' +
       '<div style="text-align:center;"><div style="font-size:12px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;">Green / Red</div><div style="font-family:\'JetBrains Mono\',monospace;font-weight:800;font-size:18px;line-height:1;"><span style="color:var(--green);">' + greenDays + '</span><span style="color:var(--text-muted);font-size:14px;"> / </span><span style="color:var(--red);">' + redDays + '</span></div></div>';
   } else {
-    document.getElementById('cal-month-stats').innerHTML = '<div style="font-size:12px;color:var(--text-muted);">No trades logged — click any day and drop a TOS CSV to begin</div>';
+    document.getElementById('cal-month-stats').innerHTML = '<div style="font-size:14px;color:var(--text-muted);">No trades logged — click any day and drop a TOS CSV to begin</div>';
   }
 
   // Performance summary below calendar
@@ -463,10 +463,10 @@ function renderRecapSummary(tradingDays, monthPnL, greenDays, redDays, weeklyPnL
       var plColor = st.pl >= 0 ? 'var(--green)' : 'var(--red)';
       var wrColor = wr >= 60 ? 'var(--green)' : wr >= 45 ? 'var(--amber)' : 'var(--red)';
       html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);">';
-      html += '<div style="font-weight:700;font-size:12px;">' + s + '</div>';
+      html += '<div style="font-weight:700;font-size:14px;">' + s + '</div>';
       html += '<div style="display:flex;gap:20px;align-items:center;font-family:\'JetBrains Mono\',monospace;">';
-      html += '<span style="font-size:12px;color:var(--text-muted);">' + st.trades + ' trades</span>';
-      html += '<span style="font-size:12px;color:' + wrColor + ';font-weight:700;">' + wr + '% WR</span>';
+      html += '<span style="font-size:14px;color:var(--text-muted);">' + st.trades + ' trades</span>';
+      html += '<span style="font-size:14px;color:' + wrColor + ';font-weight:700;">' + wr + '% WR</span>';
       html += '<span style="font-size:14px;font-weight:800;color:' + plColor + ';">' + fmtD(st.pl) + '</span>';
       html += '</div></div>';
     });
@@ -489,14 +489,14 @@ function renderRecapSummary(tradingDays, monthPnL, greenDays, redDays, weeklyPnL
       ['Pre-10am','10am-12pm','12pm-2pm','2pm-Close'].forEach(function(bucket) {
         var s = timeStats[bucket];
         if (s.t === 0) {
-          html += '<div style="flex:1;text-align:center;padding:8px;border-radius:6px;background:var(--bg-secondary);"><div style="font-size:12px;color:var(--text-muted);">' + bucket + '</div><div style="font-size:12px;color:var(--text-muted);">—</div></div>';
+          html += '<div style="flex:1;text-align:center;padding:8px;border-radius:6px;background:var(--bg-secondary);"><div style="font-size:14px;color:var(--text-muted);">' + bucket + '</div><div style="font-size:14px;color:var(--text-muted);">—</div></div>';
         } else {
           var c = s.pl >= 0 ? 'var(--green)' : 'var(--red)';
           var bg = s.pl >= 0 ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
           html += '<div style="flex:1;text-align:center;padding:8px;border-radius:6px;background:' + bg + ';">';
-          html += '<div style="font-size:12px;color:var(--text-muted);">' + bucket + '</div>';
+          html += '<div style="font-size:14px;color:var(--text-muted);">' + bucket + '</div>';
           html += '<div style="font-size:14px;font-weight:800;color:' + c + ';font-family:\'JetBrains Mono\',monospace;">' + fmtD(s.pl) + '</div>';
-          html += '<div style="font-size:12px;color:var(--text-muted);">' + s.t + ' trades · ' + (s.t > 0 ? (s.w/s.t*100).toFixed(0) : 0) + '% WR</div></div>';
+          html += '<div style="font-size:14px;color:var(--text-muted);">' + s.t + ' trades · ' + (s.t > 0 ? (s.w/s.t*100).toFixed(0) : 0) + '% WR</div></div>';
         }
       });
       html += '</div></div>';
@@ -515,7 +515,7 @@ function renderRecapSummary(tradingDays, monthPnL, greenDays, redDays, weeklyPnL
       html += '<div style="flex:1;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;">';
       html += '<div style="font-size:12px;font-weight:700;color:' + c + ';font-family:\'JetBrains Mono\',monospace;margin-bottom:2px;">' + fmtD(wpl) + '</div>';
       html += '<div style="width:100%;height:' + h + 'px;background:' + c + ';border-radius:4px 4px 0 0;opacity:0.7;"></div>';
-      html += '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Wk ' + (idx+1) + '</div></div>';
+      html += '<div style="font-size:14px;color:var(--text-muted);margin-top:2px;">Wk ' + (idx+1) + '</div></div>';
     });
     html += '</div></div>';
   }
@@ -527,7 +527,7 @@ function renderRecapSummary(tradingDays, monthPnL, greenDays, redDays, weeklyPnL
       html += '<div class="card" style="padding:16px;border-left:3px solid var(--blue);">';
       html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Pattern Engine — Edges Found</div>';
       patterns.edges.forEach(function(edge) {
-        html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:4px;">' + edge + '</div>';
+        html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.6;margin-bottom:4px;">' + edge + '</div>';
       });
       html += '</div>';
     }
@@ -779,7 +779,7 @@ function recapAnalyze() {
     const { completed, open } = matchRoundTrips(parsed);
 
     if (!completed.length && !open.length) {
-      document.getElementById('recap-results').innerHTML = `<div style="padding:40px;text-align:center;color:var(--red);"><div style="font-size:18px;margin-bottom:12px;color:var(--red);">✕</div><div style="font-weight:800;font-size:18px;">COULD NOT PARSE DATA</div><div style="font-size:12px;color:var(--text-muted);margin-top:8px;">Make sure you've pasted a TOS "Today's Trade Activity" CSV export with a Filled Orders section.</div></div>`;
+      document.getElementById('recap-results').innerHTML = `<div style="padding:40px;text-align:center;color:var(--red);"><div style="font-size:18px;margin-bottom:12px;color:var(--red);">✕</div><div style="font-weight:800;font-size:18px;">COULD NOT PARSE DATA</div><div style="font-size:14px;color:var(--text-muted);margin-top:8px;">Make sure you've pasted a TOS "Today's Trade Activity" CSV export with a Filled Orders section.</div></div>`;
       document.getElementById('recap-results').style.display = 'block';
       document.getElementById('recap-empty').style.display = 'none';
       return;
@@ -850,11 +850,11 @@ function recapAnalyze() {
         </div>
         <div>
           <div style="font-weight:800;font-size:18px;color:var(--text-primary);">SESSION RECAP — ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${totalTrades} completed trade${totalTrades !== 1 ? 's' : ''} · ${parsed.filled.length} total executions${open.length ? ` · ${open.length} still open` : ''}</div>
+          <div style="font-size:14px;color:var(--text-muted);margin-top:3px;">${totalTrades} completed trade${totalTrades !== 1 ? 's' : ''} · ${parsed.filled.length} total executions${open.length ? ` · ${open.length} still open` : ''}</div>
         </div>
         <div style="margin-left:auto;text-align:right;">
           <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:800;color:${pnlColor};line-height:1;">${fmtDR(grossPnL)}</div>
-          <div style="font-size:12px;color:var(--text-muted);">NET P&L</div>
+          <div style="font-size:14px;color:var(--text-muted);">NET P&L</div>
         </div>
       </div>
       <div class="rv-stat-grid">
@@ -900,7 +900,7 @@ function recapAnalyze() {
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
                   <div style="display:flex;align-items:center;gap:8px;">
                     <span style="font-weight:700;font-size:14px;color:var(--text-primary);min-width:50px;">${sym}</span>
-                    <span style="font-size:12px;color:var(--text-muted);">${d.count} trades · ${wr}% WR</span>
+                    <span style="font-size:14px;color:var(--text-muted);">${d.count} trades · ${wr}% WR</span>
                   </div>
                   <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${c};">${fmtDR(d.pnl)}</span>
                 </div>
@@ -918,8 +918,8 @@ function recapAnalyze() {
           <div class="recap-section-header">Behavioral Analysis</div>
           <div class="recap-section-body">
             ${behaviors.map(b => `<div class="behavior-flag ${b.severity}">
-              <div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">${b.label}</div>
-              <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;">${b.detail}</div>
+              <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">${b.label}</div>
+              <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">${b.detail}</div>
             </div>`).join('')}
           </div>
         </div>
@@ -936,8 +936,8 @@ function recapAnalyze() {
               return `<div style="padding:6px 0;border-bottom:1px solid var(--border);">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
                   <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:12px;font-weight:700;color:var(--text-secondary);width:65px;">${label}</span>
-                    <span style="font-size:12px;color:var(--text-muted);">${d.count} trades · ${wr}% WR</span>
+                    <span style="font-size:14px;font-weight:700;color:var(--text-secondary);width:65px;">${label}</span>
+                    <span style="font-size:14px;color:var(--text-muted);">${d.count} trades · ${wr}% WR</span>
                   </div>
                   <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${c};">${fmtDR(d.pnl)}</span>
                 </div>
@@ -945,14 +945,14 @@ function recapAnalyze() {
                   <div style="height:3px;width:${barW}%;background:${c};border-radius:2px;"></div>
                 </div>
               </div>`;
-            }).join('') : '<div style="padding:12px;font-size:12px;color:var(--text-muted);text-align:center;">No time data available.</div>'}
+            }).join('') : '<div style="padding:12px;font-size:14px;color:var(--text-muted);text-align:center;">No time data available.</div>'}
           </div>
         </div>
 
         <div class="recap-section-card">
           <div class="recap-section-header">Trade Log (${completed.length})</div>
           <div style="max-height:280px;overflow-y:auto;">
-            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <table style="width:100%;border-collapse:collapse;font-size:14px;">
               <thead><tr style="background:var(--bg-primary);">
                 <th style="padding:6px 10px;text-align:left;font-size:12px;letter-spacing:.08em;color:var(--text-muted);">TICKER</th>
                 <th style="padding:6px 10px;text-align:left;font-size:12px;letter-spacing:.08em;color:var(--text-muted);">SIDE</th>
@@ -969,7 +969,7 @@ function recapAnalyze() {
                   const label = t.isOption ? `${t.sym} ${t.strike}${t.optType}` : t.sym;
                   return `<tr style="border-bottom:1px solid var(--border);">
                     <td style="padding:7px 10px;font-weight:700;color:var(--text-primary);">${label}</td>
-                    <td style="padding:7px 10px;color:${t.isLong ? 'var(--green)' : 'var(--red)'};font-size:12px;font-weight:700;">${t.isLong ? 'LONG' : 'SHORT'}</td>
+                    <td style="padding:7px 10px;color:${t.isLong ? 'var(--green)' : 'var(--red)'};font-size:14px;font-weight:700;">${t.isLong ? 'LONG' : 'SHORT'}</td>
                     <td style="padding:7px 10px;text-align:right;color:var(--text-secondary);">$${t.entryPrice.toFixed(2)}</td>
                     <td style="padding:7px 10px;text-align:right;color:var(--text-secondary);">$${t.exitPrice.toFixed(2)}</td>
                     <td style="padding:7px 10px;text-align:right;color:var(--text-secondary);">${t.qty}</td>
@@ -980,7 +980,7 @@ function recapAnalyze() {
               </tbody>
             </table>
           </div>
-          ${open.length ? `<div style="padding:8px 14px;background:rgba(180,83,9,0.05);border-top:1px solid var(--border);font-size:12px;color:var(--amber);">${open.length} position${open.length !== 1 ? 's' : ''} still open: ${[...new Set(open.map(o => o.sym))].join(', ')}</div>` : ''}
+          ${open.length ? `<div style="padding:8px 14px;background:rgba(180,83,9,0.05);border-top:1px solid var(--border);font-size:14px;color:var(--amber);">${open.length} position${open.length !== 1 ? 's' : ''} still open: ${[...new Set(open.map(o => o.sym))].join(', ')}</div>` : ''}
         </div>
       </div>
     </div>
@@ -991,7 +991,7 @@ function recapAnalyze() {
         <span>🤖 AI Coaching Analysis</span>
         <span style="font-size:12px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;">Powered by Claude</span>
       </div>
-      <div id="ai-coaching-body" style="padding:16px 20px;font-size:12px;color:var(--text-secondary);line-height:1.8;">
+      <div id="ai-coaching-body" style="padding:16px 20px;font-size:14px;color:var(--text-secondary);line-height:1.8;">
         <div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);">
           <div style="width:16px;height:16px;border:2px solid var(--purple);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
           <span>Analyzing your trading patterns with AI...</span>
@@ -1050,7 +1050,7 @@ function recapAnalyze() {
     runAICoaching(completed, wins, losses, grossPnL, winRate, profitFactor, avgRR, behaviors, sortedByTime, bySymbol);
 
   } catch (err) {
-    document.getElementById('recap-results').innerHTML = `<div style="padding:40px;text-align:center;color:var(--red);"><div style="font-size:18px;margin-bottom:12px;color:var(--red);">✕</div><div style="font-weight:800;font-size:18px;">ANALYSIS ERROR</div><div style="font-size:12px;color:var(--text-muted);margin-top:8px;">${err.message}</div></div>`;
+    document.getElementById('recap-results').innerHTML = `<div style="padding:40px;text-align:center;color:var(--red);"><div style="font-size:18px;margin-bottom:12px;color:var(--red);">✕</div><div style="font-weight:800;font-size:18px;">ANALYSIS ERROR</div><div style="font-size:14px;color:var(--text-muted);margin-top:8px;">${err.message}</div></div>`;
     document.getElementById('recap-results').style.display = 'block';
     document.getElementById('recap-empty').style.display = 'none';
   }

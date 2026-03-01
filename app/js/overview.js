@@ -48,7 +48,7 @@ async function renderOverview() {
     // News
     try { newsArticles = await getPolygonNews(null, 25); } catch(e) {}
   } catch(e) {
-    container.innerHTML = '<div class="card" style="text-align:center;color:var(--red);padding:30px;">Failed to load data: '+e.message+'<br><span style="font-size:12px;color:var(--text-muted);">Check your Polygon API key (gear icon).</span></div>';
+    container.innerHTML = '<div class="card" style="text-align:center;color:var(--red);padding:30px;">Failed to load data: '+e.message+'<br><span style="font-size:14px;color:var(--text-muted);">Check your Polygon API key (gear icon).</span></div>';
     return;
   }
 
@@ -242,7 +242,7 @@ async function renderOverview() {
     var isToday = i===todayIdx;
     html += '<div style="break-inside:avoid;padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:flex-start;'+(isToday?'background:var(--amber-bg);margin:0 -4px;padding:4px;border-radius:4px;':'')+'">';
     html += '<span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;min-width:18px;">'+(i+1)+'.</span>';
-    html += '<span style="font-size:12px;color:'+(isToday?'var(--amber)':'var(--text-primary)')+';line-height:1.4;font-weight:'+(isToday?'700':'500')+';">'+rule+'</span>';
+    html += '<span style="font-size:14px;color:'+(isToday?'var(--amber)':'var(--text-primary)')+';line-height:1.4;font-weight:'+(isToday?'700':'500')+';">'+rule+'</span>';
     html += '</div>';
   });
   html += '</div></div></div>';
@@ -253,22 +253,21 @@ async function renderOverview() {
   html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Watchlist</div>';
   var wList = getWatchlist();
   html += '<div style="display:flex;align-items:center;gap:8px;">';
-  html += '<span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
-  if(wList.length>0) html += '<button onclick="clearWatchlist();renderOverview();" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:12px;color:var(--text-muted);cursor:pointer;">Clear All</button>';
+  if(wList.length>0) html += '<button onclick="clearWatchlist();renderOverview();" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Clear All</button>';
   html += '</div>';
   html += '</div>';
   // Add form
   html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-wrap:wrap;">';
   html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
-  html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:12px;font-weight:600;color:var(--text-primary);">';
+  html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:14px;font-weight:600;color:var(--text-primary);">';
   html += '<option value="long">▲ Long</option><option value="short">▼ Short</option><option value="watch">● Watch</option></select>';
-  html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="flex:1;min-width:120px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:12px;color:var(--text-primary);" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
-  html += '<button onclick="addToWatchlist();renderOverview();" style="background:var(--blue);color:white;border:none;border-radius:5px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">+ Add</button>';
+  html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="flex:1;min-width:120px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:14px;color:var(--text-primary);" onkeydown="if(event.key===\'Enter\'){addToWatchlist();renderOverview();}" />';
+  html += '<button onclick="addToWatchlist();renderOverview();" class="refresh-btn" style="padding:6px 14px;font-size:12px;">+ Add</button>';
   html += '</div>';
   // Watchlist items
   html += '<div id="watchlist-content" style="padding:10px 16px;">';
   if(wList.length===0) {
-    html += '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:12px;">No tickers. Add symbols above to track them.</div>';
+    html += '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:14px;">No tickers. Add symbols above to track them.</div>';
   } else {
     html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">';
     // We'll load data async after render
@@ -282,7 +281,7 @@ async function renderOverview() {
       html += '<span style="font-size:12px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
       html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);">Loading...</span>';
       html += '</div>';
-      if(item.note) html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.3;font-style:italic;">'+item.note.replace(/</g,'&lt;')+'</div>';
+      if(item.note) html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.3;font-style:italic;">'+item.note.replace(/</g,'&lt;')+'</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -374,7 +373,7 @@ async function renderOverview() {
   html += '<span style="font-size:18px;color:'+regimeColor+';">'+regimeIcon+'</span>';
   html += '<div style="min-width:0;">';
   html += '<div style="font-size:14px;font-weight:800;color:'+regimeColor+';">'+regimeLabel+'</div>';
-  html += '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
+  html += '<div style="font-size:14px;color:var(--text-secondary);margin-top:2px;line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
   // Show all 4 indexes' SMA status
   var smaIndexes = [
     {name:'SPY',s10:spySma10,s20:spySma20,a10:spyAbove10,a20:spyAbove20},
@@ -424,7 +423,7 @@ async function renderOverview() {
     html += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:12px;padding:12px 14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);">';
     html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">'+idx.label+'</div>';
     html += '<div style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">'+(d.price?'$'+price(d.price):'—')+'</div>';
-    html += '<div style="font-size:12px;font-weight:700;color:'+color+';margin-top:2px;">'+pct(d.pct)+'</div>';
+    html += '<div style="font-size:14px;font-weight:700;color:'+color+';margin-top:2px;">'+pct(d.pct)+'</div>';
     html += '</div>';
   });
   html += '</div>';
@@ -440,14 +439,14 @@ async function renderOverview() {
     html += '<div class="card" style="padding:16px 20px;margin-bottom:14px;">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
     html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Stock Breadth</div>';
-    html += '<div style="font-size:12px;color:var(--text-muted);">'+adStocksUp+' advancing · '+adStocksDown+' declining'+(adStocksFlat>0?' · '+adStocksFlat+' flat':'')+'</div>';
+    html += '<div style="font-size:14px;color:var(--text-muted);">'+adStocksUp+' advancing · '+adStocksDown+' declining'+(adStocksFlat>0?' · '+adStocksFlat+' flat':'')+'</div>';
     html += '</div>';
     html += '<div style="display:flex;height:20px;border-radius:6px;overflow:hidden;background:var(--bg-secondary);">';
     if(adGreenW>0) html += '<div style="width:'+adGreenW+'%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;">'+adStocksUp+'</div>';
     if(adFlatW>0) html += '<div style="width:'+adFlatW+'%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-muted);">'+adStocksFlat+'</div>';
     if(adRedW>0) html += '<div style="width:'+adRedW+'%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;">'+adStocksDown+'</div>';
     html += '</div>';
-    html += '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:12px;color:var(--text-muted);">';
+    html += '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:14px;color:var(--text-muted);">';
     html += '<span>Breadth: '+adBreadthPct+'%</span>';
     html += '<span>'+dataFreshness+'</span>';
     html += '</div>';
@@ -477,8 +476,8 @@ async function renderOverview() {
       html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px solid var(--border);">';
       html += '<span style="font-size:12px;color:var(--text-muted);white-space:nowrap;padding-top:2px;">'+pubTime+'</span>';
       html += '<div style="flex:1;min-width:0;">';
-      html += '<a href="'+(article.article_url||'#')+'" target="_blank" style="font-size:12px;font-weight:600;color:var(--text-primary);text-decoration:none;line-height:1.3;">'+(article.title||'').replace(/</g,'&lt;')+'</a>';
-      if(tickers) html += ' <span style="font-size:12px;color:var(--blue);font-weight:600;">'+tickers+'</span>';
+      html += '<a href="'+(article.article_url||'#')+'" target="_blank" style="font-size:14px;font-weight:600;color:var(--text-primary);text-decoration:none;line-height:1.3;">'+(article.title||'').replace(/</g,'&lt;')+'</a>';
+      if(tickers) html += ' <span style="font-size:14px;color:var(--blue);font-weight:600;">'+tickers+'</span>';
       html += '</div></div>';
     });
     html += '</div>';
@@ -491,14 +490,14 @@ async function renderOverview() {
   html += '<div style="padding:10px 16px;border-top:1px solid var(--border);">';
   html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
   html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Today\'s Themes</div>';
-  html += '<button id="generate-themes-btn" onclick="generateThemes()" style="padding:4px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(37,99,235,0.08);color:var(--blue);cursor:pointer;font-size:12px;font-weight:700;">Generate</button>';
+  html += '<button id="generate-themes-btn" onclick="generateThemes()" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Generate</button>';
   html += '</div>';
   html += '<div id="themes-content">';
   var cachedThemes=null;
   try{var themeKey='mac_themes_'+new Date().toISOString().split('T')[0];var themeData=localStorage.getItem(themeKey);if(themeData)cachedThemes=JSON.parse(themeData);}catch(e){}
   if(cachedThemes&&cachedThemes.movers){html+=renderThemesHTML(cachedThemes,cachedThemes.ts);}
   else if(cachedThemes&&cachedThemes.themes){html+=renderLegacyThemesHTML(cachedThemes.themes,cachedThemes.ts);}
-  else{html += '<div style="font-size:12px;color:var(--text-muted);">'+(getAnthropicKey()?'Auto-loading themes...':'Add Anthropic API key (gear icon) to auto-generate themes.')+'</div>';}
+  else{html += '<div style="font-size:14px;color:var(--text-muted);">'+(getAnthropicKey()?'Auto-loading themes...':'Add Anthropic API key (gear icon) to auto-generate themes.')+'</div>';}
   html += '</div></div>';
   html += '</div>'; // close Catalysts+Themes card
 
@@ -532,7 +531,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
   html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Top Ideas</div>';
-  html += '<button onclick="runQuickScan()" id="quick-scan-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--green);background:rgba(16,185,129,0.08);color:var(--green);cursor:pointer;font-size:12px;font-weight:700;">Quick Scan</button>';
+  html += '<button onclick="runQuickScan()" id="quick-scan-btn" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Quick Scan</button>';
   html += '</div>';
   html += '<div id="top-ideas-content" style="padding:12px 16px;">';
   var cachedIdeas=null;
@@ -567,7 +566,7 @@ async function loadWatchlistPrices() {
       var prev = s.prevDay ? s.prevDay.c : p;
       var pctVal = prev>0 ? ((p-prev)/prev)*100 : 0;
       var color = pctVal>=0 ? 'var(--green)' : 'var(--red)';
-      el.innerHTML = '$'+price(p)+' <span style="color:'+color+';font-size:12px;">'+pct(pctVal)+'</span>';
+      el.innerHTML = '$'+price(p)+' <span style="color:'+color+';font-size:14px;">'+pct(pctVal)+'</span>';
       el.style.color = 'var(--text-primary)';
     });
   } catch(e){}
@@ -594,7 +593,7 @@ function renderThemesHTML(data, cacheTs) {
 
   // Market narrative (if present)
   if(data.narrative){
-    html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:6px;border-left:3px solid var(--blue);">' + data.narrative.replace(/</g,'&lt;') + '</div>';
+    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:6px;border-left:3px solid var(--blue);">' + data.narrative.replace(/</g,'&lt;') + '</div>';
   }
 
   // ── INDUSTRY HEAT CHECK (show first for quick scan) ──
@@ -609,14 +608,14 @@ function renderThemesHTML(data, cacheTs) {
       html += '<div style="background:'+bg+';border:1px solid '+c+'20;border-radius:8px;padding:8px 12px;min-width:140px;flex:1;max-width:220px;">';
       html += '<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">';
       html += '<span style="font-size:12px;color:'+c+';font-weight:800;">'+arrow+'</span>';
-      html += '<span style="font-size:12px;font-weight:800;color:var(--text-primary);">'+((ind.name||'').replace(/</g,'&lt;'))+'</span>';
+      html += '<span style="font-size:14px;font-weight:800;color:var(--text-primary);">'+((ind.name||'').replace(/</g,'&lt;'))+'</span>';
       html += '</div>';
       if(ind.tickers && ind.tickers.length>0){
         html += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:3px;">';
         ind.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:1px 4px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+t+'</span>';});
         html += '</div>';
       }
-      if(ind.note) html += '<div style="font-size:12px;color:var(--text-muted);line-height:1.3;">'+((ind.note||'').replace(/</g,'&lt;'))+'</div>';
+      if(ind.note) html += '<div style="font-size:14px;color:var(--text-muted);line-height:1.3;">'+((ind.note||'').replace(/</g,'&lt;'))+'</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -645,7 +644,7 @@ function renderThemesHTML(data, cacheTs) {
       html += '<span style="font-size:14px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">+' + Math.abs(m.pct).toFixed(1) + '%</span>';
       html += sectorBadge(m);
       html += '</div>';
-      html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">' + (m.reason||'').replace(/</g,'&lt;') + '</div>';
+      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;">' + (m.reason||'').replace(/</g,'&lt;') + '</div>';
       if(m.tags && m.tags.length>0){
         html += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;">';
         m.tags.forEach(function(tag){html += '<span style="font-size:12px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(16,185,129,0.1);color:var(--green);">' + tag + '</span>';});
@@ -667,7 +666,7 @@ function renderThemesHTML(data, cacheTs) {
       html += '<span style="font-size:14px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + (m.pct<0?'':'-') + Math.abs(m.pct).toFixed(1) + '%</span>';
       html += sectorBadge(m);
       html += '</div>';
-      html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">' + (m.reason||'').replace(/</g,'&lt;') + '</div>';
+      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;">' + (m.reason||'').replace(/</g,'&lt;') + '</div>';
       if(m.tags && m.tags.length>0){
         html += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;">';
         m.tags.forEach(function(tag){html += '<span style="font-size:12px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(239,68,68,0.08);color:var(--red);">' + tag + '</span>';});
@@ -686,8 +685,8 @@ function renderThemesHTML(data, cacheTs) {
       var colors=['var(--blue)','var(--purple)','var(--cyan)'];var bgs=['rgba(37,99,235,0.05)','rgba(124,58,237,0.05)','rgba(8,145,178,0.05)'];
       var c=colors[i%colors.length],bg=bgs[i%bgs.length];
       html += '<div style="background:'+bg+';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);border-radius:10px;padding:10px 14px;border-left:3px solid '+c+'">';
-      html += '<div style="font-size:12px;font-weight:800;color:var(--text-primary);">'+(theme.title||'').replace(/</g,'&lt;')+'</div>';
-      html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.4;margin-top:2px;">'+(theme.description||'').replace(/</g,'&lt;')+'</div>';
+      html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">'+(theme.title||'').replace(/</g,'&lt;')+'</div>';
+      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.4;margin-top:2px;">'+(theme.description||'').replace(/</g,'&lt;')+'</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -705,7 +704,7 @@ function renderLegacyThemesHTML(themes, cacheTs) {
     var c=colors[i%colors.length],bg=bgs[i%bgs.length];
     html += '<div style="background:'+bg+';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);border-radius:12px;padding:12px 14px;border-left:3px solid '+c+'">';
     html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);margin-bottom:3px;">'+(theme.title||'Theme '+(i+1)).replace(/</g,'&lt;')+'</div>';
-    html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:5px;">'+(theme.description||'').replace(/</g,'&lt;')+'</div>';
+    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:5px;">'+(theme.description||'').replace(/</g,'&lt;')+'</div>';
     if(theme.tickers&&theme.tickers.length>0){
       html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
       theme.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+c+'15;color:'+c+';font-family:\'JetBrains Mono\',monospace;">'+t+'</span>';});
@@ -733,7 +732,7 @@ function renderTopIdeasHTML(ideas, cacheTs) {
     html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid '+sc+';font-size:12px;font-weight:900;color:'+sc+';font-family:\'JetBrains Mono\',monospace;">'+idea.score+'</div>';
     html += '</div>';
     if(idea.source) html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">via '+idea.source+'</div>';
-    if(idea.thesis) html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.4;margin-bottom:6px;">'+idea.thesis.replace(/</g,'&lt;')+'</div>';
+    if(idea.thesis) html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.4;margin-bottom:6px;">'+idea.thesis.replace(/</g,'&lt;')+'</div>';
     if(idea.entry||idea.stop||idea.target){
       html += '<div style="display:flex;gap:8px;font-size:12px;font-family:\'JetBrains Mono\',monospace;padding:4px 6px;background:var(--bg-secondary);border-radius:3px;">';
       if(idea.entry) html += '<span style="color:var(--blue);">Entry $'+idea.entry+'</span>';
@@ -818,7 +817,7 @@ async function generateThemes() {
     try{localStorage.setItem('mac_themes_'+new Date().toISOString().split('T')[0],JSON.stringify(result));}catch(e){}
     el.innerHTML=renderThemesHTML(result,Date.now());
   }catch(e){
-    el.innerHTML='<div style="padding:10px;color:var(--red);font-size:12px;">Failed: '+e.message+'</div>';
+    el.innerHTML='<div style="padding:10px;color:var(--red);font-size:14px;">Failed: '+e.message+'</div>';
   }
   if(btn){btn.textContent='Generate';btn.disabled=false;}
 }
@@ -900,7 +899,7 @@ async function loadEconCalendar() {
 
     renderAutoEconCal(el,grouped,Date.now());
   } catch(e) {
-    el.innerHTML='<div style="font-size:12px;color:var(--red);">Failed to load calendar: '+e.message+'</div>';
+    el.innerHTML='<div style="font-size:14px;color:var(--red);">Failed to load calendar: '+e.message+'</div>';
   }
 }
 
@@ -939,7 +938,7 @@ function renderAutoEconCal(el, grouped, ts) {
       html += '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:'+dot+';flex-shrink:0;margin-top:3px;"></span>';
       html += '<div style="min-width:0;">';
       if(time) html += '<div style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:12px;white-space:nowrap;">'+time+'</div>';
-      html += '<div style="color:var(--text-primary);font-weight:600;font-size:12px;line-height:1.3;">'+((ev.title||'').replace(/</g,'&lt;'))+'</div>';
+      html += '<div style="color:var(--text-primary);font-weight:600;font-size:14px;line-height:1.3;">'+((ev.title||'').replace(/</g,'&lt;'))+'</div>';
 
       // Forecast / Previous
       var details=[];
