@@ -234,7 +234,7 @@ async function renderOverview() {
   html += '</div></div>';
   // Full rules — collapsible
   html += '<div id="mindset-body" style="'+(mindsetCollapsed?'display:none;':'')+'padding:0 16px 12px;">';
-  html += '<div style="columns:2;column-gap:16px;">';
+  html += '<div class="ov-mindset-cols" style="columns:2;column-gap:16px;">';
   mindsetRules.forEach(function(rule,i) {
     var isToday = i===todayIdx;
     html += '<div style="break-inside:avoid;padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:flex-start;'+(isToday?'background:var(--amber-bg);margin:0 -4px;padding:4px;border-radius:4px;':'')+'">';
@@ -287,7 +287,7 @@ async function renderOverview() {
 
 
   // ════ 3. MARKET REGIME ════
-  var regimeLabel='Neutral',regimeColor='var(--text-muted)',regimeBg='var(--bg-secondary)',regimeBorder='var(--border)',regimeIcon='◆',regimeDetail='';
+  var regimeLabel='Neutral',regimeColor='var(--text-muted)',regimeDetail='';
   var spyPct=spyData.pct, qqqPct=qqqData.pct, iwmPct=iwmData.pct, diaPct=diaData.pct;
   var avgPct=(spyPct+qqqPct+iwmPct+diaPct)/4;
 
@@ -332,31 +332,31 @@ async function renderOverview() {
 
   // Regime decision using ALL indexes + VIX
   if(hasHighImpactEvent&&!live){
-    regimeLabel='Wait for '+eventName;regimeIcon='⏸';regimeColor='var(--purple)';regimeBg='rgba(124,58,237,0.06)';regimeBorder='rgba(124,58,237,0.3)';
+    regimeLabel='Wait for '+eventName;regimeColor='var(--purple)';
     regimeDetail=eventName+' data expected — wait for the reaction before entering.';
   }
   else if(avgPct>0.8&&breadthPct>=65&&idxAboveBoth>=3){
-    regimeLabel='Risk On';regimeIcon='▲';regimeColor='var(--green)';regimeBg='rgba(16,185,129,0.06)';regimeBorder='rgba(16,185,129,0.3)';
+    regimeLabel='Risk On';regimeColor='var(--green)';
     regimeDetail='Broad strength. '+idxAboveBoth+'/4 indexes above 10 & 20 SMA. '+sectorsUp+'/'+sectorData.length+' sectors green. '+vixLine+'\n'+indexNotes;
   }
   else if(avgPct<-0.8&&breadthPct<=35&&idxBelowBoth>=3){
-    regimeLabel='Risk Off';regimeIcon='▼';regimeColor='var(--red)';regimeBg='rgba(239,68,68,0.06)';regimeBorder='rgba(239,68,68,0.3)';
+    regimeLabel='Risk Off';regimeColor='var(--red)';
     regimeDetail='Broad weakness. '+idxBelowBoth+'/4 indexes below 10 & 20 SMA. '+sectorsDown+'/'+sectorData.length+' sectors red. '+vixLine+' Reduce size.\n'+indexNotes;
   }
   else if(Math.abs(avgPct)<0.3&&idxMixed>=2){
-    regimeLabel='Choppy / Low Conviction';regimeIcon='↔';regimeColor='var(--amber)';regimeBg='rgba(245,158,11,0.06)';regimeBorder='rgba(245,158,11,0.3)';
+    regimeLabel='Choppy / Low Conviction';regimeColor='var(--amber)';
     regimeDetail='Narrow range, mixed signals. '+idxAboveBoth+'/4 above both SMAs, '+idxBelowBoth+'/4 below both, '+idxMixed+'/4 mixed. '+vixLine+'\n'+indexNotes;
   }
   else if(avgPct>0.3||idxAboveBoth>=3){
-    regimeLabel='Lean Bullish';regimeIcon='▲';regimeColor='var(--green)';regimeBg='rgba(16,185,129,0.04)';regimeBorder='rgba(16,185,129,0.2)';
+    regimeLabel='Lean Bullish';regimeColor='var(--green)';
     regimeDetail=idxAboveBoth+'/4 indexes above both SMAs. '+sectorsUp+'/'+sectorData.length+' sectors positive. '+vixLine+' Selective longs.\n'+indexNotes;
   }
   else if(avgPct<-0.3||idxBelowBoth>=3){
-    regimeLabel='Lean Bearish';regimeIcon='▼';regimeColor='var(--red)';regimeBg='rgba(239,68,68,0.04)';regimeBorder='rgba(239,68,68,0.2)';
+    regimeLabel='Lean Bearish';regimeColor='var(--red)';
     regimeDetail=idxBelowBoth+'/4 indexes below both SMAs. '+sectorsDown+'/'+sectorData.length+' sectors negative. '+vixLine+' Cautious, reduce size.\n'+indexNotes;
   }
   else{
-    regimeLabel='Neutral';regimeIcon='◆';regimeColor='var(--text-muted)';regimeBg='var(--bg-secondary)';regimeBorder='var(--border)';
+    regimeLabel='Neutral';regimeColor='var(--text-muted)';
     regimeDetail='Mixed signals across indexes. '+idxAboveBoth+' above both SMAs, '+idxBelowBoth+' below both. '+vixLine+' A+ setups only.\n'+indexNotes;
   }
   if(hasHighImpactEvent&&live) regimeDetail+=' ⚠ '+eventName+' today — volatility expected.';
@@ -365,10 +365,9 @@ async function renderOverview() {
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
   html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Market Regime</div>';
   html += '</div>';
-  html += '<div style="background:'+regimeBg+';padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;">';
-  html += '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">';
-  html += '<span style="font-size:18px;color:'+regimeColor+';">'+regimeIcon+'</span>';
-  html += '<div style="min-width:0;">';
+  html += '<div style="padding:14px 20px;display:flex;align-items:flex-start;gap:12px;">';
+  html += '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+regimeColor+';margin-top:4px;flex-shrink:0;"></span>';
+  html += '<div style="min-width:0;flex:1;">';
   html += '<div style="font-size:14px;font-weight:800;color:'+regimeColor+';">'+regimeLabel+'</div>';
   html += '<div style="font-size:14px;color:var(--text-secondary);margin-top:2px;line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
   // Show all 4 indexes' SMA status
@@ -393,7 +392,6 @@ async function renderOverview() {
   }
   html += '</div></div>';
   html += '</div>';
-  html += '</div>';
 
   // ════ 4. MARKET SNAPSHOT (tight row: SPY QQQ IWM DIA VIX DXY) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
@@ -402,7 +400,7 @@ async function renderOverview() {
   html += '<span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
   html += '</div>';
   html += '<div style="padding:12px 16px;">';
-  html += '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">';
+  html += '<div class="ov-snap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">';
   var snapItems = [
     {ticker:'SPY',label:'S&P 500',data:spyData},
     {ticker:'QQQ',label:'Nasdaq',data:qqqData},
@@ -443,7 +441,7 @@ async function renderOverview() {
     if(adFlatW>0) html += '<div style="width:'+adFlatW+'%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-muted);">'+adStocksFlat+'</div>';
     if(adRedW>0) html += '<div style="width:'+adRedW+'%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;">'+adStocksDown+'</div>';
     html += '</div>';
-    html += '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:14px;color:var(--text-muted);">';
+    html += '<div class="ov-breadth-footer" style="display:flex;justify-content:space-between;margin-top:4px;font-size:14px;color:var(--text-muted);">';
     html += '<span>Breadth: '+adBreadthPct+'%</span>';
     html += '<span>'+dataFreshness+'</span>';
     html += '</div>';
@@ -506,7 +504,7 @@ async function renderOverview() {
   html += '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'▶':'▼')+'</span></div>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
-  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:12px 14px;">';
+  html += '<div class="ov-heatmap-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:12px 14px;">';
   sectorData.forEach(function(sec){
     var chgColor,chgBg;
     if(sec.dayChg>1){chgColor='#fff';chgBg='#059669';}
@@ -913,7 +911,7 @@ function renderAutoEconCal(el, grouped, ts) {
 
   // Horizontal layout: days side by side
   var cols=sortedDays.length;
-  html += '<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:8px;">';
+  html += '<div class="ov-econ-grid" style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:8px;">';
 
   sortedDays.forEach(function(day,idx){
     var dt=new Date(day+'T12:00:00');

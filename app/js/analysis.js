@@ -112,7 +112,7 @@ function renderAnalysis() {
     var topGainer = analysis.movers.reduce(function(a, b) { return b.changePct > a.changePct ? b : a; });
     var topLoser = analysis.movers.reduce(function(a, b) { return b.changePct < a.changePct ? b : a; });
 
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">';
+    html += '<div class="an-stat-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">';
     html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Movers</div><div style="font-size:18px;font-weight:800;color:var(--text-primary);">' + analysis.movers.length + '</div></div>';
     html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Catchable</div><div style="font-size:18px;font-weight:800;color:var(--green);">' + catchableCount + '</div></div>';
     html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Gainer</div><div style="font-size:14px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">' + topGainer.ticker + ' +' + topGainer.changePct.toFixed(1) + '%</div></div>';
@@ -120,7 +120,7 @@ function renderAnalysis() {
     html += '</div>';
   }
 
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
+  html += '<div class="an-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
   if (analysis.sectorRotation) {
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--amber);">';
     html += '<div style="font-size:12px;font-weight:800;color:var(--amber);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u{1F504} Sector Rotation</div>';
@@ -135,7 +135,7 @@ function renderAnalysis() {
   }
   html += '</div>';
 
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
+  html += '<div class="an-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
   if (analysis.missed) {
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--red);">';
     html += '<div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u{274C} Missed Opportunities</div>';
@@ -173,7 +173,7 @@ function renderAnalysis() {
   // ════════════════════════════
   html += '<div id="an-movers" class="an-panel" style="display:none;">';
   if (analysis.movers && analysis.movers.length > 0) {
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+    html += '<div class="an-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
     analysis.movers.forEach(function(m) {
       var mc = m.changePct >= 0 ? 'var(--green)' : 'var(--red)';
       var cb = m.catchable === 'yes' ? '<span style="font-size:12px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);">CATCHABLE</span>'
@@ -200,7 +200,7 @@ function renderAnalysis() {
   html += '<div id="an-heatmap" class="an-panel" style="display:none;">';
   if (analysis.probabilityMap && analysis.probabilityMap.length > 0) {
     html += '<div style="font-size:14px;color:var(--text-muted);margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:8px;line-height:1.5;">Ranked by probability of a 3%+ move tomorrow. Based on multi-day patterns, catalyst proximity, IV levels, technical setup, and sector correlation.</div>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+    html += '<div class="an-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
     analysis.probabilityMap.forEach(function(p) {
       var pc = p.probability >= 75 ? 'var(--green)' : p.probability >= 60 ? 'var(--amber)' : 'var(--text-muted)';
       var tb = p.tier === 1 ? '<span style="font-size:12px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--purple-bg);color:var(--purple);">T1</span>'
@@ -231,7 +231,7 @@ function renderAnalysis() {
   // ════════════════════════════
   html += '<div id="an-watchlist" class="an-panel" style="display:none;">';
   if (analysis.watchlist && analysis.watchlist.length > 0) {
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+    html += '<div class="an-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
     analysis.watchlist.forEach(function(w) {
       var sc2 = w.status === 'active' ? 'var(--green)' : w.status === 'watch' ? 'var(--amber)' : 'var(--text-muted)';
       var sd = w.status === 'active' ? '\u25CF' : w.status === 'watch' ? '\u25D0' : '\u25CB';
@@ -277,7 +277,7 @@ function renderAnalysis() {
     html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">DISCIPLINE SCORE: ' + ms.score + '/10</div>';
     if (ms.scoreNote) html += '<div style="font-size:14px;color:var(--text-muted);margin-top:6px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6;">' + ms.scoreNote + '</div>';
     html += '</div>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+    html += '<div class="an-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--red);">';
     html += '<div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u26A0\uFE0F Violations</div>';
     if (ms.violations && ms.violations.length > 0) {

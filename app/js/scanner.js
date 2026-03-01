@@ -433,7 +433,7 @@ function renderScanResults(data) {
   var html = '';
 
   html += '<div style="font-size:14px;color:var(--text-muted);margin-bottom:8px;">Scanned ' + time + ' · ' + setups.length + ' setups found</div>';
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;">';
+  html += '<div class="sc-results-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;">';
 
   setups.forEach(function(s, idx) {
     var scoreColor = s.score >= 75 ? 'var(--green)' : 'var(--text-muted)';
@@ -537,10 +537,10 @@ function renderComponentBar(label, value, max, color) {
 }
 
 function renderTop100List(tickers) {
-  var html = '<div class="card" style="padding:0;overflow:hidden;">';
+  var html = '<div class="sc-table-wrap" style=""><div class="card" style="padding:0;overflow:hidden;">';
 
   // Table header
-  html += '<div style="display:grid;grid-template-columns:40px 70px 80px 65px 65px 55px 55px;gap:4px;padding:8px 14px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">';
+  html += '<div class="sc-table-row" style="display:grid;grid-template-columns:40px 70px 80px 65px 65px 55px 55px;gap:4px;padding:8px 14px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">';
   html += '<span>#</span><span>Ticker</span><span>Price</span><span>20d %</span><span>50d %</span><span>vs High</span><span>SMAs</span>';
   html += '</div>';
 
@@ -549,7 +549,7 @@ function renderTop100List(tickers) {
     var pct50Color = (t.pct50d || 0) >= 0 ? 'var(--green)' : 'var(--red)';
     var bg = idx % 2 === 0 ? '' : 'background:var(--bg-secondary);';
 
-    html += '<div style="display:grid;grid-template-columns:40px 70px 80px 65px 65px 55px 55px;gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:14px;' + bg + 'align-items:center;">';
+    html += '<div class="sc-table-row" style="display:grid;grid-template-columns:40px 70px 80px 65px 65px 55px 55px;gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:14px;' + bg + 'align-items:center;">';
     html += '<span style="color:var(--text-muted);font-size:14px;">' + (idx + 1) + '</span>';
     html += '<span style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + t.ticker + '</span>';
     html += '<span style="font-family:\'JetBrains Mono\',monospace;color:var(--text-secondary);">$' + t.price.toFixed(2) + '</span>';
@@ -560,12 +560,9 @@ function renderTop100List(tickers) {
     html += '</div>';
   });
 
-  html += '</div>';
+  html += '</div></div>';
   return html;
 }
-
-
-// ==================== UI ACTIONS ====================
 
 async function refreshMomentumUI() {
   var btn = document.getElementById('refresh-universe-btn');

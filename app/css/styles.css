@@ -363,7 +363,136 @@ details[open] summary { color: var(--blue) !important; }
 }
 .theme-toggle-btn:active { transform: translateY(0); box-shadow: none; }
 
-/* Responsive: hide tagline on narrow screens to prevent overlap */
-@media (max-width: 900px) {
+/* ================================================================
+   RESPONSIVE DESIGN
+   Breakpoints:
+     - 1024px: Tablet landscape / small desktop
+     - 768px:  Tablet portrait / iPad
+     - 480px:  Mobile phones
+   ================================================================ */
+
+/* --- 1024px: Tablet landscape --- */
+@media (max-width: 1024px) {
   .header-tagline { display: none; }
+  .main { padding: 20px 16px; }
+
+  /* Overview: Market Snapshot 6-col → 3-col */
+  .ov-snap-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  /* Overview: Sector Heatmap 4-col → 3-col */
+  .ov-heatmap-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  /* Analysis: stat cards 4-col → 2-col */
+  .an-stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  /* Analysis: 2-col panels → 1-col */
+  .an-two-col { grid-template-columns: 1fr !important; }
+  /* Scanner: scan results cards */
+  .sc-results-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important; }
+}
+
+/* --- 768px: Tablet portrait / iPad --- */
+@media (max-width: 768px) {
+  .header {
+    padding: 0 12px;
+    height: 52px;
+    gap: 8px;
+  }
+  .header-left { gap: 8px; }
+  .header-title { font-size: 16px; }
+  .header-sub { display: none; } /* hide "Market Action Center" subtitle */
+  .header-right { gap: 6px; }
+  .header-right .last-updated { display: none; }
+  /* Hide text labels on header buttons, keep icons */
+  .header-right .refresh-btn {
+    padding: 7px 8px;
+    font-size: 0; /* hide text */
+  }
+  .header-right .refresh-btn svg { font-size: initial; }
+  /* Keep Sign Out visible */
+  .header-right .refresh-btn[onclick="logoutUser()"] { font-size: 12px; padding: 6px 10px; }
+  #user-email { display: none; }
+
+  /* Tabs */
+  .tabs { padding: 0 8px; }
+  .tab { padding: 10px 12px; font-size: 13px; }
+
+  .main { padding: 14px 10px; }
+
+  .card { border-radius: 12px; padding: 16px; }
+
+  /* Section titles */
+  .section-title { font-size: 16px; margin: 20px 0 10px 0; }
+
+  /* Overview: Market Snapshot 3-col → 2-col */
+  .ov-snap-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  /* Overview: Sector Heatmap 3-col → 2-col */
+  .ov-heatmap-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  /* Overview: Econ calendar horizontal → vertical stack */
+  .ov-econ-grid { grid-template-columns: 1fr !important; }
+  /* Overview: Mindset rules 2-col → 1-col */
+  .ov-mindset-cols { columns: 1 !important; }
+
+  /* Scanner: Top 100 table → horizontal scroll */
+  .sc-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .sc-table-row { min-width: 520px; }
+
+  /* Trade Journal: 2-col → stacked */
+  .tj-day-grid { grid-template-columns: 1fr !important; }
+  /* Trade Journal: Calendar stat cells */
+  .rv-stat-grid { grid-template-columns: repeat(4, 1fr); }
+
+  /* Analysis: stat grid → 2-col */
+  .an-stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .an-two-col { grid-template-columns: 1fr !important; }
+  /* Analysis: sub-nav pills scroll horizontally */
+  #analysis-subnav {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+
+  /* Settings modal */
+  #settings-overlay > div {
+    width: 95vw !important;
+    padding: 20px !important;
+    border-radius: 12px !important;
+  }
+}
+
+/* --- 480px: Mobile phones --- */
+@media (max-width: 480px) {
+  .header {
+    padding: 0 8px;
+    height: 48px;
+  }
+  .header-title { font-size: 15px; }
+
+  /* Tabs: smaller, equal-width */
+  .tabs { padding: 0 4px; gap: 0; }
+  .tab { padding: 8px 8px; font-size: 12px; flex: 1; text-align: center; }
+
+  .main { padding: 10px 8px; }
+
+  .card { border-radius: 10px; padding: 12px; }
+  .section-title { font-size: 15px; }
+
+  /* Overview: Market Snapshot → 2-col (already set) */
+  /* Overview: Sector Heatmap → 2-col (already set) */
+  /* Overview: Breadth stats */
+  .ov-breadth-footer { flex-direction: column; align-items: flex-start; gap: 2px; }
+
+  /* Scanner: results → single column */
+  .sc-results-grid { grid-template-columns: 1fr !important; }
+
+  /* Trade Journal: stat grid → 2-col on smallest */
+  .rv-stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .rv-stat-cell { padding: 8px 6px; }
+  .rv-stat-label { font-size: 10px; }
+  .rv-stat-value { font-size: 14px; }
+
+  /* Analysis: stat grid → 2-col */
+  .an-stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .an-two-col { grid-template-columns: 1fr !important; }
+
+  /* Analysis: sub-nav pills smaller */
+  #analysis-subnav .an-pill { padding: 5px 10px !important; font-size: 12px !important; }
 }
