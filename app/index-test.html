@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAC Terminal — Market Action Center</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script>var supabase={createClient:function(){return{auth:{getSession:function(){return Promise.resolve({data:{session:null}})},onAuthStateChange:function(){}}}}};</script>
+</head>
+<body>
+
+<!-- Theme init (runs immediately to prevent flash) -->
+<script>
+(function(){
+  var saved = localStorage.getItem('mac-theme');
+  var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+</script>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div style="width:32px;height:32px;background:#2563EB;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    </div>
+    <div>
+      <div class="header-title">MAC Terminal</div>
+      <div class="header-sub">Market Action Center</div>
+    </div>
+  </div>
+  <div class="header-tagline" style="position:absolute;left:50%;transform:translateX(-50%);font-size:14px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--blue);">
+    Simplify Your Trading
+  </div>
+  <div class="header-right">
+    <span class="last-updated" id="lastUpdated"></span>
+    <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Refresh
+    </button>
+    <button class="refresh-btn" onclick="toggleSettings()" title="API Keys & Settings" style="padding:7px 10px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSen-JL8VLKqSDt3hkkbqihnItxiVHc4El1o0uEis1i3Y2xOUg/viewform" target="_blank" class="refresh-btn" title="Send Feedback" style="padding:7px 10px;text-decoration:none;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </a>
+    <button class="theme-toggle-btn" id="themeToggle" title="Toggle dark mode">
+      <svg id="theme-icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg id="theme-icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </button>
+    <span id="user-email" style="font-size:11px;color:var(--text-muted);font-weight:500;"></span>
+    <button class="refresh-btn" onclick="logoutUser()" title="Sign Out">Sign Out</button>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" data-tab="overview">Overview</div>
+  <div class="tab" data-tab="scanner">Action Center</div>
+  <div class="tab" data-tab="recap">Trade Journal</div>
+  <div class="tab" data-tab="analysis">Analysis</div>
+</div>
+
+<!-- Main Content -->
+<div class="main">
+
+  <!-- ===================== OVERVIEW TAB ===================== -->
+  <div class="tab-content active" id="tab-overview"></div>
+
+  <!-- ===================== SCANNER TAB ===================== -->
+  <div class="tab-content" id="tab-scanner"></div>
+
+  <!-- ===================== TRADE RECAP TAB ===================== -->
+  <div class="tab-content" id="tab-recap">
+
+    <!-- CALENDAR VIEW -->
+    <div id="recap-cal-view">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div class="section-title" style="margin:0;"><span class="dot" style="background:var(--green)"></span> Trading Journal</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Click any day · Drop a file or paste to log trades</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="recapExportAll()" class="refresh-btn" style="padding:6px 12px;" title="Export all trade recap data to JSON file">↑ Export</button>
+          <button onclick="document.getElementById('recap-import-file').click()" class="refresh-btn" style="padding:6px 12px;" title="Import trade recap data from JSON file">↓ Import</button>
+          <input type="file" id="recap-import-file" accept=".json" style="display:none;" onchange="recapImportAll(event)">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="calNav(-1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">‹</button>
+          <div id="cal-month-label" style="font-weight:800;font-size:16px;color:var(--text-primary);min-width:160px;text-align:center;"></div>
+          <button onclick="calNav(1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">›</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;" id="cal-month-stats"></div>
+      </div>
+
+      <div id="cal-grid" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+
+    <!-- DAY DETAIL VIEW (drill-down) -->
+    <div id="recap-day-view" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button onclick="calBackToMonth()" class="refresh-btn">← Calendar</button>
+          <div>
+            <div style="font-weight:800;font-size:16px;color:var(--green);" id="day-view-title">Trade Recap</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Drop a file or paste trade data below</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="recapClear()" class="refresh-btn">Clear</button>
+          <button onclick="recapExportPDF()" id="recap-export-btn" style="display:none;" class="refresh-btn">Save Recap</button>
+        </div>
+      </div>
+
+      <div class="tj-day-grid" style="display:grid;grid-template-columns:380px 1fr;gap:16px;">
+        <!-- LEFT: Drop + paste -->
+        <div>
+          <!-- Drop zone -->
+          <div class="recap-dropzone" id="recap-dropzone" onclick="document.getElementById('recap-file-input').click()"
+            ondragover="event.preventDefault();this.style.borderColor='var(--green)';this.style.background='rgba(0,135,90,0.06)';"
+            ondragleave="this.style.borderColor='var(--border)';this.style.background='var(--bg-card)';"
+            ondrop="event.preventDefault();this.style.borderColor='var(--border)';this.style.background='var(--bg-card)';recapHandleDrop(event.dataTransfer.files[0]);">
+            <input type="file" id="recap-file-input" accept=".csv,.txt" style="display:none;" onchange="recapHandleDrop(this.files[0])">
+            <div style="font-size:28px;margin-bottom:8px;color:var(--text-muted);">↓</div>
+            <div style="font-weight:700;font-size:14px;color:var(--text-primary);margin-bottom:4px;">Drop file or click to browse</div>
+            <div style="font-size:11px;color:var(--text-muted);">CSV or text · any broker</div>
+            <div id="recap-file-name" style="margin-top:8px;font-size:11px;color:var(--green);font-weight:700;display:none;"></div>
+          </div>
+
+          <!-- Paste area -->
+          <div style="margin-bottom:12px;">
+            <div style="font-size:10px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;">— OR PASTE —</div>
+            <textarea id="recap-paste" rows="8" placeholder="Paste trade data here..." style="width:100%;font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-secondary);resize:vertical;line-height:1.5;"></textarea>
+          </div>
+
+          <button onclick="recapAnalyze()" class="refresh-btn" style="width:100%;padding:12px;font-size:14px;">ANALYZE TRADES</button>
+        </div>
+
+        <!-- RIGHT: Analysis output -->
+        <div>
+          <div id="recap-empty" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;gap:16px;color:var(--text-muted);">
+            <div style="font-size:20px;color:var(--text-muted);">—</div>
+            <div style="font-weight:800;font-size:18px;color:var(--text-primary);">DROP A FILE TO BEGIN</div>
+            <div style="font-size:12px;max-width:400px;text-align:center;line-height:1.7;">Drop your trade file on the left or paste the data. Full P&L, behavioral analysis, and AI coaching will appear here.</div>
+            <div id="recap-platform-badge" style="display:none;margin-top:8px;padding:4px 12px;background:rgba(59,130,246,0.1);border-radius:20px;font-size:10px;font-weight:700;color:var(--blue);"></div>
+          </div>
+          <div id="recap-results" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ANALYSIS TAB -->
+  <div class="tab-content" id="tab-analysis">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div class="section-title" style="margin:0;"><span class="dot" style="background:var(--blue)"></span> Analysis</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Post-market analysis · Best setups · Lessons · Forward look · All-time scorecard</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button onclick="analysisNav(-1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">‹</button>
+        <div id="analysis-date-label" style="font-weight:800;font-size:16px;color:var(--text-primary);min-width:160px;text-align:center;"></div>
+        <button onclick="analysisNav(1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">›</button>
+      </div>
+    </div>
+    <div id="analysis-content"></div>
+
+  </div>
+
+</div>
+
+
+<!-- JavaScript — load in dependency order -->
+<script src="js/auth-test.js"></script>
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/tickers.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/account.js"></script>
+<script src="js/api.js"></script>
+<script src="js/overview.js"></script>
+<script src="js/watchlist.js"></script>
+<script src="js/scanner.js"></script>
+<script src="js/journal.js"></script>
+<script src="js/analysis.js"></script>
+<script src="js/tabs.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/init.js"></script>
+<script>
+// Theme toggle handler
+(function(){
+  var btn = document.getElementById('themeToggle');
+  var moonIcon = document.getElementById('theme-icon-moon');
+  var sunIcon = document.getElementById('theme-icon-sun');
+  function updateIcons(){
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    moonIcon.style.display = isDark ? 'none' : 'block';
+    sunIcon.style.display = isDark ? 'block' : 'none';
+  }
+  updateIcons();
+  btn.addEventListener('click', function(){
+    var current = document.documentElement.getAttribute('data-theme');
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('mac-theme', next);
+    updateIcons();
+  });
+})();
+</script>
+</body>
+</html>
