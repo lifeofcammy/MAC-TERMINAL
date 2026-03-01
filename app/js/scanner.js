@@ -493,7 +493,7 @@ function renderScanner() {
 
   // ── HEADER ──
   html += '<div style="display:flex;align-items:center;justify-content:center;margin-bottom:8px;">';
-  html += '<div class="card-header-bar">Momentum Scanner</div>';
+  html += '<div style="text-align:center;"><div class="card-header-bar">Momentum Scanner</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Find the best momentum breakout setups automatically</div></div>';
   html += '</div>';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">';
   html += '<div style="font-size:12px;color:var(--text-muted);">Qullamaggie + Zanger methodology · ' + dataFreshness + '</div>';

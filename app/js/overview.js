@@ -2,13 +2,13 @@
 // Overview: Morning command center
 // Layout (top to bottom):
 // 1. Morning Mindset (collapsible, Today's Focus always visible)
-// 2. Watchlist (manual ticker entry, right under mindset)
-// 3. Market Regime (auto with 10/20 SMA logic)
-// 4. Market Snapshot (SPY/QQQ/IWM/DIA/VIX/DXY in one tight row)
-// 5. Breadth (Sector + Stock Advancers/Decliners)
+// 2. Market Regime (auto with 10/20 SMA logic)
+// 3. Market Snapshot (SPY/QQQ/IWM/DIA/VIX/DXY in one tight row)
+// 4. Stock Breadth (Advancers/Decliners)
+// 5. Sector Heatmap (collapsible, color-coded)
 // 6. Today's Catalysts + Themes (combined: econ calendar, headlines, themes)
-// 7. Sector Heatmap (collapsible, color-coded)
-// 8. Top Ideas (auto from scanners)
+// 7. Top Ideas (auto from scanners)
+// 8. Watchlist (manual ticker entry)
 
 // ==================== RENDER: OVERVIEW ====================
 async function renderOverview() {
@@ -198,25 +198,16 @@ async function renderOverview() {
 
   // ════ 1. MORNING MINDSET ════
   var mindsetRules = [
-    "My job is execution, not prediction. Only job is to manage risk.",
-    "Capital Conservation before Capital Growth.",
+    "My job is execution, not prediction. Manage risk above all.",
+    "Capital conservation before capital growth.",
     "I only trade my edge — nothing else exists.",
-    "Trading is a business, losses are business expenses.",
-    "One trade means nothing.",
+    "Losses are business expenses. One trade means nothing.",
     "I don't need to trade — I wait to be invited.",
     "I don't fight the tape, I align with it.",
-    "Hope has no room in my strategy.",
-    "Boredom is a signal I'm doing this right.",
     "Fall in love with the process, the outcome will figure itself out.",
-    "You are defined by how you handle losses.",
-    "The market is always right, respect the market.",
-    "Being wrong is okay.",
-    "Always have a stop loss.",
-    "Better to lose on a trade and follow your rules, than make money and not follow.",
-    "Discipline and process is built day in and day out.",
-    "Cut losers fast, let winners run as long as trend intact.",
-    "Avoid chop, cash is a position.",
-    "You have a limited number of bandwidth every day, conserve it."
+    "Always have a stop loss. Cut losers fast, let winners run.",
+    "Cash is a position. Avoid the chop.",
+    "Discipline is built day in and day out."
   ];
   var todayIdx = Math.floor(Date.now()/(24*60*60*1000)) % mindsetRules.length;
   var dailyFocus = mindsetRules[todayIdx];
@@ -225,7 +216,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;border-left:3px solid var(--amber);border-radius:14px;">';
   html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;user-select:none;">';
   html += '<span style="width:20px;"></span>';
-  html += '<span class="card-header-bar">Morning Mindset</span>';
+  html += '<div style="text-align:center;"><span class="card-header-bar">Morning Mindset</span><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Set your mental game before the market opens</div></div>';
   html += '<span id="mindset-arrow" style="width:20px;text-align:right;font-size:12px;color:var(--text-muted);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
   html += '</div>';
   // Today's Focus — ALWAYS visible
@@ -245,50 +236,7 @@ async function renderOverview() {
   });
   html += '</div></div></div>';
 
-  // ════ 2. WATCHLIST (right under Morning Mindset) ════
-  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="flex:1;"></div>';
-  html += '<div class="card-header-bar" style="flex:none;">Watchlist</div>';
-  var wList = getWatchlist();
-  html += '<div style="flex:1;display:flex;justify-content:flex-end;align-items:center;gap:8px;">';
-  if(wList.length>0) html += '<button onclick="clearWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Clear All</button>';
-  html += '</div>';
-  html += '</div>';
-  // Add form
-  html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-wrap:wrap;">';
-  html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
-  html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:14px;font-weight:600;color:var(--text-primary);">';
-  html += '<option value="long">▲ Long</option><option value="short">▼ Short</option><option value="watch">● Watch</option></select>';
-  html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="flex:1;min-width:120px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:14px;color:var(--text-primary);" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
-  html += '<button onclick="addToWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:6px 14px;font-size:12px;">+ Add</button>';
-  html += '</div>';
-  // Watchlist items
-  html += '<div id="watchlist-content" style="padding:10px 16px;">';
-  if(wList.length===0) {
-    html += '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:14px;">No tickers. Add symbols above to track them.</div>';
-  } else {
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">';
-    // We'll load data async after render
-    wList.forEach(function(item){
-      var biasColor = item.bias==='long'?'var(--green)':item.bias==='short'?'var(--red)':'var(--amber)';
-      var biasIcon = item.bias==='long'?'▲':item.bias==='short'?'▼':'●';
-      html += '<div class="wl-card-'+item.ticker+'" style="box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px;border-left:3px solid '+biasColor+';position:relative;">';
-      html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');refreshWatchlistUI();" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">×</button>';
-      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
-      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">'+item.ticker+'</span>';
-      html += '<span style="font-size:12px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
-      html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);">Loading...</span>';
-      html += '</div>';
-      if(item.note) html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.3;font-style:italic;">'+item.note.replace(/</g,'&lt;')+'</div>';
-      html += '</div>';
-    });
-    html += '</div>';
-  }
-  html += '</div></div>';
-
-
-  // ════ 3. MARKET REGIME ════
+  // ════ 2. MARKET REGIME ════
   var regimeLabel='Neutral',regimeColor='var(--text-muted)',regimeDetail='';
   var spyPct=spyData.pct, qqqPct=qqqData.pct, iwmPct=iwmData.pct, diaPct=diaData.pct;
   var avgPct=(spyPct+qqqPct+iwmPct+diaPct)/4;
@@ -365,7 +313,7 @@ async function renderOverview() {
 
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div class="card-header-bar">Market Regime</div>';
+  html += '<div><div class="card-header-bar">Market Regime</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Should you be aggressive or cautious today?</div></div>';
   html += '</div>';
   html += '<div style="padding:14px 20px;display:flex;align-items:flex-start;gap:12px;">';
   html += '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+regimeColor+';margin-top:4px;flex-shrink:0;"></span>';
@@ -395,11 +343,11 @@ async function renderOverview() {
   html += '</div></div>';
   html += '</div>';
 
-  // ════ 4. MARKET SNAPSHOT (tight row: SPY QQQ IWM DIA VIX DXY) ════
+  // ════ 3. MARKET SNAPSHOT (tight row: SPY QQQ IWM DIA VIX DXY) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div class="card-header-bar" style="flex:none;">Market Snapshot</div>';
+  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Market Snapshot</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">How the major indexes are moving right now</div></div>';
   html += '<div style="flex:1;text-align:right;font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</div>';
   html += '</div>';
   html += '<div style="padding:12px 16px;">';
@@ -428,14 +376,15 @@ async function renderOverview() {
   html += '</div>';
   html += '</div>';
 
-  // ════ 5. STOCK BREADTH (advancers/decliners from ~90 stock universe) ════
+  // ════ 4. STOCK BREADTH (advancers/decliners) ════
   if(adTotal > 0) {
     var adBreadthColor = adBreadthPct>=65?'var(--green)':adBreadthPct>=40?'var(--amber)':'var(--red)';
     var adGreenW = (adStocksUp/adTotal)*100;
     var adRedW = (adStocksDown/adTotal)*100;
     var adFlatW = 100-adGreenW-adRedW;
     html += '<div class="card" style="padding:16px 20px;margin-bottom:14px;">';
-    html += '<div class="card-header-bar" style="margin-bottom:8px;">Stock Breadth</div>';
+    html += '<div class="card-header-bar" style="margin-bottom:2px;">Stock Breadth</div>';
+    html += '<div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-bottom:8px;">Are most stocks going up or down today?</div>';
     html += '<div style="text-align:center;font-size:12px;color:var(--text-muted);margin-bottom:8px;">'+adStocksUp+' advancing · '+adStocksDown+' declining'+(adStocksFlat>0?' · '+adStocksFlat+' flat':'')+'</div>';
     html += '<div style="display:flex;height:20px;border-radius:6px;overflow:hidden;background:var(--bg-secondary);">';
     if(adGreenW>0) html += '<div style="width:'+adGreenW+'%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;">'+adStocksUp+'</div>';
@@ -449,11 +398,38 @@ async function renderOverview() {
     html += '</div>';
   }
 
+  // ════ 5. SECTOR HEATMAP (collapsible) ════
+  var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')==='true';
+  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
+  html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
+  html += '<div style="flex:1;"></div>';
+  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Sector Heatmap</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Which sectors are hot and which to avoid</div></div>';
+  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span></div>';
+  html += '</div>';
+  html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
+  html += '<div class="ov-heatmap-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:12px 14px;">';
+  sectorData.forEach(function(sec){
+    var chgColor,chgBg;
+    if(sec.dayChg>1){chgColor='#fff';chgBg='#059669';}
+    else if(sec.dayChg>0.3){chgColor='#fff';chgBg='#10B981';}
+    else if(sec.dayChg>0){chgColor='var(--text-primary)';chgBg='rgba(16,185,129,0.15)';}
+    else if(sec.dayChg>-0.3){chgColor='var(--text-primary)';chgBg='rgba(239,68,68,0.1)';}
+    else if(sec.dayChg>-1){chgColor='#fff';chgBg='#EF4444';}
+    else{chgColor='#fff';chgBg='#DC2626';}
+    html += '<div style="background:'+chgBg+';border-radius:6px;padding:10px;text-align:center;">';
+    html += '<div style="font-size:12px;font-weight:800;color:'+chgColor+';">'+sec.etf+'</div>';
+    html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.8;">'+sec.name+'</div>';
+    html += '<div style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:'+chgColor+';margin-top:3px;">'+pct(sec.dayChg)+'</div>';
+    html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.7;margin-top:1px;">Wk: '+pct(sec.weekPerf)+'</div>';
+    html += '</div>';
+  });
+  html += '</div></div></div>';
+
   // ════ 6. TODAY'S CATALYSTS + THEMES ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div class="card-header-bar" style="flex:none;">Today\'s Catalysts & Themes</div>';
+  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Today\'s Catalysts & Themes</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Events and trends moving the market today</div></div>';
   html += '<div style="flex:1;text-align:right;font-size:12px;color:var(--text-muted);">'+tsLabel(ts)+'</div>';
   html += '</div>';
   // Econ calendar
@@ -498,38 +474,11 @@ async function renderOverview() {
   html += '</div></div>';
   html += '</div>'; // close Catalysts+Themes card
 
-  // ════ 7. SECTOR HEATMAP (collapsible) ════
-  var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')==='true';
-  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
-  html += '<div style="flex:1;"></div>';
-  html += '<div class="card-header-bar" style="flex:none;">Sector Heatmap</div>';
-  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'▶':'▼')+'</span></div>';
-  html += '</div>';
-  html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
-  html += '<div class="ov-heatmap-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:12px 14px;">';
-  sectorData.forEach(function(sec){
-    var chgColor,chgBg;
-    if(sec.dayChg>1){chgColor='#fff';chgBg='#059669';}
-    else if(sec.dayChg>0.3){chgColor='#fff';chgBg='#10B981';}
-    else if(sec.dayChg>0){chgColor='var(--text-primary)';chgBg='rgba(16,185,129,0.15)';}
-    else if(sec.dayChg>-0.3){chgColor='var(--text-primary)';chgBg='rgba(239,68,68,0.1)';}
-    else if(sec.dayChg>-1){chgColor='#fff';chgBg='#EF4444';}
-    else{chgColor='#fff';chgBg='#DC2626';}
-    html += '<div style="background:'+chgBg+';border-radius:6px;padding:10px;text-align:center;">';
-    html += '<div style="font-size:12px;font-weight:800;color:'+chgColor+';">'+sec.etf+'</div>';
-    html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.8;">'+sec.name+'</div>';
-    html += '<div style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:'+chgColor+';margin-top:3px;">'+pct(sec.dayChg)+'</div>';
-    html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.7;margin-top:1px;">Wk: '+pct(sec.weekPerf)+'</div>';
-    html += '</div>';
-  });
-  html += '</div></div></div>';
-
-  // ════ 8. TOP IDEAS (from scanners) ════
+  // ════ 7. TOP IDEAS (from scanners) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div class="card-header-bar" style="flex:none;">Top Ideas</div>';
+  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Top Ideas</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Today\'s highest-scored trade setups</div></div>';
   html += '<div style="flex:1;display:flex;justify-content:flex-end;"><button onclick="runQuickScan()" id="quick-scan-btn" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Scan</button></div>';
   html += '</div>';
   html += '<div id="top-ideas-content" style="padding:12px 16px;">';
@@ -537,6 +486,47 @@ async function renderOverview() {
   try{var ideaKey='mac_top_ideas_'+new Date().toISOString().split('T')[0];var ideaData=localStorage.getItem(ideaKey);if(ideaData)cachedIdeas=JSON.parse(ideaData);}catch(e){}
   if(cachedIdeas&&cachedIdeas.ideas&&cachedIdeas.ideas.length>0){html+=renderTopIdeasHTML(cachedIdeas.ideas,cachedIdeas.ts);}
   else{html += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">Click "Scan" to find today\'s top setups.</div>';}
+  html += '</div></div>';
+
+  // ════ 8. WATCHLIST ════
+  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
+  html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
+  html += '<div style="flex:1;"></div>';
+  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Watchlist</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Stocks you\'re watching for entries</div></div>';
+  var wList = getWatchlist();
+  html += '<div style="flex:1;display:flex;justify-content:flex-end;align-items:center;gap:8px;">';
+  if(wList.length>0) html += '<button onclick="clearWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Clear All</button>';
+  html += '</div>';
+  html += '</div>';
+  // Add form
+  html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-wrap:wrap;">';
+  html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
+  html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:14px;font-weight:600;color:var(--text-primary);">';
+  html += '<option value="long">\u25b2 Long</option><option value="short">\u25bc Short</option><option value="watch">\u25cf Watch</option></select>';
+  html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="flex:1;min-width:120px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:14px;color:var(--text-primary);" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
+  html += '<button onclick="addToWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:6px 14px;font-size:12px;">+ Add</button>';
+  html += '</div>';
+  // Watchlist items
+  html += '<div id="watchlist-content" style="padding:10px 16px;">';
+  if(wList.length===0) {
+    html += '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:14px;">No tickers. Add symbols above to track them.</div>';
+  } else {
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">';
+    wList.forEach(function(item){
+      var biasColor = item.bias==='long'?'var(--green)':item.bias==='short'?'var(--red)':'var(--amber)';
+      var biasIcon = item.bias==='long'?'\u25b2':item.bias==='short'?'\u25bc':'\u25cf';
+      html += '<div class="wl-card-'+item.ticker+'" style="box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px;border-left:3px solid '+biasColor+';position:relative;">';
+      html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');refreshWatchlistUI();" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">\u00d7</button>';
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
+      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">'+item.ticker+'</span>';
+      html += '<span style="font-size:12px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
+      html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);">Loading...</span>';
+      html += '</div>';
+      if(item.note) html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.3;font-style:italic;">'+item.note.replace(/</g,'&lt;')+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
   html += '</div></div>';
 
   container.innerHTML = html;
