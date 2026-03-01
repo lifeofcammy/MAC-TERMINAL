@@ -172,13 +172,13 @@ function analyzeSetup(ticker: string, bars: any[]) {
       const prevC = gi > 0 ? closes[gi - 1] : closes[gi]
       const gapPct = prevC > 0 ? ((closes[gi] - prevC) / prevC) * 100 : 0
       if (gapPct > 15) {
-        const postGapHighs = highs.slice(gi + 1)
-        const postGapLows = lows.slice(gi + 1)
+        const postGapHighs = highs.slice(gi + 2)
+        const postGapLows = lows.slice(gi + 2)
         if (postGapHighs.length >= 3) {
           const postH = Math.max(...postGapHighs)
           const postL = Math.min(...postGapLows)
           const postRange = ((postH - postL) / price) * 100
-          if (postRange < 8) return null
+          if (postRange < 5) return null
         }
       }
     }

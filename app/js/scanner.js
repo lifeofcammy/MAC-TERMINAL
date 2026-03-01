@@ -356,14 +356,14 @@ function analyzeSetup(ticker, bars) {
       var prevC = gi > 0 ? closes[gi - 1] : closes[gi];
       var gapPct = prevC > 0 ? ((closes[gi] - prevC) / prevC) * 100 : 0;
       if (gapPct > 15) {
-        // Big gap found — check if price has been pinned since
-        var postGapHighs = highs.slice(gi + 1);
-        var postGapLows = lows.slice(gi + 1);
+        // Big gap found — check if price has been pinned AFTER gap day
+        var postGapHighs = highs.slice(gi + 2);
+        var postGapLows = lows.slice(gi + 2);
         if (postGapHighs.length >= 3) {
           var postH = Math.max.apply(null, postGapHighs);
           var postL = Math.min.apply(null, postGapLows);
           var postRange = ((postH - postL) / price) * 100;
-          if (postRange < 8) return null; // Pinned to deal price
+          if (postRange < 5) return null; // Pinned to deal price
         }
       }
     }
