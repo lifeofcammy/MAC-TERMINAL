@@ -226,7 +226,7 @@ async function renderOverview() {
 
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;border-left:3px solid var(--amber);border-radius:14px;">';
   html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;user-select:none;">';
-  html += '<div style="display:flex;align-items:center;justify-content:center;gap:8px;"><span style="font-size:18px;font-weight:800;">Morning Mindset</span></div>';
+  html += '<div style="display:flex;align-items:center;justify-content:center;gap:8px;"><span style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;">Morning Mindset</span></div>';
   html += '<span id="mindset-arrow" style="font-size:12px;color:var(--text-muted);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
   html += '</div>';
   // Today's Focus — ALWAYS visible
@@ -248,8 +248,8 @@ async function renderOverview() {
 
   // ════ 2. WATCHLIST (right under Morning Mindset) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:18px;font-weight:700;color:var(--text-primary);">Watchlist</div>';
+  html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
+  html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Watchlist</div>';
   var wList = getWatchlist();
   html += '<div style="display:flex;align-items:center;gap:8px;">';
   html += '<span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
@@ -365,8 +365,8 @@ async function renderOverview() {
   if(hasHighImpactEvent&&live) regimeDetail+=' ⚠ '+eventName+' today — volatility expected.';
 
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:18px;font-weight:700;color:var(--text-primary);">Market Regime</div>';
+  html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
+  html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Market Regime</div>';
   html += '</div>';
   html += '<div style="background:'+regimeBg+';padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;">';
   html += '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">';
@@ -401,8 +401,8 @@ async function renderOverview() {
   // ════ 4. MARKET SNAPSHOT (tight row: SPY QQQ IWM DIA VIX DXY) ════
   var dataFreshness = getDataFreshnessLabel();
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:18px;font-weight:700;color:var(--text-primary);">Market Snapshot</div>';
+  html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
+  html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Market Snapshot</div>';
   html += '<span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span>';
   html += '</div>';
   html += '<div style="padding:12px 16px;">';
@@ -439,7 +439,7 @@ async function renderOverview() {
     var adFlatW = 100-adGreenW-adRedW;
     html += '<div class="card" style="padding:16px 20px;margin-bottom:14px;">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
-    html += '<div style="font-size:18px;font-weight:700;color:var(--text-primary);">Stock Breadth</div>';
+    html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Stock Breadth</div>';
     html += '<div style="font-size:12px;color:var(--text-muted);">'+adStocksUp+' advancing · '+adStocksDown+' declining'+(adStocksFlat>0?' · '+adStocksFlat+' flat':'')+'</div>';
     html += '</div>';
     html += '<div style="display:flex;height:20px;border-radius:6px;overflow:hidden;background:var(--bg-secondary);">';
@@ -456,8 +456,8 @@ async function renderOverview() {
 
   // ════ 6. TODAY'S CATALYSTS + THEMES ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:18px;font-weight:700;color:var(--text-primary);">Today\'s Catalysts & Themes</div>';
+  html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
+  html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Today\'s Catalysts & Themes</div>';
   html += '<div style="font-size:12px;color:var(--text-muted);">'+tsLabel(ts)+'</div>';
   html += '</div>';
   // Econ calendar
@@ -505,8 +505,8 @@ async function renderOverview() {
   // ════ 7. SECTOR HEATMAP (collapsible) ════
   var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')==='true';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div onclick="toggleHeatmap()" style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
-  html += '<div style="font-size:18px;font-weight:700;color:var(--text-primary);">Sector Heatmap</div>';
+  html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
+  html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Sector Heatmap</div>';
   html += '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'▶':'▼')+'</span></div>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
@@ -530,8 +530,8 @@ async function renderOverview() {
 
   // ════ 8. TOP IDEAS (from scanners) ════
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div style="padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:18px;font-weight:700;color:var(--text-primary);">Top Ideas</div>';
+  html += '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">';
+  html += '<div style="font-size:18px;font-weight:400;font-family:\'DM Serif Display\',Georgia,serif;color:var(--text-primary);">Top Ideas</div>';
   html += '<button onclick="runQuickScan()" id="quick-scan-btn" style="padding:4px 10px;border-radius:5px;border:1px solid var(--green);background:rgba(16,185,129,0.08);color:var(--green);cursor:pointer;font-size:12px;font-weight:700;font-family:\'Inter\',sans-serif;">Quick Scan</button>';
   html += '</div>';
   html += '<div id="top-ideas-content" style="padding:12px 16px;">';
