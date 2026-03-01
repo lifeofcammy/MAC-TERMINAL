@@ -8,6 +8,15 @@
 var SCANNER_CACHE_KEY = 'mac_momentum_top100';
 var SCANNER_RESULTS_KEY = 'mac_scan_results';
 
+// Local date string (YYYY-MM-DD) — avoids UTC timezone shift from toISOString()
+function localDateStr(d) {
+  if (!d) d = new Date();
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+
 // ==================== LAYER 1: DAILY MOMENTUM UNIVERSE ====================
 
 function getMomentumCache() {
@@ -26,7 +35,7 @@ function isMomentumCacheFresh() {
   var cache = getMomentumCache();
   if (!cache || !cache.date) return false;
   // Fresh if generated today (or last trading day if weekend)
-  var today = new Date().toISOString().split('T')[0];
+  var today = localDateStr();
   return cache.date === today || cache.date === getLastTradingDay();
 }
 
@@ -34,7 +43,7 @@ function getLastTradingDay() {
   var d = new Date();
   // Walk back to last weekday
   while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1);
-  return d.toISOString().split('T')[0];
+  return localDateStr(d);
 }
 
 // Retry wrapper for API calls — retries on 429 / network errors
@@ -162,7 +171,7 @@ async function buildMomentumUniverse(statusFn) {
 
   // Save to cache
   var cacheData = {
-    date: new Date().toISOString().split('T')[0],
+    date: localDateStr(),
     ts: Date.now(),
     count: top100.length,
     tickers: top100
@@ -300,7 +309,7 @@ async function runBreakoutScan(statusFn) {
 
   // Save results
   var resultData = {
-    date: new Date().toISOString().split('T')[0],
+    date: localDateStr(),
     ts: Date.now(),
     setups: setups
   };

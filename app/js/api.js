@@ -22,8 +22,10 @@ async function getSnapshots(tickers) {
 }
 
 async function getDailyBars(ticker, days = 60) {
-  const to = new Date().toISOString().split('T')[0];
-  const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const now = new Date();
+  const to = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  const fd = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const from = fd.getFullYear() + '-' + String(fd.getMonth()+1).padStart(2,'0') + '-' + String(fd.getDate()).padStart(2,'0');
   const d = await polyGet(`/v2/aggs/ticker/${ticker}/range/1/day/${from}/${to}?adjusted=true&sort=asc&limit=${days}`);
   return d.results || [];
 }
