@@ -30,7 +30,8 @@ async function callAIProxy(body) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + session.access_token
+      'Authorization': 'Bearer ' + session.access_token,
+      'apikey': typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : ''
     },
     body: JSON.stringify(body)
   });

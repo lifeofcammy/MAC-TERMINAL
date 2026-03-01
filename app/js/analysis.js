@@ -349,7 +349,6 @@ function renderRecentEntries(parentEl) {
   if(missingCount > 0) {
     html += '<button onclick="backfillAnalysis(7)" id="backfill-btn" class="refresh-btn" style="padding:4px 10px;">Fill Missing ('+missingCount+')</button>';
   }
-  html += '<button onclick="backfillAnalysis(14)" id="backfill-2wk-btn" class="refresh-btn" style="padding:4px 10px;">Look Back 2 Weeks</button>';
   html += '</div></div>';
   html += '<div id="backfill-status" style="font-size:14px;color:var(--text-muted);margin-bottom:6px;"></div>';
   html += '<div class="card" style="padding:0;overflow:hidden;">';
