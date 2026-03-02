@@ -1028,7 +1028,7 @@ async function renderOverview() {
       html += '<div class="wl-card-'+item.ticker+'" style="box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px;border-left:3px solid '+biasColor+';position:relative;">';
       html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');refreshWatchlistUI();" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">\u00d7</button>';
       html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
-      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">'+item.ticker+'</span>';
+      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" onclick="event.stopPropagation();openTVChart(\''+item.ticker+'\');">'+item.ticker+'</span>';
       html += '<span style="font-size:12px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
       html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);">Loading...</span>';
       html += '</div>';
@@ -1075,7 +1075,7 @@ function refreshWatchlistUI() {
         html += '<div class="wl-card-'+item.ticker+'" style="box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px;border-left:3px solid '+biasColor+';position:relative;">';
         html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');refreshWatchlistUI();" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">×</button>';
         html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
-        html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">'+item.ticker+'</span>';
+        html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" onclick="event.stopPropagation();openTVChart(\''+item.ticker+'\');">'+item.ticker+'</span>';
         html += '<span style="font-size:12px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
         html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);">Loading...</span>';
         html += '</div>';
@@ -1273,7 +1273,7 @@ function renderThemesHTML(data, cacheTs) {
       html += '</div>';
       if(ind.tickers && ind.tickers.length>0){
         html += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:3px;">';
-        ind.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:1px 4px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+t+'</span>';});
+        ind.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:1px 4px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;cursor:pointer;" onclick="openTVChart(\''+t+'\');">'+t+'</span>';});
         html += '</div>';
       }
       if(ind.note) html += '<div style="font-size:14px;color:var(--text-muted);line-height:1.3;">'+((ind.note||'').replace(/</g,'&lt;'))+'</div>';
@@ -1368,7 +1368,7 @@ function renderLegacyThemesHTML(themes, cacheTs) {
     html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:5px;">'+(theme.description||'').replace(/</g,'&lt;')+'</div>';
     if(theme.tickers&&theme.tickers.length>0){
       html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
-      theme.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+c+'15;color:'+c+';font-family:\'JetBrains Mono\',monospace;">'+t+'</span>';});
+      theme.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+c+'15;color:'+c+';font-family:\'JetBrains Mono\',monospace;cursor:pointer;" onclick="openTVChart(\''+t+'\');">'+t+'</span>';});
       html += '</div>';
     }
     html += '</div>';
@@ -1387,7 +1387,7 @@ function renderTopIdeasHTML(ideas, cacheTs) {
     html += '<div style="background:'+sbg+';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px 16px;border-left:3px solid '+sc+'">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
     html += '<div style="display:flex;align-items:center;gap:6px;">';
-    html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">'+idea.ticker+'</span>';
+    html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" onclick="event.stopPropagation();openTVChart(\''+idea.ticker+'\');">'+idea.ticker+'</span>';
     html += '<span style="font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-secondary);">$'+(idea.price?idea.price.toFixed(2):'—')+'</span>';
     html += '</div>';
     html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid '+sc+';font-size:12px;font-weight:900;color:'+sc+';font-family:\'JetBrains Mono\',monospace;">'+idea.score+'</div>';

@@ -867,7 +867,7 @@ function renderSetupCard(s, detailIdPrefix) {
   // Header
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
   html += '<div style="display:flex;align-items:center;gap:8px;">';
-  html += '<span style="font-size:18px;font-weight:900;font-family:\'JetBrains Mono\',monospace;">' + s.ticker + '</span>';
+  html += '<span style="font-size:18px;font-weight:900;font-family:\'JetBrains Mono\',monospace;cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" onclick="event.stopPropagation();openTVChart(\'' + s.ticker + '\')">' + s.ticker + '</span>';
   html += '<span style="font-size:14px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
   html += '<span style="font-size:14px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:' + changePctColor + ';">' + (s.changePct >= 0 ? '+' : '') + s.changePct.toFixed(2) + '%</span>';
   html += '</div>';
