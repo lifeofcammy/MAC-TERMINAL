@@ -2,33 +2,58 @@
 // Global TradingView chart popup — click any ticker to open a daily chart
 // Uses TradingView's free Advanced Chart widget (15-min delayed data)
 
-// ── First-time hint banner ──
+// ── First-time ticker glow hint ──
+// Adds a subtle pulse glow to all clickable tickers until the user opens their first chart.
+var HINT_KEY = 'mac_chart_hint_seen';
+
 (function() {
-  var HINT_KEY = 'mac_chart_hint_seen';
   if (localStorage.getItem(HINT_KEY)) return;
 
-  // Wait for app to render
+  // Wait for app to render, then apply glow class to all clickable tickers
   setTimeout(function() {
-    var target = document.getElementById('app-content') || document.body;
-    var hint = document.createElement('div');
-    hint.id = 'chart-hint-banner';
-    hint.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--bg-card);border:1px solid var(--blue);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);max-width:400px;';
-    hint.innerHTML = '<span style="font-size:14px;color:var(--text-primary);line-height:1.4;">Tip: Click any <strong style="font-family:\'JetBrains Mono\',monospace;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px;">ticker symbol</strong> to view its daily chart.</span>'
-      + '<button onclick="this.parentElement.remove();localStorage.setItem(\'mac_chart_hint_seen\',\'1\');" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;line-height:1;padding:0 2px;flex-shrink:0;">&times;</button>';
-    target.appendChild(hint);
-
-    // Auto-dismiss after 8 seconds
-    setTimeout(function() {
-      var el = document.getElementById('chart-hint-banner');
-      if (el) { el.style.transition='opacity 0.3s'; el.style.opacity='0'; setTimeout(function(){ el.remove(); }, 300); }
-      localStorage.setItem(HINT_KEY, '1');
-    }, 8000);
+    applyTickerGlow();
   }, 3000);
+
+  // Re-apply glow after dynamic content loads (scans, refreshes)
+  var _glowObserver = new MutationObserver(function() {
+    if (localStorage.getItem(HINT_KEY)) { _glowObserver.disconnect(); return; }
+    applyTickerGlow();
+  });
+  setTimeout(function() {
+    var appContent = document.getElementById('app-content');
+    if (appContent && !localStorage.getItem(HINT_KEY)) {
+      _glowObserver.observe(appContent, { childList: true, subtree: true });
+    }
+  }, 4000);
 })();
+
+function applyTickerGlow() {
+  if (localStorage.getItem(HINT_KEY)) return;
+  // Find all elements with onclick containing openTVChart
+  var all = document.querySelectorAll('[onclick*="openTVChart"]');
+  all.forEach(function(el) {
+    if (!el.classList.contains('ticker-hint-glow')) {
+      el.classList.add('ticker-hint-glow');
+    }
+  });
+}
+
+function removeTickerGlow() {
+  localStorage.setItem(HINT_KEY, '1');
+  var glowing = document.querySelectorAll('.ticker-hint-glow');
+  glowing.forEach(function(el) {
+    el.classList.remove('ticker-hint-glow');
+  });
+}
 
 function openTVChart(ticker) {
   if (!ticker) return;
   ticker = ticker.toUpperCase().trim();
+
+  // First chart opened — remove glow from all tickers
+  if (!localStorage.getItem(HINT_KEY)) {
+    removeTickerGlow();
+  }
 
   // Remove any existing modal
   var existing = document.getElementById('tv-chart-modal');
