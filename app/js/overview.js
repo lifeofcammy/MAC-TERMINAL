@@ -939,8 +939,7 @@ async function renderOverview() {
     if(!tickers || tickers.length===0) return false;
     return tickers.some(function(t) {
       if(!t || t.length===0) return false;
-      if(t.length >= 5 && /[YF]$/.test(t)) return false; // ADR/foreign OTC pattern
-      if(t.length > 5) return false; // warrants, units, etc.
+      if(t.length > 4) return false; // Only 1-4 char tickers (US common stocks)
       return true;
     });
   }
