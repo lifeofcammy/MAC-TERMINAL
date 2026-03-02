@@ -3,169 +3,217 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MAC Terminal</title>
-<link rel="stylesheet" href="css/styles.css?v=20260302">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>MAC Terminal — Market Action Center</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="app-shell">
+<body>
 
-<!-- ═══ TOP NAV ═══ -->
-<nav class="top-nav">
-  <div class="nav-brand">
-    <span class="logo-text">MAC Terminal</span>
+<!-- Theme init (runs immediately to prevent flash) -->
+<script>
+(function(){
+  var saved = localStorage.getItem('mac-theme');
+  var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+</script>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div style="width:32px;height:32px;background:#2563EB;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    </div>
+    <div>
+      <div class="header-title">MAC Terminal</div>
+      <div class="header-sub">Market Action Center</div>
+    </div>
   </div>
-  <div class="nav-actions">
-    <span id="lastUpdated" class="text-muted" style="font-size:0.72rem"></span>
-    <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="5"/>
-        <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-      </svg>
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-      </svg>
+  <div class="header-tagline" style="position:absolute;left:50%;transform:translateX(-50%);font-family:'DM Serif Display',Georgia,serif;font-size:20px;font-weight:400;letter-spacing:0.02em;color:var(--blue);">
+    Simplify Your Trading
+  </div>
+  <div class="header-right">
+    <span class="last-updated" id="lastUpdated"></span>
+    <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Refresh
     </button>
+    <button class="refresh-btn" onclick="toggleSettings()" title="API Keys & Settings" style="padding:7px 10px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <a href="#" onclick="openFeedbackModal();return false;" class="refresh-btn" title="Send Feedback" style="padding:7px 10px;text-decoration:none;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </a>
+    <button class="theme-toggle-btn" id="themeToggle" title="Toggle dark mode">
+      <svg id="theme-icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg id="theme-icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </button>
+    <span id="user-email" style="font-size:11px;color:var(--text-muted);font-weight:500;"></span>
+    <button class="refresh-btn" onclick="logoutUser()" title="Sign Out">Sign Out</button>
   </div>
-</nav>
+</div>
 
-<!-- ═══ TICKER BAR ═══ -->
-<div class="ticker-bar" id="tickerBar"><!-- filled by scanner.js --></div>
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" data-tab="overview">Overview</div>
+  <div class="tab" data-tab="scanner">Scanner</div>
+  <div class="tab" data-tab="recap">Trade Journal</div>
+  <div class="tab" data-tab="analysis">Analysis</div>
+</div>
 
-<!-- ═══ MAIN ═══ -->
-<main class="main-content">
+<!-- Main Content -->
+<div class="main">
 
-  <!-- ── STAT CARDS ── -->
-  <div class="grid-4" style="margin-bottom:1.25rem">
-    <div class="card stat-card card-sm">
-      <span class="stat-label">S&amp;P 500</span>
-      <span class="stat-value" id="statSpyPrice">—</span>
-      <span class="stat-sub"><span id="statSpyChg">—</span></span>
-    </div>
-    <div class="card stat-card card-sm">
-      <span class="stat-label">Nasdaq 100</span>
-      <span class="stat-value" id="statQqqPrice">—</span>
-      <span class="stat-sub"><span id="statQqqChg">—</span></span>
-    </div>
-    <div class="card stat-card card-sm">
-      <span class="stat-label">VIX</span>
-      <span class="stat-value" id="statVixPrice">—</span>
-      <span class="stat-sub"><span id="statVixChg">—</span></span>
-    </div>
-    <div class="card stat-card card-sm">
-      <span class="stat-label">Adv / Dec</span>
-      <span class="stat-value" style="font-size:1.2rem">
-        <span id="statAdv" class="up">—</span> / <span id="statDec" class="dn">—</span>
-      </span>
-    </div>
-  </div>
+  <!-- ===================== OVERVIEW TAB ===================== -->
+  <div class="tab-content active" id="tab-overview"></div>
 
-  <!-- ── TABS ── -->
-  <div class="tab-row mb-3">
-    <button class="tab-btn active" data-tab="scanner">Scanner</button>
-    <button class="tab-btn" data-tab="heatmap">Heatmap</button>
-    <button class="tab-btn" data-tab="universe">Universe</button>
-    <button class="tab-btn" data-tab="macro">Macro</button>
-    <button class="tab-btn" data-tab="watchlist">Watchlist</button>
-    <button class="tab-btn" data-tab="news">News</button>
-  </div>
+  <!-- ===================== SCANNER TAB ===================== -->
+  <div class="tab-content" id="tab-scanner"></div>
 
-  <!-- ── SCANNER PANEL ── -->
-  <div data-panel="scanner">
-    <div class="scanner-controls">
-      <input id="scannerSearch" type="text" placeholder="Search symbol or name…">
-      <select id="sectorFilter">
-        <option value="">All sectors</option>
-        <option>Technology</option>
-        <option>Financial Services</option>
-        <option>Healthcare</option>
-        <option>Energy</option>
-        <option>Industrials</option>
-        <option>Consumer Defensive</option>
-        <option>Consumer Cyclical</option>
-      </select>
-      <button id="resetFilters" class="btn btn-sm">Reset</button>
-    </div>
-    <div class="card" style="padding:0;overflow:hidden">
-      <table class="data-table">
-        <thead><tr>
-          <th data-sort="symbol">Symbol</th>
-          <th data-sort="regularMarketPrice">Price</th>
-          <th data-sort="regularMarketChange">Chg $</th>
-          <th data-sort="regularMarketChangePercent">Chg %</th>
-          <th data-sort="regularMarketVolume">Volume</th>
-          <th data-sort="volRatio">Vol/Avg</th>
-          <th data-sort="marketCap">Mkt Cap</th>
-          <th data-sort="fiftyTwoWeekHigh">52W Hi</th>
-          <th>% from Hi</th>
-        </tr></thead>
-        <tbody id="scannerBody"></tbody>
-      </table>
-    </div>
-  </div>
+  <!-- ===================== TRADE RECAP TAB ===================== -->
+  <div class="tab-content" id="tab-recap">
 
-  <!-- ── HEATMAP PANEL ── -->
-  <div data-panel="heatmap" style="display:none">
-    <div class="card">
-      <div class="section-header mb-3"><span class="section-title">Market Heatmap</span></div>
-      <div class="heatmap-grid" id="heatmapGrid"></div>
+    <!-- CALENDAR VIEW -->
+    <div id="recap-cal-view">
+      <div style="display:flex;align-items:center;justify-content:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+      <div style="text-align:center;"><div class="card-header-bar">Trading Journal</div>
+      <div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Drop a file or paste trades to review your performance</div></div>
     </div>
-  </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="recapExportAll()" class="refresh-btn" style="padding:6px 12px;" title="Export all trade recap data to JSON file">↑ Export</button>
+          <button onclick="document.getElementById('recap-import-file').click()" class="refresh-btn" style="padding:6px 12px;" title="Import trade recap data from JSON file">↓ Import</button>
+          <input type="file" id="recap-import-file" accept=".json" style="display:none;" onchange="recapImportAll(event)">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="calNav(-1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">‹</button>
+          <div id="cal-month-label" style="font-weight:800;font-size:16px;color:var(--text-primary);min-width:160px;text-align:center;"></div>
+          <button onclick="calNav(1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">›</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;" id="cal-month-stats"></div>
+      </div>
 
-  <!-- ── UNIVERSE PANEL ── -->
-  <div data-panel="universe" style="display:none">
-    <div class="section-header mb-3">
-      <span class="section-title">Watchable Universe</span>
+      <div id="cal-grid" style="display:flex;flex-direction:column;gap:6px;"></div>
     </div>
-    <div class="universe-grid" id="universeGrid"></div>
-  </div>
 
-  <!-- ── MACRO PANEL ── -->
-  <div data-panel="macro" style="display:none">
-    <div class="card">
-      <div class="section-header mb-3"><span class="section-title">Macro Indicators</span></div>
-      <div class="macro-grid">
-        <div class="macro-item"><span class="macro-label">DXY</span><span class="macro-value" id="macroDxyVal">—</span><span class="macro-sub" id="macroDxyChg">—</span></div>
-        <div class="macro-item"><span class="macro-label">Gold (GLD)</span><span class="macro-value" id="macroGoldVal">—</span><span class="macro-sub" id="macroGoldChg">—</span></div>
-        <div class="macro-item"><span class="macro-label">Oil (USO)</span><span class="macro-value" id="macroOilVal">—</span><span class="macro-sub" id="macroOilChg">—</span></div>
-        <div class="macro-item"><span class="macro-label">Bitcoin</span><span class="macro-value" id="macroBtcVal">—</span><span class="macro-sub" id="macroBtcChg">—</span></div>
-        <div class="macro-item"><span class="macro-label">20yr Bond (TLT)</span><span class="macro-value" id="macroTltVal">—</span><span class="macro-sub" id="macroTltChg">—</span></div>
-        <div class="macro-item"><span class="macro-label">VIX</span><span class="macro-value" id="macroVixVal">—</span><span class="macro-sub" id="macroVixChg">—</span></div>
+    <!-- DAY DETAIL VIEW (drill-down) -->
+    <div id="recap-day-view" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button onclick="calBackToMonth()" class="refresh-btn">← Calendar</button>
+          <div>
+            <div style="font-weight:800;font-size:16px;color:var(--green);" id="day-view-title">Trade Recap</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Drop a file or paste trade data below</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="recapClear()" class="refresh-btn">Clear</button>
+          <button onclick="recapExportPDF()" id="recap-export-btn" style="display:none;" class="refresh-btn">Save Recap</button>
+        </div>
+      </div>
+
+      <div class="tj-day-grid" style="display:grid;grid-template-columns:380px 1fr;gap:16px;">
+        <!-- LEFT: Drop + paste -->
+        <div>
+          <!-- Drop zone -->
+          <div class="recap-dropzone" id="recap-dropzone" onclick="document.getElementById('recap-file-input').click()"
+            ondragover="event.preventDefault();this.style.borderColor='var(--green)';this.style.background='rgba(0,135,90,0.06)';"
+            ondragleave="this.style.borderColor='var(--border)';this.style.background='var(--bg-card)';"
+            ondrop="event.preventDefault();this.style.borderColor='var(--border)';this.style.background='var(--bg-card)';recapHandleDrop(event.dataTransfer.files[0]);">
+            <input type="file" id="recap-file-input" accept=".csv,.txt" style="display:none;" onchange="recapHandleDrop(this.files[0])">
+            <div style="font-size:28px;margin-bottom:8px;color:var(--text-muted);">↓</div>
+            <div style="font-weight:700;font-size:14px;color:var(--text-primary);margin-bottom:4px;">Drop file or click to browse</div>
+            <div style="font-size:11px;color:var(--text-muted);">CSV or text · any broker</div>
+            <div id="recap-file-name" style="margin-top:8px;font-size:11px;color:var(--green);font-weight:700;display:none;"></div>
+          </div>
+
+          <!-- Paste area -->
+          <div style="margin-bottom:12px;">
+            <div style="font-size:10px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;">— OR PASTE —</div>
+            <textarea id="recap-paste" rows="8" placeholder="Paste trade data here..." style="width:100%;font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-secondary);resize:vertical;line-height:1.5;"></textarea>
+          </div>
+
+          <button onclick="recapAnalyze()" class="refresh-btn" style="width:100%;padding:12px;font-size:14px;">ANALYZE TRADES</button>
+        </div>
+
+        <!-- RIGHT: Analysis output -->
+        <div>
+          <div id="recap-empty" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;gap:16px;color:var(--text-muted);">
+            <div style="font-size:20px;color:var(--text-muted);">—</div>
+            <div style="font-weight:800;font-size:18px;color:var(--text-primary);">DROP A FILE TO BEGIN</div>
+            <div style="font-size:12px;max-width:400px;text-align:center;line-height:1.7;">Drop your trade file on the left or paste the data. Full P&L, behavioral analysis, and AI coaching will appear here.</div>
+            <div id="recap-platform-badge" style="display:none;margin-top:8px;padding:4px 12px;background:rgba(59,130,246,0.1);border-radius:20px;font-size:10px;font-weight:700;color:var(--blue);"></div>
+          </div>
+          <div id="recap-results" style="display:none;"></div>
+        </div>
       </div>
     </div>
+
   </div>
 
-  <!-- ── WATCHLIST PANEL ── -->
-  <div data-panel="watchlist" style="display:none">
-    <div class="card">
-      <div class="section-header mb-3"><span class="section-title">Watchlist</span></div>
-      <div id="watchlistBody"></div>
+  <!-- ANALYSIS TAB -->
+  <div class="tab-content" id="tab-analysis">
+    <div style="display:flex;align-items:center;justify-content:center;margin-bottom:8px;">
+      <div style="text-align:center;"><div class="card-header-bar">Analysis</div>
+      <div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">AI-powered breakdown of your trading patterns</div></div>
     </div>
-  </div>
-
-  <!-- ── NEWS PANEL ── -->
-  <div data-panel="news" style="display:none">
-    <div class="card">
-      <div class="section-header mb-3"><span class="section-title">Market News</span></div>
-      <div id="newsFeed"></div>
+    <div style="display:flex;align-items:center;justify-content:center;margin-bottom:16px;gap:8px;position:relative;">
+        <button onclick="analysisNav(-1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">‹</button>
+        <div id="analysis-date-label" onclick="toggleAnalysisDateDropdown()" style="font-weight:800;font-size:16px;color:var(--text-primary);min-width:160px;text-align:center;cursor:pointer;padding:6px 12px;border-radius:6px;border:1px solid transparent;transition:all 0.15s ease;" onmouseover="this.style.borderColor='var(--border)';this.style.background='var(--bg-secondary)';" onmouseout="this.style.borderColor='transparent';this.style.background='transparent';"></div>
+        <button onclick="analysisNav(1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">›</button>
+        <div id="analysis-date-dropdown" style="display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:4px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px;z-index:100;max-height:300px;overflow-y:auto;min-width:220px;"></div>
     </div>
+    <div id="analysis-content"></div>
+
   </div>
 
-  <!-- ── SENTIMENT ── -->
-  <div class="card mt-4">
-    <div class="section-header mb-3"><span class="section-title">Market Breadth</span></div>
-    <div class="sentiment-bar-wrap">
-      <div class="sentiment-row"><span class="sentiment-label">Advancing</span><div class="sentiment-track"><div class="sentiment-fill" id="sentAdvFill"></div></div><span class="sentiment-val" id="sentAdvVal">—</span></div>
-      <div class="sentiment-row"><span class="sentiment-label">Declining</span><div class="sentiment-track"><div class="sentiment-fill" id="sentDecFill"></div></div><span class="sentiment-val" id="sentDecVal">—</span></div>
-      <div class="sentiment-row"><span class="sentiment-label">Above 50 MA</span><div class="sentiment-track"><div class="sentiment-fill" id="sentAboveFill"></div></div><span class="sentiment-val" id="sentAboveVal">—</span></div>
-      <div class="sentiment-row"><span class="sentiment-label">Vol Surge</span><div class="sentiment-track"><div class="sentiment-fill" id="sentVolumeFill"></div></div><span class="sentiment-val" id="sentVolumeVal">—</span></div>
-    </div>
-  </div>
+</div>
 
-</main>
 
-<script src="js/scanner.js?v=20260302"></script>
+<!-- JavaScript — load in dependency order -->
+<script src="js/auth.js?v=20260302"></script>
+<script src="js/config.js?v=20260302"></script>
+<script src="js/db.js?v=20260302"></script>
+<script src="js/tickers.js?v=20260302"></script>
+<script src="js/utils.js?v=20260302"></script>
+<script src="js/account.js?v=20260302"></script>
 <script src="js/chart.js?v=20260302"></script>
+<script src="js/api.js?v=20260302"></script>
+<script src="js/overview.js?v=20260302"></script>
+<script src="js/watchlist.js?v=20260302"></script>
+<script src="js/scanner.js?v=20260302"></script>
+<script src="js/journal.js?v=20260302"></script>
+<script src="js/analysis.js?v=20260302"></script>
+<script src="js/tabs.js?v=20260302"></script>
+<script src="js/settings.js?v=20260302"></script>
+<script src="js/feedback.js?v=20260302"></script>
+<script src="js/init.js?v=20260302"></script>
+<script>
+// Theme toggle handler
+(function(){
+  var btn = document.getElementById('themeToggle');
+  var moonIcon = document.getElementById('theme-icon-moon');
+  var sunIcon = document.getElementById('theme-icon-sun');
+  function updateIcons(){
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    moonIcon.style.display = isDark ? 'none' : 'block';
+    sunIcon.style.display = isDark ? 'block' : 'none';
+  }
+  updateIcons();
+  btn.addEventListener('click', function(){
+    var current = document.documentElement.getAttribute('data-theme');
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('mac-theme', next);
+    updateIcons();
+  });
+})();
+</script>
 </body>
 </html>

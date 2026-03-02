@@ -2,95 +2,113 @@
 // Global TradingView chart popup — click any ticker to open a daily chart
 // Uses TradingView's free Advanced Chart widget (15-min delayed data)
 
-// ── First-time ticker glow hint ──
-(function glowHint() {
-  const KEY = 'mac_ticker_clicked';
-  if (localStorage.getItem(KEY)) return;
-  // Wait for ticker chips to render, then pulse the first few
-  window.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-      const chips = document.querySelectorAll('.ticker-chip');
-      const limit = Math.min(chips.length, 3);
-      for (let i = 0; i < limit; i++) chips[i].classList.add('glow-hint');
-      // Remove class after animation finishes (3 × 1.4 s ≈ 4.5 s)
-      setTimeout(() => {
-        chips.forEach(c => c.classList.remove('glow-hint'));
-      }, 4800);
-    }, 600);
-  });
+// ── First-time hint banner ──
+(function() {
+  var HINT_KEY = 'mac_chart_hint_seen';
+  if (localStorage.getItem(HINT_KEY)) return;
+
+  // Wait for app to render
+  setTimeout(function() {
+    var target = document.getElementById('app-content') || document.body;
+    var hint = document.createElement('div');
+    hint.id = 'chart-hint-banner';
+    hint.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--bg-card);border:1px solid var(--blue);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);max-width:400px;';
+    hint.innerHTML = '<span style="font-size:14px;color:var(--text-primary);line-height:1.4;">Tip: Click any <strong style="font-family:\'JetBrains Mono\',monospace;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px;">ticker symbol</strong> to view its daily chart.</span>'
+      + '<button onclick="this.parentElement.remove();localStorage.setItem(\'mac_chart_hint_seen\',\'1\');" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;line-height:1;padding:0 2px;flex-shrink:0;">&times;</button>';
+    target.appendChild(hint);
+
+    // Auto-dismiss after 8 seconds
+    setTimeout(function() {
+      var el = document.getElementById('chart-hint-banner');
+      if (el) { el.style.transition='opacity 0.3s'; el.style.opacity='0'; setTimeout(function(){ el.remove(); }, 300); }
+      localStorage.setItem(HINT_KEY, '1');
+    }, 8000);
+  }, 3000);
 })();
 
-// ── Modal DOM setup ──
-const CHART_MODAL_HTML = `
-<div id="chartModal">
-  <div id="chartModalBox">
-    <div id="chartModalHeader">
-      <span id="chartModalTitle">Chart</span>
-      <button id="chartModalClose" aria-label="Close chart">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2.2"
-             stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-    </div>
-    <div id="chartModalBody"></div>
-  </div>
-</div>
-`;
+function openTVChart(ticker) {
+  if (!ticker) return;
+  ticker = ticker.toUpperCase().trim();
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Inject modal
-  document.body.insertAdjacentHTML('beforeend', CHART_MODAL_HTML);
+  // Remove any existing modal
+  var existing = document.getElementById('tv-chart-modal');
+  if (existing) existing.remove();
 
-  const modal    = document.getElementById('chartModal');
-  const modalBox = document.getElementById('chartModalBox');
-  const title    = document.getElementById('chartModalTitle');
-  const body     = document.getElementById('chartModalBody');
-  const closeBtn = document.getElementById('chartModalClose');
+  // Create modal overlay
+  var overlay = document.createElement('div');
+  overlay.id = 'tv-chart-modal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
 
-  // ── Open chart ──
-  function openChart(sym) {
-    // Mark as interacted → stop glow hint
-    localStorage.setItem('mac_ticker_clicked', '1');
-    document.querySelectorAll('.ticker-chip.glow-hint')
-            .forEach(c => c.classList.remove('glow-hint'));
-
-    const theme = document.documentElement.getAttribute('data-theme') === 'dark'
-      ? 'dark' : 'light';
-    title.textContent = sym + ' — Daily Chart';
-    body.innerHTML = `<iframe
-      src="https://s.tradingview.com/widgetembed/?frameElementId=tv_chart_${sym}&symbol=${encodeURIComponent(sym)}&interval=D&theme=${theme}&style=1&locale=en&toolbar_bg=%23f1f3f6&enable_publishing=0&hide_top_toolbar=0&hide_legend=0&saveimage=0&calendar=0&hotlist=0&news=0&studies=[]&show_popup_button=0&utm_source=terminal"
-      allowtransparency="true"
-      allowfullscreen
-      scrolling="no"
-    ></iframe>`;
-    modal.classList.add('open');
-  }
-
-  // ── Close chart ──
-  function closeChart() {
-    modal.classList.remove('open');
-    body.innerHTML = '';
-  }
-
-  closeBtn.addEventListener('click', closeChart);
-  modal.addEventListener('click', e => { if (e.target === modal) closeChart(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChart(); });
-
-  // ── Delegate clicks on ticker chips & universe chips ──
-  document.addEventListener('click', e => {
-    const chip = e.target.closest('.ticker-chip, .universe-chip, .watchlist-row');
-    if (!chip) return;
-    const sym = chip.dataset.sym || chip.querySelector('.sym, .u-sym, .wl-sym')?.textContent?.trim();
-    if (sym) { e.preventDefault(); openChart(sym); }
+  // Close on overlay click
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) overlay.remove();
   });
 
-  // ── Also wire scanner rows if they have data-sym ──
-  document.addEventListener('click', e => {
-    const row = e.target.closest('tr[data-sym]');
-    if (!row) return;
-    openChart(row.dataset.sym);
-  });
-});
+  // Close on Escape key
+  function escHandler(e) {
+    if (e.key === 'Escape') {
+      overlay.remove();
+      document.removeEventListener('keydown', escHandler);
+    }
+  }
+  document.addEventListener('keydown', escHandler);
+
+  // Detect dark mode
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+    window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var tvTheme = isDark ? 'dark' : 'light';
+
+  // Modal container
+  var modal = document.createElement('div');
+  modal.style.cssText = 'position:relative;width:100%;max-width:900px;height:70vh;max-height:600px;background:var(--bg-card);border-radius:14px;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.3);display:flex;flex-direction:column;';
+
+  // Header bar
+  var header = document.createElement('div');
+  header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;';
+  header.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">'
+    + '<span style="font-size:16px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">' + ticker + '</span>'
+    + '<span style="font-size:12px;color:var(--text-muted);">Daily Chart</span>'
+    + '</div>'
+    + '<div style="display:flex;align-items:center;gap:12px;">'
+    + '<span style="font-size:11px;color:var(--text-muted);opacity:0.7;">15-min delayed</span>'
+    + '<button onclick="document.getElementById(\'tv-chart-modal\').remove()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;line-height:1;padding:0 4px;">&times;</button>'
+    + '</div>';
+  modal.appendChild(header);
+
+  // Chart container
+  var chartWrap = document.createElement('div');
+  chartWrap.id = 'tv-chart-container';
+  chartWrap.style.cssText = 'flex:1;min-height:0;';
+  modal.appendChild(chartWrap);
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  // Load TradingView widget
+  var script = document.createElement('script');
+  script.src = 'https://s3.tradingview.com/tv.js';
+  script.onload = function() {
+    if (typeof TradingView === 'undefined') return;
+    new TradingView.widget({
+      container_id: 'tv-chart-container',
+      autosize: true,
+      symbol: ticker,
+      interval: 'D',
+      timezone: 'America/New_York',
+      theme: tvTheme,
+      style: '1',
+      locale: 'en',
+      toolbar_bg: 'transparent',
+      enable_publishing: false,
+      hide_top_toolbar: false,
+      hide_legend: false,
+      save_image: false,
+      studies: ['MASimple@tv-basicstudies'],
+      hide_side_toolbar: true,
+      allow_symbol_change: true,
+      withdateranges: true,
+      details: false
+    });
+  };
+  document.head.appendChild(script);
+}
