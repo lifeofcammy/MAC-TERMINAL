@@ -1280,18 +1280,63 @@ function toggleTop100() {
 }
 
 
-// ==================== AUTO-LOAD ON PAGE LOAD ====================
-// Check server for cached results; if none, check localStorage
+// ==================== AUTO-BUILD ON PAGE LOAD ====================
+// If universe cache is stale, auto-build in background so live scan is ready
+var _autoBuildRunning = false;
+
 (function() {
   setTimeout(async function() {
+    // Skip if no API key configured
+    if (!POLYGON_KEY) return;
+
+    // Step 1: Try loading from server
     try {
       var serverData = await getServerScanResults();
-      if (serverData && serverData.momentum_universe) {
+      if (serverData && serverData.momentum_universe && serverData.momentum_universe.tickers) {
         saveMomentumCache(serverData.momentum_universe);
         if (serverData.breakout_setups) {
           try { localStorage.setItem(SCANNER_RESULTS_KEY, JSON.stringify(serverData.breakout_setups)); } catch(e) {}
         }
+        console.log('[scanner] Loaded universe from server cache.');
+        return; // Server had fresh data, done
       }
-    } catch(e) {}
-  }, 3000);
+    } catch(e) { console.warn('[scanner] Server cache check failed:', e); }
+
+    // Step 2: Check if local cache is fresh
+    if (isMomentumCacheFresh()) {
+      console.log('[scanner] Local universe cache is fresh.');
+      return;
+    }
+
+    // Step 3: Cache is stale — auto-build in background
+    if (_autoBuildRunning) return;
+    _autoBuildRunning = true;
+    console.log('[scanner] Universe stale. Auto-building in background...');
+
+    // Show subtle status in the scanner tab if it's visible
+    var idleStatus = document.getElementById('scanner-status-idle');
+    if (idleStatus) idleStatus.textContent = 'Auto-building momentum universe...';
+
+    try {
+      await buildMomentumUniverse(function(msg) {
+        console.log('[scanner] ' + msg);
+        if (idleStatus) idleStatus.textContent = msg;
+      });
+      console.log('[scanner] Auto-build complete. Live scan ready.');
+      if (idleStatus) {
+        var cache = getMomentumCache();
+        idleStatus.textContent = 'Universe ready \xb7 ' + (cache ? cache.count : 0) + ' stocks \xb7 Click Scan for live setups';
+      }
+      // Also update the top 100 list if visible
+      var cache = getMomentumCache();
+      var top100Body = document.getElementById('top100-body');
+      if (top100Body && cache && cache.tickers) {
+        top100Body.innerHTML = renderTop100List(cache.tickers);
+      }
+    } catch(e) {
+      console.warn('[scanner] Auto-build failed:', e);
+      if (idleStatus) idleStatus.textContent = 'Auto-build failed: ' + e.message;
+    }
+    _autoBuildRunning = false;
+  }, 2000);
 })();
