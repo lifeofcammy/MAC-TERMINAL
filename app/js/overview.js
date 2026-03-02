@@ -498,7 +498,7 @@ async function renderOverview() {
       html += '<div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px;text-align:center;">\u25b2 Accelerating</div>';
       rotatingIn.forEach(function(s){
         html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:2px;background:rgba(16,185,129,0.06);border-radius:4px;">';
-        html += '<span style="font-size:12px;font-weight:700;color:var(--text-primary);">' + s.name + '</span>';
+        html += '<span style="font-size:12px;"><span style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + s.etf + '</span> <span style="font-weight:600;color:var(--text-muted);">' + s.name + '</span></span>';
         html += '<span style="font-size:12px;color:var(--green);font-weight:700;font-family:\'JetBrains Mono\',monospace;">+' + s.rotation.toFixed(1) + '</span>';
         html += '</div>';
       });
@@ -510,7 +510,7 @@ async function renderOverview() {
       html += '<div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:4px;text-align:center;">\u25bc Decelerating</div>';
       rotatingOut.forEach(function(s){
         html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:2px;background:rgba(239,68,68,0.06);border-radius:4px;">';
-        html += '<span style="font-size:12px;font-weight:700;color:var(--text-primary);">' + s.name + '</span>';
+        html += '<span style="font-size:12px;"><span style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + s.etf + '</span> <span style="font-weight:600;color:var(--text-muted);">' + s.name + '</span></span>';
         html += '<span style="font-size:12px;color:var(--red);font-weight:700;font-family:\'JetBrains Mono\',monospace;">' + s.rotation.toFixed(1) + '</span>';
         html += '</div>';
       });
