@@ -4,11 +4,142 @@
 // 1. Morning Mindset (collapsible, Today's Focus always visible)
 // 2. Market Regime (auto with 10/20 SMA logic)
 // 3. Market Snapshot (SPY/QQQ/IWM/DIA/VIX/DXY in one tight row)
-// 4. Stock Breadth (Advancers/Decliners)
+// 4. Stock Breadth (Advancers/Decliners) — auto-refreshes every 15 min
 // 5. Sector Heatmap (collapsible, color-coded)
 // 6. Today's Catalysts + Themes (combined: econ calendar, headlines, themes)
 // 7. Top Ideas (auto from scanners)
 // 8. Watchlist (manual ticker entry)
+
+// ==================== BREADTH AUTO-REFRESH ENGINE ====================
+// Stores 15-min breadth readings in session memory
+var _breadthHistory = []; // [{time: Date, pct: number, up: number, down: number, flat: number}]
+var _breadthInterval = null;
+var _breadthLastUpdate = null;
+
+// Fetch breadth data only (lightweight — just the snapshot)
+async function fetchBreadthData() {
+  var up=0, down=0, flat=0;
+  try {
+    var allSnap = await polyGet('/v2/snapshot/locale/us/markets/stocks/tickers?include_otc=false');
+    (allSnap.tickers || []).forEach(function(s) {
+      if(!s || !s.prevDay || !s.prevDay.c) return;
+      var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : s.prevDay.c;
+      var prev = s.prevDay.c;
+      if(!p || !prev || prev < 1 || (s.day&&s.day.v&&s.day.v < 10000)) return;
+      var adPct = ((p-prev)/prev)*100;
+      if(adPct > 0.01) up++;
+      else if(adPct < -0.01) down++;
+      else flat++;
+    });
+  } catch(e) { console.warn('Breadth refresh failed:', e); return null; }
+  var total = up + down + flat;
+  if(total === 0) return null;
+  return { up: up, down: down, flat: flat, total: total, pct: Math.round((up/total)*100) };
+}
+
+// Record a breadth reading into history
+function recordBreadthReading(data) {
+  if(!data) return;
+  var now = new Date();
+  _breadthHistory.push({
+    time: now,
+    pct: data.pct,
+    up: data.up,
+    down: data.down,
+    flat: data.flat
+  });
+  _breadthLastUpdate = now;
+  // Keep only last 20 readings (~5 hours)
+  if(_breadthHistory.length > 20) _breadthHistory.shift();
+}
+
+// Render just the breadth card body (partial refresh — no full page reload)
+function renderBreadthBody(data) {
+  var el = document.getElementById('breadth-body');
+  if(!el || !data) return;
+  var pct = data.pct;
+  var color = pct>=65?'var(--green)':pct>=40?'var(--amber)':'var(--red)';
+  var greenW = (data.up/data.total)*100;
+  var redW = (data.down/data.total)*100;
+  var flatW = 100-greenW-redW;
+
+  var html = '';
+  html += '<div style="text-align:center;font-size:12px;color:var(--text-muted);margin-bottom:8px;">'+data.up+' advancing \xb7 '+data.down+' declining'+(data.flat>0?' \xb7 '+data.flat+' flat':'')+'</div>';
+  // Bar
+  html += '<div style="display:flex;height:20px;border-radius:6px;overflow:hidden;background:var(--bg-secondary);">';
+  if(greenW>0) html += '<div style="width:'+greenW+'%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;">'+data.up+'</div>';
+  if(flatW>0) html += '<div style="width:'+flatW+'%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-muted);">'+data.flat+'</div>';
+  if(redW>0) html += '<div style="width:'+redW+'%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;">'+data.down+'</div>';
+  html += '</div>';
+  // Footer: breadth % + last updated
+  var updateLabel = _breadthLastUpdate ? _breadthLastUpdate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'}) + ' ET' : getDataFreshnessLabel();
+  html += '<div class="ov-breadth-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:14px;color:var(--text-muted);">';
+  html += '<span>Breadth: <span style="color:'+color+';font-weight:700;">'+pct+'%</span></span>';
+  html += '<span style="font-size:12px;" id="breadth-updated-label">Updated '+updateLabel+'</span>';
+  html += '</div>';
+  // History timeline (if we have 2+ readings)
+  html += renderBreadthTimeline();
+  el.innerHTML = html;
+  // Pulse animation on the updated label
+  var lbl = document.getElementById('breadth-updated-label');
+  if(lbl) { lbl.style.color='var(--blue)'; setTimeout(function(){ if(lbl) lbl.style.color='var(--text-muted)'; }, 1500); }
+}
+
+// Render the 15-min history timeline
+function renderBreadthTimeline() {
+  if(_breadthHistory.length < 2) return '';
+  var html = '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Breadth Trend (15-min)</div>';
+  html += '<div style="display:flex;align-items:flex-end;gap:3px;height:50px;">';
+  // Mini bar chart — each reading is a bar
+  var maxPct = 100; // breadth % is 0-100
+  _breadthHistory.forEach(function(r, i) {
+    var h = Math.max(4, (r.pct / maxPct) * 46); // min 4px height
+    var barColor = r.pct>=65?'var(--green)':r.pct>=40?'var(--amber)':'var(--red)';
+    var timeStr = r.time.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
+    var isLast = i === _breadthHistory.length - 1;
+    html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;max-width:40px;" title="'+timeStr+': '+r.pct+'% ('+r.up+' up / '+r.down+' dn)">';
+    html += '<div style="font-size:10px;font-weight:'+(isLast?'800':'600')+';color:'+(isLast?barColor:'var(--text-muted)')+';line-height:1;">'+r.pct+'</div>';
+    html += '<div style="width:100%;height:'+h+'px;background:'+barColor+';border-radius:3px 3px 0 0;opacity:'+(isLast?'1':'0.6')+';min-width:8px;"></div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  // Time labels: first and last
+  html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:2px;">';
+  var firstTime = _breadthHistory[0].time.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
+  var lastTime = _breadthHistory[_breadthHistory.length-1].time.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
+  html += '<span>'+firstTime+'</span>';
+  if(_breadthHistory.length > 2) {
+    var delta = _breadthHistory[_breadthHistory.length-1].pct - _breadthHistory[0].pct;
+    var deltaColor = delta > 0 ? 'var(--green)' : delta < 0 ? 'var(--red)' : 'var(--text-muted)';
+    var arrow = delta > 0 ? '\u25b2' : delta < 0 ? '\u25bc' : '\u25cf';
+    html += '<span style="color:'+deltaColor+';font-weight:700;">'+arrow+' '+(delta>0?'+':'')+delta+'%</span>';
+  }
+  html += '<span>'+lastTime+'</span>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+// Auto-refresh breadth every 15 minutes during market hours
+function startBreadthAutoRefresh() {
+  if(_breadthInterval) clearInterval(_breadthInterval);
+  _breadthInterval = setInterval(async function() {
+    // Only refresh during market hours (9:30 AM - 4:00 PM ET, weekdays)
+    if(!isMarketOpen()) return;
+    console.log('[Breadth] Auto-refreshing...');
+    var data = await fetchBreadthData();
+    if(data) {
+      recordBreadthReading(data);
+      renderBreadthBody(data);
+    }
+  }, 15 * 60 * 1000); // 15 minutes
+}
+
+// Stop auto-refresh (call when navigating away from overview)
+function stopBreadthAutoRefresh() {
+  if(_breadthInterval) { clearInterval(_breadthInterval); _breadthInterval = null; }
+}
 
 // ==================== RENDER: OVERVIEW ====================
 async function renderOverview() {
@@ -412,30 +543,21 @@ async function renderOverview() {
   html += '</div>';
   html += '</div>';
 
-  // ════ 4. STOCK BREADTH (advancers/decliners) ════
+  // ════ 4. STOCK BREADTH (advancers/decliners) — auto-refreshes every 15 min ════
   if(adTotal > 0) {
-    var adBreadthColor = adBreadthPct>=65?'var(--green)':adBreadthPct>=40?'var(--amber)':'var(--red)';
-    var adGreenW = (adStocksUp/adTotal)*100;
-    var adRedW = (adStocksDown/adTotal)*100;
-    var adFlatW = 100-adGreenW-adRedW;
+    // Record initial reading into history
+    recordBreadthReading({ up: adStocksUp, down: adStocksDown, flat: adStocksFlat, total: adTotal, pct: adBreadthPct });
+
     var breadthCardCollapsed = localStorage.getItem('mac_breadth_collapsed')==='true';
+    var autoLabel = live ? 'Auto-refreshes every 15 min' : '';
     html += '<div class="card" style="padding:0;margin-bottom:14px;overflow:hidden;">';
     html += '<div onclick="toggleCard(\'breadth\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
     html += '<div style="flex:1;"></div>';
-    html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Stock Breadth</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Are most stocks going up or down today?</div></div>';
+    html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Stock Breadth</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Are most stocks going up or down today?'+(autoLabel?' · <span style="color:var(--blue);">'+autoLabel+'</span>':'')+'</div></div>';
     html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;"><span id="breadth-arrow" style="font-size:12px;color:var(--text-muted);">'+(breadthCardCollapsed?'\u25b6':'\u25bc')+'</span></div>';
     html += '</div>';
     html += '<div id="breadth-body" style="'+(breadthCardCollapsed?'display:none;':'')+'padding:12px 20px;">';
-    html += '<div style="text-align:center;font-size:12px;color:var(--text-muted);margin-bottom:8px;">'+adStocksUp+' advancing · '+adStocksDown+' declining'+(adStocksFlat>0?' · '+adStocksFlat+' flat':'')+'</div>';
-    html += '<div style="display:flex;height:20px;border-radius:6px;overflow:hidden;background:var(--bg-secondary);">';
-    if(adGreenW>0) html += '<div style="width:'+adGreenW+'%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;">'+adStocksUp+'</div>';
-    if(adFlatW>0) html += '<div style="width:'+adFlatW+'%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-muted);">'+adStocksFlat+'</div>';
-    if(adRedW>0) html += '<div style="width:'+adRedW+'%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;">'+adStocksDown+'</div>';
-    html += '</div>';
-    html += '<div class="ov-breadth-footer" style="display:flex;justify-content:space-between;margin-top:4px;font-size:14px;color:var(--text-muted);">';
-    html += '<span>Breadth: '+adBreadthPct+'%</span>';
-    html += '<span>'+dataFreshness+'</span>';
-    html += '</div>';
+    // Initial content will be rendered by renderBreadthBody after innerHTML is set
     html += '</div></div>';
   }
 
@@ -640,6 +762,14 @@ async function renderOverview() {
   loadEconCalendar();
   // Load watchlist live prices async
   loadWatchlistPrices();
+  // Render initial breadth card body (uses recordBreadthReading data from above)
+  if(adTotal > 0) {
+    renderBreadthBody({ up: adStocksUp, down: adStocksDown, flat: adStocksFlat, total: adTotal, pct: adBreadthPct });
+  }
+  // Start 15-min auto-refresh for breadth (only during market hours)
+  if(live) {
+    startBreadthAutoRefresh();
+  }
   // Auto-generate themes if no cache and user is logged in
   if(!cachedThemes && window._currentSession){
     setTimeout(function(){ generateThemes(); }, 500);

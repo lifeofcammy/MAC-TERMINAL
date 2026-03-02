@@ -8,6 +8,12 @@ document.querySelectorAll('.tabs > .tab').forEach(tab => {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    // Stop breadth auto-refresh when leaving overview; restart when returning
+    if (tab.dataset.tab === 'overview') {
+      renderOverview();
+    } else {
+      stopBreadthAutoRefresh();
+    }
     // Trigger per-tab renders
     if (tab.dataset.tab === 'analysis') renderAnalysis();
     if (tab.dataset.tab === 'scanner' && !window._scannerLoaded) { renderScanner(); window._scannerLoaded = true; }
