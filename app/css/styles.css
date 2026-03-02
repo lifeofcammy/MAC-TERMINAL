@@ -135,22 +135,6 @@ body {
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-/* ── Ticker hint glow for new users ── */
-@keyframes ticker-glow {
-  0%, 100% { text-shadow: 0 0 4px rgba(37,99,235,0.4); }
-  50% { text-shadow: 0 0 10px rgba(37,99,235,0.7), 0 0 20px rgba(37,99,235,0.3); }
-}
-.ticker-hint-glow {
-  animation: ticker-glow 2s ease-in-out infinite;
-}
-[data-theme="dark"] .ticker-hint-glow {
-  animation: ticker-glow-dark 2s ease-in-out infinite;
-}
-@keyframes ticker-glow-dark {
-  0%, 100% { text-shadow: 0 0 4px rgba(59,130,246,0.5); }
-  50% { text-shadow: 0 0 10px rgba(59,130,246,0.8), 0 0 20px rgba(59,130,246,0.4); }
-}
-
 /* Tabs */
 .tabs {
   display: flex;
