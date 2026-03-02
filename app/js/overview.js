@@ -882,8 +882,10 @@ async function renderOverview() {
   // Top news headlines
   html += '<div style="padding:10px 16px;">';
   html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Top Headlines</div>';
-  if(newsArticles.length>0) {
-    var topNews = newsArticles.slice(0,5);
+  // Filter to US stock news only (articles must have at least one ticker)
+  var usNewsArticles = newsArticles.filter(function(a){ return a.tickers && a.tickers.length > 0; });
+  if(usNewsArticles.length>0) {
+    var topNews = usNewsArticles.slice(0,5);
     html += '<div style="display:grid;gap:4px;">';
     topNews.forEach(function(article){
       var pubTime = new Date(article.published_utc).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
