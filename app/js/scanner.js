@@ -303,45 +303,69 @@ async function runLiveBreakoutScan(statusFn) {
   }
 
   var tickers = cache.tickers.map(function(t) { return t.ticker; });
+  var tickerMap = {};
+  cache.tickers.forEach(function(t) { tickerMap[t.ticker] = t; });
+
+  // ── STEP 1: Fetch live snapshots ──
   statusFn('Fetching live snapshots for ' + tickers.length + ' stocks...');
-
-  // Fetch snapshots in batches (API supports comma-separated tickers)
   var allSnapshots = {};
-  var batchSize = 50; // Snapshot endpoint handles many tickers at once
-
-  for (var i = 0; i < tickers.length; i += batchSize) {
-    var batch = tickers.slice(i, i + batchSize);
+  var snapBatchSize = 50;
+  for (var si = 0; si < tickers.length; si += snapBatchSize) {
+    var snapBatch = tickers.slice(si, si + snapBatchSize);
     try {
-      var snapMap = await getSnapshots(batch);
+      var snapMap = await getSnapshots(snapBatch);
       for (var key in snapMap) {
         if (snapMap.hasOwnProperty(key)) allSnapshots[key] = snapMap[key];
       }
     } catch(e) {
       console.warn('[live-scan] Snapshot batch failed:', e);
     }
-    var progress = Math.min(i + batchSize, tickers.length);
-    statusFn('Fetching snapshots... ' + progress + '/' + tickers.length);
+    var sp = Math.min(si + snapBatchSize, tickers.length);
+    statusFn('Fetching snapshots... ' + sp + '/' + tickers.length);
   }
 
-  statusFn('Analyzing live data...');
+  // ── STEP 2: Fetch 15-day daily bars for compression + avg volume ──
+  statusFn('Fetching daily bars for compression analysis...');
+  var allBars = {};
+  var barBatchSize = 20;
+  for (var bi = 0; bi < tickers.length; bi += barBatchSize) {
+    var barBatch = tickers.slice(bi, bi + barBatchSize);
+    var barPromises = barBatch.map(function(ticker) {
+      return getDailyBarsRetry(ticker, 25).then(function(bars) {
+        return { ticker: ticker, bars: bars };
+      }).catch(function() { return { ticker: ticker, bars: [] }; });
+    });
+    var barResults = await Promise.all(barPromises);
+    barResults.forEach(function(r) { allBars[r.ticker] = r.bars; });
+    var bp = Math.min(bi + barBatchSize, tickers.length);
+    statusFn('Fetching bars... ' + bp + '/' + tickers.length);
+    if (bi + barBatchSize < tickers.length) {
+      await new Promise(function(r) { setTimeout(r, 50); });
+    }
+  }
 
-  // Score each stock based on live snapshot vs previous day
-  var liveSetups = [];
+  statusFn('Analyzing compression + live volume...');
+
   var marketOpen = isMarketOpenNow();
   var etNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
   var etTimeStr = etNow.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  var etHours = etNow.getHours() + etNow.getMinutes() / 60;
+  var mktMinutesElapsed = marketOpen ? Math.max((etHours - 9.5) * 60, 1) : 1;
+  var expectedVolFraction = mktMinutesElapsed / 390;
+
+  var liveSetups = [];
 
   tickers.forEach(function(ticker) {
     var snap = allSnapshots[ticker];
+    var bars = allBars[ticker];
     if (!snap || !snap.prevDay || !snap.prevDay.c) return;
+    if (!bars || bars.length < 10) return;
 
     var prevClose = snap.prevDay.c;
-    var prevHigh = snap.prevDay.h || prevClose;
-    var prevLow = snap.prevDay.l || prevClose;
     var prevVol = snap.prevDay.v || 0;
 
-    // Current data — use day data if market is open, otherwise prevDay
-    var curPrice = 0, curHigh = 0, curLow = 0, curVol = 0, curVwap = 0;
+    // Current live data
+    var curPrice = 0, curVol = 0, curVwap = 0, curHigh = 0, curLow = 0;
     if (snap.day && snap.day.c && snap.day.c > 0) {
       curPrice = snap.day.c;
       curHigh = snap.day.h || curPrice;
@@ -349,91 +373,167 @@ async function runLiveBreakoutScan(statusFn) {
       curVol = snap.day.v || 0;
       curVwap = snap.day.vw || 0;
     } else {
-      // Pre-market or no day data yet — use last trade or prevDay
       curPrice = snap.lastTrade ? snap.lastTrade.p : prevClose;
       curHigh = curPrice;
       curLow = curPrice;
-      curVol = 0;
     }
-
-    if (curPrice <= 0 || prevClose <= 0) return;
+    if (curPrice <= 0) return;
 
     var changePct = ((curPrice - prevClose) / prevClose) * 100;
-    var gapPct = changePct; // At open, this IS the gap
 
-    // Volume ratio vs previous day
-    var volRatio = prevVol > 0 ? (curVol / prevVol) : 0;
+    // ── COMPRESSION ANALYSIS (from daily bars) ──
+    var closes = bars.map(function(b) { return b.c; });
+    var highs = bars.map(function(b) { return b.h; });
+    var lows = bars.map(function(b) { return b.l; });
+    var volumes = bars.map(function(b) { return b.v; });
+    var len = closes.length;
 
-    // Get cached momentum data for this ticker
-    var cachedTicker = null;
-    cache.tickers.forEach(function(t) { if (t.ticker === ticker) cachedTicker = t; });
-    var momentumScore = cachedTicker ? cachedTicker.score : 0;
+    // 5-day and 10-day range
+    var recent5H = Math.max.apply(null, highs.slice(-5));
+    var recent5L = Math.min.apply(null, lows.slice(-5));
+    var range5 = ((recent5H - recent5L) / prevClose) * 100;
 
-    // ── LIVE SCORING ──
+    var recent10H = Math.max.apply(null, highs.slice(-10));
+    var recent10L = Math.min.apply(null, lows.slice(-10));
+    var range10 = ((recent10H - recent10L) / prevClose) * 100;
+
+    // 20-day average volume
+    var avgVol20 = 0;
+    var volSlice = volumes.slice(-20);
+    if (volSlice.length > 0) {
+      var volSum = 0;
+      volSlice.forEach(function(v) { volSum += v; });
+      avgVol20 = volSum / volSlice.length;
+    }
+
+    // Recent 5-day avg volume (to detect dry-up before today)
+    var avgVol5 = 0;
+    var volSlice5 = volumes.slice(-5);
+    if (volSlice5.length > 0) {
+      var volSum5 = 0;
+      volSlice5.forEach(function(v) { volSum5 += v; });
+      avgVol5 = volSum5 / volSlice5.length;
+    }
+    var baseVolRatio = avgVol20 > 0 ? avgVol5 / avgVol20 : 1;
+
+    // Breakout level = top of recent range
+    var breakoutLevel = recent10H;
+    var distToBreakout = breakoutLevel > 0 ? ((breakoutLevel - prevClose) / prevClose) * 100 : 0;
+
+    // Is today breaking out of the range?
+    var breakingOut = curPrice > breakoutLevel;
+    var nearBreakout = !breakingOut && distToBreakout <= 2;
+
+    // SMA from bars
+    function sma(arr, period) {
+      if (arr.length < period) return null;
+      var s = 0; for (var i = arr.length - period; i < arr.length; i++) s += arr[i]; return s / period;
+    }
+    var sma10 = sma(closes, 10), sma20 = sma(closes, 20);
+
+    // ── RELATIVE VOLUME TODAY (pace-adjusted) ──
+    var relativeVol = 0;
+    if (marketOpen && avgVol20 > 0 && curVol > 0) {
+      relativeVol = (curVol / avgVol20) / expectedVolFraction;
+    }
+
+    // ── SCORING: Compression + Volume Surge + Breakout ──
     var score = 0;
     var signals = [];
     var setupType = '';
 
-    // 1. Gap-up scoring (0-30 pts)
-    if (changePct >= 10) { score += 30; signals.push('Major gap +' + changePct.toFixed(1) + '%'); setupType = 'GAP UP'; }
-    else if (changePct >= 5) { score += 25; signals.push('Strong gap +' + changePct.toFixed(1) + '%'); setupType = 'GAP UP'; }
-    else if (changePct >= 3) { score += 20; signals.push('Gap +' + changePct.toFixed(1) + '%'); setupType = 'GAP UP'; }
-    else if (changePct >= 1.5) { score += 12; signals.push('Modest gap +' + changePct.toFixed(1) + '%'); setupType = 'OPENING RANGE'; }
-    else if (changePct >= 0.5) { score += 5; signals.push('Slight gap +' + changePct.toFixed(1) + '%'); }
+    // 1. TIGHTNESS / COMPRESSION (0-30 pts) — Qullamaggie's #1 factor
+    var ptsTight = 0;
+    if (range5 <= 3) { ptsTight = 30; signals.push('Very tight 5d range (' + range5.toFixed(1) + '%)'); }
+    else if (range5 <= 5) { ptsTight = 25; signals.push('Tight 5d range (' + range5.toFixed(1) + '%)'); }
+    else if (range5 <= 7) { ptsTight = 18; signals.push('Compressing (' + range5.toFixed(1) + '% 5d)'); }
+    else if (range5 <= 10) { ptsTight = 10; }
+    else if (range10 <= 10) { ptsTight = 8; signals.push('10d base (' + range10.toFixed(1) + '%)'); }
+    score += ptsTight;
 
-    // 2. Breaking previous day's high (0-25 pts)
-    if (curPrice > prevHigh) {
-      var breakPct = ((curPrice - prevHigh) / prevHigh) * 100;
-      if (breakPct >= 3) { score += 25; signals.push('Breaking prev high by ' + breakPct.toFixed(1) + '%'); }
-      else if (breakPct >= 1) { score += 20; signals.push('Above prev high +' + breakPct.toFixed(1) + '%'); }
-      else { score += 12; signals.push('Just broke prev high'); }
-      if (!setupType) setupType = 'BREAKOUT';
+    // 2. VOLUME DRY-UP IN BASE (0-15 pts) — sellers exhausted before today
+    var ptsDryUp = 0;
+    if (baseVolRatio <= 0.4) { ptsDryUp = 15; signals.push('Vol dried up to ' + Math.round(baseVolRatio * 100) + '% of avg'); }
+    else if (baseVolRatio <= 0.6) { ptsDryUp = 10; signals.push('Vol declining (' + Math.round(baseVolRatio * 100) + '% of avg)'); }
+    else if (baseVolRatio <= 0.75) { ptsDryUp = 5; }
+    score += ptsDryUp;
+
+    // 3. LIVE VOLUME SURGE (0-30 pts) — the trigger: volume coming back TODAY
+    var ptsVolSurge = 0;
+    if (marketOpen && relativeVol > 0) {
+      if (relativeVol >= 4) { ptsVolSurge = 30; signals.push('Volume exploding ' + relativeVol.toFixed(1) + 'x pace'); }
+      else if (relativeVol >= 2.5) { ptsVolSurge = 25; signals.push('Heavy volume ' + relativeVol.toFixed(1) + 'x pace'); }
+      else if (relativeVol >= 1.8) { ptsVolSurge = 20; signals.push('Volume picking up ' + relativeVol.toFixed(1) + 'x pace'); }
+      else if (relativeVol >= 1.3) { ptsVolSurge = 12; signals.push('Above-avg volume ' + relativeVol.toFixed(1) + 'x'); }
+      else if (relativeVol >= 1) { ptsVolSurge = 5; }
+    }
+    score += ptsVolSurge;
+
+    // 4. BREAKOUT PROXIMITY / ACTUAL BREAKOUT (0-25 pts)
+    var ptsBreakout = 0;
+    if (breakingOut) {
+      var breakPct = ((curPrice - breakoutLevel) / breakoutLevel) * 100;
+      if (breakPct <= 3) { ptsBreakout = 25; signals.push('Breaking out above $' + breakoutLevel.toFixed(2)); setupType = 'BREAKOUT'; }
+      else if (breakPct <= 6) { ptsBreakout = 18; signals.push('Above range by ' + breakPct.toFixed(1) + '%'); setupType = 'BREAKOUT'; }
+      else { ptsBreakout = 8; signals.push('Extended ' + breakPct.toFixed(1) + '% past range'); setupType = 'EXTENDED'; }
+    } else if (nearBreakout) {
+      ptsBreakout = 15; signals.push('Near breakout ($' + breakoutLevel.toFixed(2) + ', ' + distToBreakout.toFixed(1) + '% away)');
+      setupType = 'NEAR BREAKOUT';
+    } else if (distToBreakout <= 5) {
+      ptsBreakout = 6;
+    }
+    score += ptsBreakout;
+
+    // Must have some compression AND some volume signal to qualify
+    if (ptsTight < 8) return;  // Not compressed enough
+    if (ptsVolSurge < 5 && !breakingOut) return;  // No volume trigger and not breaking out
+    if (score < 30) return;  // Overall too weak
+    if (changePct < -5) return;  // Dumping, not breaking out
+
+    if (!setupType) {
+      if (ptsVolSurge >= 20) setupType = 'VOLUME SURGE';
+      else if (changePct >= 2) setupType = 'MOMENTUM';
+      else setupType = 'COMPRESSION';
     }
 
-    // 3. Volume surge (0-25 pts) — compare current volume to fraction of prior full day
-    // If market has been open 2 hours and volume is already 50% of yesterday = very strong
-    if (marketOpen && prevVol > 0 && curVol > 0) {
-      var etHours = etNow.getHours() + etNow.getMinutes() / 60;
-      var mktMinutesElapsed = Math.max((etHours - 9.5) * 60, 1);
-      var expectedVolFraction = mktMinutesElapsed / 390; // 390 min in trading day
-      var relativeVol = (curVol / prevVol) / expectedVolFraction;
-
-      if (relativeVol >= 3) { score += 25; signals.push('Volume ' + relativeVol.toFixed(1) + 'x expected pace'); }
-      else if (relativeVol >= 2) { score += 20; signals.push('Volume ' + relativeVol.toFixed(1) + 'x pace'); }
-      else if (relativeVol >= 1.5) { score += 12; signals.push('Above-avg volume'); }
-      else if (relativeVol >= 1) { score += 5; signals.push('Normal volume'); }
-    } else if (!marketOpen && changePct >= 2) {
-      // Pre-market: can't judge volume, but a gap is still relevant
-      score += 5;
-      signals.push('Pre-market (no vol data)');
-    }
-
-    // 4. Momentum bonus from cached universe score (0-20 pts)
-    if (momentumScore >= 80) { score += 20; signals.push('Top momentum (' + momentumScore + ')'); }
-    else if (momentumScore >= 60) { score += 14; }
-    else if (momentumScore >= 40) { score += 8; }
-    else { score += 3; }
-
-    // Minimum threshold — need some actual live signal
-    if (score < 25 || (changePct < 0.5 && curPrice <= prevHigh)) return;
-    if (!setupType) setupType = changePct >= 0 ? 'MOMENTUM' : 'PULLBACK';
+    // Suggested levels
+    var entryPrice = breakingOut ? curPrice : breakoutLevel;
+    var stopPrice = Math.max(recent5L, sma20 ? sma20 * 0.99 : recent10L);
+    var riskPct = entryPrice > 0 ? ((entryPrice - stopPrice) / entryPrice) * 100 : 0;
+    var targetPrice = entryPrice + (entryPrice - stopPrice) * 2;
 
     liveSetups.push({
       ticker: ticker,
       price: curPrice,
       prevClose: prevClose,
       changePct: Math.round(changePct * 100) / 100,
-      prevHigh: prevHigh,
       curHigh: curHigh,
       curLow: curLow,
       volume: curVol,
-      prevVolume: prevVol,
+      avgVol20: avgVol20,
+      relativeVol: Math.round(relativeVol * 10) / 10,
       vwap: curVwap,
+      range5: Math.round(range5 * 10) / 10,
+      range10: Math.round(range10 * 10) / 10,
+      breakoutLevel: breakoutLevel,
+      breakingOut: breakingOut,
+      distToBreakout: Math.round(distToBreakout * 10) / 10,
+      baseVolRatio: Math.round(baseVolRatio * 100),
       score: Math.round(score),
       setupType: setupType,
       signals: signals,
-      momentumScore: momentumScore,
-      description: signals.join(' · ')
+      momentumScore: tickerMap[ticker] ? tickerMap[ticker].score : 0,
+      description: signals.join(' \xb7 '),
+      entryPrice: entryPrice,
+      stopPrice: stopPrice,
+      targetPrice: targetPrice,
+      riskPct: Math.round(riskPct * 10) / 10,
+      components: {
+        tightness: ptsTight,
+        volumeDryUp: ptsDryUp,
+        volumeSurge: ptsVolSurge,
+        breakoutProximity: ptsBreakout
+      }
     });
   });
 
@@ -448,7 +548,6 @@ async function runLiveBreakoutScan(statusFn) {
     setups: liveSetups
   };
 
-  // Save results
   try { localStorage.setItem(SCANNER_RESULTS_KEY, JSON.stringify(resultData)); } catch(e) {}
 
   statusFn('Found ' + liveSetups.length + ' live setups.');
@@ -463,24 +562,24 @@ function renderLiveScanResults(data) {
 
   html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">';
   html += '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;"></span> Live Scan</span>';
-  html += '<span style="font-size:12px;color:var(--text-muted);">' + etTime + ' ET · ' + setups.length + ' setups</span>';
+  html += '<span style="font-size:12px;color:var(--text-muted);">' + etTime + ' ET \xb7 ' + setups.length + ' setups \xb7 Compression + Volume Surge</span>';
   html += '</div>';
 
   if (setups.length === 0) {
-    html += '<div class="card" style="padding:24px;text-align:center;color:var(--text-muted);font-size:14px;">No notable setups detected yet. Check back after market opens or as volume builds.</div>';
+    html += '<div class="card" style="padding:24px;text-align:center;color:var(--text-muted);font-size:14px;">No compression breakouts detected yet. Check back as volume builds during the session.</div>';
     return html;
   }
 
   html += '<div class="sc-results-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start;">';
 
   setups.forEach(function(s, idx) {
-    var scoreColor = s.score >= 60 ? 'var(--green)' : s.score >= 40 ? 'var(--blue)' : 'var(--text-muted)';
+    var scoreColor = s.score >= 70 ? 'var(--green)' : s.score >= 45 ? 'var(--blue)' : 'var(--text-muted)';
     var changePctColor = s.changePct >= 0 ? 'var(--green)' : 'var(--red)';
     var detailId = 'live-detail-' + idx;
 
     html += '<div style="background:var(--bg-card);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:14px;padding:16px 18px;border-left:3px solid ' + scoreColor + ';cursor:pointer;" onclick="var d=document.getElementById(\'' + detailId + '\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';">';
 
-    // Header: ticker + price + change + score
+    // Header
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
     html += '<div style="display:flex;align-items:center;gap:8px;">';
     html += '<span style="font-size:18px;font-weight:900;font-family:\'JetBrains Mono\',monospace;">' + s.ticker + '</span>';
@@ -494,36 +593,58 @@ function renderLiveScanResults(data) {
 
     // Signal description
     if (s.description) {
-      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:6px;">' + s.description + '</div>';
+      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:8px;">' + s.description + '</div>';
     }
 
-    // Quick stats row
-    html += '<div style="display:flex;gap:8px;font-size:12px;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);">';
-    html += '<span>Prev: $' + s.prevClose.toFixed(2) + '</span>';
-    if (s.volume > 0) html += '<span>Vol: ' + (s.volume > 1000000 ? (s.volume/1000000).toFixed(1) + 'M' : (s.volume > 1000 ? (s.volume/1000).toFixed(0) + 'K' : s.volume)) + '</span>';
-    if (s.vwap > 0) html += '<span>VWAP: $' + s.vwap.toFixed(2) + '</span>';
+    // Component bars
+    var comps = s.components || {};
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:14px;">';
+    html += renderComponentBar('Tightness', comps.tightness || 0, 30, scoreColor);
+    html += renderComponentBar('Base Vol Dry', comps.volumeDryUp || 0, 15, scoreColor);
+    html += renderComponentBar('Vol Surge', comps.volumeSurge || 0, 30, scoreColor);
+    html += renderComponentBar('Breakout', comps.breakoutProximity || 0, 25, scoreColor);
+    html += '</div>';
+
+    // Quick stats
+    html += '<div style="display:flex;gap:8px;margin-top:8px;font-size:12px;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);flex-wrap:wrap;">';
+    html += '<span>5d: ' + s.range5 + '%</span>';
+    if (s.relativeVol > 0) html += '<span>RVol: ' + s.relativeVol + 'x</span>';
+    html += '<span>Brkout: $' + s.breakoutLevel.toFixed(2) + (s.breakingOut ? ' \u2714' : ' (' + s.distToBreakout + '% away)') + '</span>';
     html += '</div>';
 
     // Expandable detail
-    html += '<div id="' + detailId + '" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">';
-    html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:11px;">Prev Close</div><div style="font-weight:700;font-family:\'JetBrains Mono\',monospace;font-size:14px;">$' + s.prevClose.toFixed(2) + '</div></div>';
-    html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:11px;">Prev High</div><div style="font-weight:700;font-family:\'JetBrains Mono\',monospace;font-size:14px;">$' + s.prevHigh.toFixed(2) + '</div></div>';
-    html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:11px;">Today High</div><div style="font-weight:700;font-family:\'JetBrains Mono\',monospace;font-size:14px;">$' + s.curHigh.toFixed(2) + '</div></div>';
+    html += '<div id="' + detailId + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">';
+
+    // Trade Levels
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Trade Levels</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px;">';
+    html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Entry</div><div style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--blue);font-size:14px;">$' + (s.entryPrice ? s.entryPrice.toFixed(2) : '\u2014') + '</div></div>';
+    html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Stop</div><div style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--red);font-size:14px;">$' + (s.stopPrice ? s.stopPrice.toFixed(2) : '\u2014') + '</div></div>';
+    html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Target (2:1)</div><div style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--green);font-size:14px;">$' + (s.targetPrice ? s.targetPrice.toFixed(2) : '\u2014') + '</div></div>';
     html += '</div>';
+
+    // Context stats
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">';
+    html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:11px;">5d Range</div><div style="font-weight:700;font-size:14px;">' + s.range5 + '%</div></div>';
+    html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:11px;">10d Range</div><div style="font-weight:700;font-size:14px;">' + s.range10 + '%</div></div>';
+    html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:11px;">Base Vol</div><div style="font-weight:700;font-size:14px;">' + s.baseVolRatio + '% of avg</div></div>';
     if (s.vwap > 0) {
       var aboveVwap = s.price > s.vwap;
-      html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Price is ' + (aboveVwap ? '<span style="color:var(--green);">above</span>' : '<span style="color:var(--red);">below</span>') + ' VWAP ($' + s.vwap.toFixed(2) + ') — ' + (aboveVwap ? 'buyers in control' : 'sellers winning') + '</div>';
+      html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:11px;">VWAP</div><div style="font-weight:700;font-size:14px;color:' + (aboveVwap ? 'var(--green)' : 'var(--red)') + ';">$' + s.vwap.toFixed(2) + '</div></div>';
     }
-    html += '<div style="font-size:12px;color:var(--text-muted);">Momentum rank: ' + s.momentumScore + '/100</div>';
-    html += '</div>'; // close detail
+    html += '</div>';
 
+    // Risk
+    html += '<div style="font-size:12px;color:var(--text-muted);">Risk: ' + (s.riskPct || 0) + '% per share \xb7 Momentum rank: ' + s.momentumScore + '/100</div>';
+
+    html += '</div>'; // close detail
     html += '</div>'; // close card
   });
 
   html += '</div>';
   return html;
 }
+
 
 
 // ==================== LAYER 2: BREAKOUT / COMPRESSION SCAN ====================
