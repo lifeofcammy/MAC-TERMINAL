@@ -2,6 +2,30 @@
 // Global TradingView chart popup — click any ticker to open a daily chart
 // Uses TradingView's free Advanced Chart widget (15-min delayed data)
 
+// ── First-time hint banner ──
+(function() {
+  var HINT_KEY = 'mac_chart_hint_seen';
+  if (localStorage.getItem(HINT_KEY)) return;
+
+  // Wait for app to render
+  setTimeout(function() {
+    var target = document.getElementById('app-content') || document.body;
+    var hint = document.createElement('div');
+    hint.id = 'chart-hint-banner';
+    hint.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--bg-card);border:1px solid var(--blue);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);max-width:400px;';
+    hint.innerHTML = '<span style="font-size:14px;color:var(--text-primary);line-height:1.4;">Tip: Click any <strong style="font-family:\'JetBrains Mono\',monospace;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px;">ticker symbol</strong> to view its daily chart.</span>'
+      + '<button onclick="this.parentElement.remove();localStorage.setItem(\'mac_chart_hint_seen\',\'1\');" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;line-height:1;padding:0 2px;flex-shrink:0;">&times;</button>';
+    target.appendChild(hint);
+
+    // Auto-dismiss after 8 seconds
+    setTimeout(function() {
+      var el = document.getElementById('chart-hint-banner');
+      if (el) { el.style.transition='opacity 0.3s'; el.style.opacity='0'; setTimeout(function(){ el.remove(); }, 300); }
+      localStorage.setItem(HINT_KEY, '1');
+    }, 8000);
+  }, 3000);
+})();
+
 function openTVChart(ticker) {
   if (!ticker) return;
   ticker = ticker.toUpperCase().trim();
