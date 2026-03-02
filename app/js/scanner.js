@@ -275,6 +275,257 @@ function calcMomentumScore(bars, currentPrice) {
 }
 
 
+// ==================== LIVE BREAKOUT SCAN (MARKET HOURS) ====================
+// Uses Polygon snapshot endpoint for real-time data against cached universe
+
+function isScannerMarketHours() {
+  var now = new Date();
+  var et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  var h = et.getHours(), m = et.getMinutes(), d = et.getDay();
+  // Market hours: Mon-Fri 9:30 AM - 4:00 PM ET
+  // Also include pre-market from 4 AM for gap detection
+  return d > 0 && d < 6 && h >= 4 && h < 17;
+}
+
+function isMarketOpenNow() {
+  var now = new Date();
+  var et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  var h = et.getHours(), m = et.getMinutes(), d = et.getDay();
+  return d > 0 && d < 6 && (h > 9 || (h === 9 && m >= 30)) && h < 16;
+}
+
+async function runLiveBreakoutScan(statusFn) {
+  if (!statusFn) statusFn = function() {};
+
+  var cache = getMomentumCache();
+  if (!cache || !cache.tickers || cache.tickers.length === 0) {
+    throw new Error('No momentum universe cached. Run a full scan first (available after market close).');
+  }
+
+  var tickers = cache.tickers.map(function(t) { return t.ticker; });
+  statusFn('Fetching live snapshots for ' + tickers.length + ' stocks...');
+
+  // Fetch snapshots in batches (API supports comma-separated tickers)
+  var allSnapshots = {};
+  var batchSize = 50; // Snapshot endpoint handles many tickers at once
+
+  for (var i = 0; i < tickers.length; i += batchSize) {
+    var batch = tickers.slice(i, i + batchSize);
+    try {
+      var snapMap = await getSnapshots(batch);
+      for (var key in snapMap) {
+        if (snapMap.hasOwnProperty(key)) allSnapshots[key] = snapMap[key];
+      }
+    } catch(e) {
+      console.warn('[live-scan] Snapshot batch failed:', e);
+    }
+    var progress = Math.min(i + batchSize, tickers.length);
+    statusFn('Fetching snapshots... ' + progress + '/' + tickers.length);
+  }
+
+  statusFn('Analyzing live data...');
+
+  // Score each stock based on live snapshot vs previous day
+  var liveSetups = [];
+  var marketOpen = isMarketOpenNow();
+  var etNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  var etTimeStr = etNow.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+  tickers.forEach(function(ticker) {
+    var snap = allSnapshots[ticker];
+    if (!snap || !snap.prevDay || !snap.prevDay.c) return;
+
+    var prevClose = snap.prevDay.c;
+    var prevHigh = snap.prevDay.h || prevClose;
+    var prevLow = snap.prevDay.l || prevClose;
+    var prevVol = snap.prevDay.v || 0;
+
+    // Current data — use day data if market is open, otherwise prevDay
+    var curPrice = 0, curHigh = 0, curLow = 0, curVol = 0, curVwap = 0;
+    if (snap.day && snap.day.c && snap.day.c > 0) {
+      curPrice = snap.day.c;
+      curHigh = snap.day.h || curPrice;
+      curLow = snap.day.l || curPrice;
+      curVol = snap.day.v || 0;
+      curVwap = snap.day.vw || 0;
+    } else {
+      // Pre-market or no day data yet — use last trade or prevDay
+      curPrice = snap.lastTrade ? snap.lastTrade.p : prevClose;
+      curHigh = curPrice;
+      curLow = curPrice;
+      curVol = 0;
+    }
+
+    if (curPrice <= 0 || prevClose <= 0) return;
+
+    var changePct = ((curPrice - prevClose) / prevClose) * 100;
+    var gapPct = changePct; // At open, this IS the gap
+
+    // Volume ratio vs previous day
+    var volRatio = prevVol > 0 ? (curVol / prevVol) : 0;
+
+    // Get cached momentum data for this ticker
+    var cachedTicker = null;
+    cache.tickers.forEach(function(t) { if (t.ticker === ticker) cachedTicker = t; });
+    var momentumScore = cachedTicker ? cachedTicker.score : 0;
+
+    // ── LIVE SCORING ──
+    var score = 0;
+    var signals = [];
+    var setupType = '';
+
+    // 1. Gap-up scoring (0-30 pts)
+    if (changePct >= 10) { score += 30; signals.push('Major gap +' + changePct.toFixed(1) + '%'); setupType = 'GAP UP'; }
+    else if (changePct >= 5) { score += 25; signals.push('Strong gap +' + changePct.toFixed(1) + '%'); setupType = 'GAP UP'; }
+    else if (changePct >= 3) { score += 20; signals.push('Gap +' + changePct.toFixed(1) + '%'); setupType = 'GAP UP'; }
+    else if (changePct >= 1.5) { score += 12; signals.push('Modest gap +' + changePct.toFixed(1) + '%'); setupType = 'OPENING RANGE'; }
+    else if (changePct >= 0.5) { score += 5; signals.push('Slight gap +' + changePct.toFixed(1) + '%'); }
+
+    // 2. Breaking previous day's high (0-25 pts)
+    if (curPrice > prevHigh) {
+      var breakPct = ((curPrice - prevHigh) / prevHigh) * 100;
+      if (breakPct >= 3) { score += 25; signals.push('Breaking prev high by ' + breakPct.toFixed(1) + '%'); }
+      else if (breakPct >= 1) { score += 20; signals.push('Above prev high +' + breakPct.toFixed(1) + '%'); }
+      else { score += 12; signals.push('Just broke prev high'); }
+      if (!setupType) setupType = 'BREAKOUT';
+    }
+
+    // 3. Volume surge (0-25 pts) — compare current volume to fraction of prior full day
+    // If market has been open 2 hours and volume is already 50% of yesterday = very strong
+    if (marketOpen && prevVol > 0 && curVol > 0) {
+      var etHours = etNow.getHours() + etNow.getMinutes() / 60;
+      var mktMinutesElapsed = Math.max((etHours - 9.5) * 60, 1);
+      var expectedVolFraction = mktMinutesElapsed / 390; // 390 min in trading day
+      var relativeVol = (curVol / prevVol) / expectedVolFraction;
+
+      if (relativeVol >= 3) { score += 25; signals.push('Volume ' + relativeVol.toFixed(1) + 'x expected pace'); }
+      else if (relativeVol >= 2) { score += 20; signals.push('Volume ' + relativeVol.toFixed(1) + 'x pace'); }
+      else if (relativeVol >= 1.5) { score += 12; signals.push('Above-avg volume'); }
+      else if (relativeVol >= 1) { score += 5; signals.push('Normal volume'); }
+    } else if (!marketOpen && changePct >= 2) {
+      // Pre-market: can't judge volume, but a gap is still relevant
+      score += 5;
+      signals.push('Pre-market (no vol data)');
+    }
+
+    // 4. Momentum bonus from cached universe score (0-20 pts)
+    if (momentumScore >= 80) { score += 20; signals.push('Top momentum (' + momentumScore + ')'); }
+    else if (momentumScore >= 60) { score += 14; }
+    else if (momentumScore >= 40) { score += 8; }
+    else { score += 3; }
+
+    // Minimum threshold — need some actual live signal
+    if (score < 25 || (changePct < 0.5 && curPrice <= prevHigh)) return;
+    if (!setupType) setupType = changePct >= 0 ? 'MOMENTUM' : 'PULLBACK';
+
+    liveSetups.push({
+      ticker: ticker,
+      price: curPrice,
+      prevClose: prevClose,
+      changePct: Math.round(changePct * 100) / 100,
+      prevHigh: prevHigh,
+      curHigh: curHigh,
+      curLow: curLow,
+      volume: curVol,
+      prevVolume: prevVol,
+      vwap: curVwap,
+      score: Math.round(score),
+      setupType: setupType,
+      signals: signals,
+      momentumScore: momentumScore,
+      description: signals.join(' · ')
+    });
+  });
+
+  // Sort by score descending
+  liveSetups.sort(function(a, b) { return b.score - a.score; });
+
+  var resultData = {
+    date: localDateStr(),
+    ts: Date.now(),
+    mode: 'live',
+    etTime: etTimeStr,
+    setups: liveSetups
+  };
+
+  // Save results
+  try { localStorage.setItem(SCANNER_RESULTS_KEY, JSON.stringify(resultData)); } catch(e) {}
+
+  statusFn('Found ' + liveSetups.length + ' live setups.');
+  return resultData;
+}
+
+
+function renderLiveScanResults(data) {
+  var setups = data.setups || [];
+  var etTime = data.etTime || '';
+  var html = '';
+
+  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">';
+  html += '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;"></span> Live Scan</span>';
+  html += '<span style="font-size:12px;color:var(--text-muted);">' + etTime + ' ET · ' + setups.length + ' setups</span>';
+  html += '</div>';
+
+  if (setups.length === 0) {
+    html += '<div class="card" style="padding:24px;text-align:center;color:var(--text-muted);font-size:14px;">No notable setups detected yet. Check back after market opens or as volume builds.</div>';
+    return html;
+  }
+
+  html += '<div class="sc-results-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start;">';
+
+  setups.forEach(function(s, idx) {
+    var scoreColor = s.score >= 60 ? 'var(--green)' : s.score >= 40 ? 'var(--blue)' : 'var(--text-muted)';
+    var changePctColor = s.changePct >= 0 ? 'var(--green)' : 'var(--red)';
+    var detailId = 'live-detail-' + idx;
+
+    html += '<div style="background:var(--bg-card);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:14px;padding:16px 18px;border-left:3px solid ' + scoreColor + ';cursor:pointer;" onclick="var d=document.getElementById(\'' + detailId + '\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';">';
+
+    // Header: ticker + price + change + score
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
+    html += '<div style="display:flex;align-items:center;gap:8px;">';
+    html += '<span style="font-size:18px;font-weight:900;font-family:\'JetBrains Mono\',monospace;">' + s.ticker + '</span>';
+    html += '<span style="font-size:14px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
+    html += '<span style="font-size:14px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:' + changePctColor + ';">' + (s.changePct >= 0 ? '+' : '') + s.changePct.toFixed(2) + '%</span>';
+    html += '</div>';
+    html += '<div style="display:flex;align-items:center;gap:8px;">';
+    html += '<span style="font-size:11px;font-weight:700;color:' + scoreColor + ';text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border:1px solid ' + scoreColor + ';border-radius:4px;">' + s.setupType + '</span>';
+    html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:2.5px solid ' + scoreColor + ';font-size:14px;font-weight:900;color:' + scoreColor + ';font-family:\'JetBrains Mono\',monospace;">' + s.score + '</div>';
+    html += '</div></div>';
+
+    // Signal description
+    if (s.description) {
+      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:6px;">' + s.description + '</div>';
+    }
+
+    // Quick stats row
+    html += '<div style="display:flex;gap:8px;font-size:12px;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);">';
+    html += '<span>Prev: $' + s.prevClose.toFixed(2) + '</span>';
+    if (s.volume > 0) html += '<span>Vol: ' + (s.volume > 1000000 ? (s.volume/1000000).toFixed(1) + 'M' : (s.volume > 1000 ? (s.volume/1000).toFixed(0) + 'K' : s.volume)) + '</span>';
+    if (s.vwap > 0) html += '<span>VWAP: $' + s.vwap.toFixed(2) + '</span>';
+    html += '</div>';
+
+    // Expandable detail
+    html += '<div id="' + detailId + '" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">';
+    html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:11px;">Prev Close</div><div style="font-weight:700;font-family:\'JetBrains Mono\',monospace;font-size:14px;">$' + s.prevClose.toFixed(2) + '</div></div>';
+    html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:11px;">Prev High</div><div style="font-weight:700;font-family:\'JetBrains Mono\',monospace;font-size:14px;">$' + s.prevHigh.toFixed(2) + '</div></div>';
+    html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:11px;">Today High</div><div style="font-weight:700;font-family:\'JetBrains Mono\',monospace;font-size:14px;">$' + s.curHigh.toFixed(2) + '</div></div>';
+    html += '</div>';
+    if (s.vwap > 0) {
+      var aboveVwap = s.price > s.vwap;
+      html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Price is ' + (aboveVwap ? '<span style="color:var(--green);">above</span>' : '<span style="color:var(--red);">below</span>') + ' VWAP ($' + s.vwap.toFixed(2) + ') — ' + (aboveVwap ? 'buyers in control' : 'sellers winning') + '</div>';
+    }
+    html += '<div style="font-size:12px;color:var(--text-muted);">Momentum rank: ' + s.momentumScore + '/100</div>';
+    html += '</div>'; // close detail
+
+    html += '</div>'; // close card
+  });
+
+  html += '</div>';
+  return html;
+}
+
+
 // ==================== LAYER 2: BREAKOUT / COMPRESSION SCAN ====================
 
 async function runBreakoutScan(statusFn) {
@@ -504,8 +755,14 @@ function renderScanner() {
   html += '<div style="display:flex;align-items:center;justify-content:center;margin-bottom:8px;">';
   html += '<div style="text-align:center;"><div class="card-header-bar">Momentum Scanner</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Find the best momentum breakout setups automatically</div></div>';
   html += '</div>';
+  // Mode indicator
+  var scanMode = isScannerMarketHours() && isMomentumCacheFresh() ? 'live' : 'eod';
+  var modeLabel = scanMode === 'live'
+    ? '<span style="display:inline-flex;align-items:center;gap:4px;color:var(--green);font-weight:700;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;"></span> Live Mode</span>'
+    : '<span style="color:var(--text-muted);">End-of-Day Mode</span>';
+
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">';
-  html += '<div style="font-size:12px;color:var(--text-muted);">Qullamaggie + Zanger methodology · ' + dataFreshness + '</div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);">Qullamaggie + Zanger methodology · ' + dataFreshness + ' · ' + modeLabel + '</div>';
   html += '<button onclick="runFullScanUI()" id="scan-btn" class="refresh-btn" style="padding:8px 20px;font-weight:700;">Scan</button>';
   html += '</div>';
 
@@ -528,7 +785,11 @@ function renderScanner() {
   // ── SCAN RESULTS (setups at top) ──
   html += '<div id="scan-results">';
   if (scanResults && scanResults.setups && scanResults.setups.length > 0) {
-    html += renderScanResults(scanResults);
+    if (scanResults.mode === 'live') {
+      html += renderLiveScanResults(scanResults);
+    } else {
+      html += renderScanResults(scanResults);
+    }
   }
   html += '</div>';
 
@@ -719,7 +980,7 @@ async function triggerServerScan() {
 }
 
 // ==================== SINGLE SCAN BUTTON ====================
-// One click: builds universe (if stale) + runs breakout scan
+// Routes to live scan during market hours, full scan after close
 
 async function runFullScanUI() {
   var btn = document.getElementById('scan-btn');
@@ -733,6 +994,8 @@ async function runFullScanUI() {
   if (btn) { btn.disabled = true; btn.textContent = 'Scanning...'; }
   if (progressWrap) progressWrap.style.display = 'block';
   if (idleStatus) idleStatus.style.display = 'none';
+  if (barEl) { barEl.style.background = 'var(--blue)'; } // reset color in case of prior error
+  if (statusEl) { statusEl.style.color = 'var(--text-muted)'; }
 
   function updateProgress(msg, pct) {
     if (statusEl) statusEl.textContent = msg;
@@ -741,19 +1004,47 @@ async function runFullScanUI() {
   }
 
   try {
-    // ── STRATEGY: Try server cache first, then fall back to fast client scan ──
-    
+    // ── ROUTE: Live scan during market hours, full scan after close ──
+    var liveMode = isScannerMarketHours();
+    var cache = getMomentumCache();
+
+    if (liveMode && cache && cache.tickers && cache.tickers.length > 0) {
+      // ── LIVE SCAN MODE ──
+      updateProgress('Running live scan...', 10);
+      var liveResults = await runLiveBreakoutScan(function(msg) {
+        var match = msg.match(/(\d+)\/(\d+)/);
+        if (match) {
+          var pct = 10 + Math.round(parseInt(match[1]) / parseInt(match[2]) * 85);
+          updateProgress(msg, Math.min(pct, 95));
+        } else {
+          updateProgress(msg);
+        }
+      });
+
+      updateProgress('Done!', 100);
+      if (resultsEl) resultsEl.innerHTML = renderLiveScanResults(liveResults);
+
+      setTimeout(function() {
+        if (progressWrap) progressWrap.style.display = 'none';
+        if (idleStatus) {
+          idleStatus.textContent = 'Live scan · ' + liveResults.etTime + ' ET · ' + liveResults.setups.length + ' setups from ' + cache.count + ' stocks';
+          idleStatus.style.display = 'block';
+        }
+      }, 1500);
+      if (btn) { btn.disabled = false; btn.textContent = 'Scan'; }
+      return;
+    }
+
+    // ── FULL SCAN MODE (after market close or no cache) ──
     // Step 1: Check if Supabase already has today's results
     updateProgress('Checking for cached results...', 5);
     var serverData = await getServerScanResults();
     
     if (serverData && serverData.momentum_universe && serverData.breakout_setups) {
-      // Server has today's results — load them instantly
       updateProgress('Loading cached results...', 80);
       var momentum = serverData.momentum_universe;
       var setups = serverData.breakout_setups;
       
-      // Save to localStorage for offline access
       saveMomentumCache(momentum);
       try { localStorage.setItem(SCANNER_RESULTS_KEY, JSON.stringify(setups)); } catch(e) {}
       
@@ -775,28 +1066,25 @@ async function runFullScanUI() {
       return;
     }
     
-    // Step 2: No server cache — check local cache before rebuilding
-    // Also trigger server scan in background for next time
+    // Step 2: No server cache — run client-side
     triggerServerScan().catch(function() {});
     
     if (!isMomentumCacheFresh()) {
       updateProgress('Building momentum universe...', 0);
       await buildMomentumUniverse(function(msg) {
-        // Parse progress from status messages like "Scoring... 500/3024 (17%)"
         var match = msg.match(/(\d+)%/);
-        var pct = match ? Math.round(parseInt(match[1]) * 0.7) : undefined; // Universe building = 0-70%
+        var pct = match ? Math.round(parseInt(match[1]) * 0.7) : undefined;
         updateProgress(msg, pct);
       });
     } else {
       updateProgress('Universe cached. Scanning for setups...', 70);
     }
 
-    // Run breakout scan
     updateProgress('Scanning for breakout setups...', 72);
     var results = await runBreakoutScan(function(msg) {
       var match = msg.match(/(\d+)\/(\d+)/);
       if (match) {
-        var pct = 72 + Math.round(parseInt(match[1]) / parseInt(match[2]) * 28); // Scan = 72-100%
+        var pct = 72 + Math.round(parseInt(match[1]) / parseInt(match[2]) * 28);
         updateProgress(msg, Math.min(pct, 99));
       } else {
         updateProgress(msg);
@@ -804,23 +1092,19 @@ async function runFullScanUI() {
     });
 
     updateProgress('Done!', 100);
-
-    // Render results
     if (resultsEl) resultsEl.innerHTML = renderScanResults(results);
 
-    // Update top 100 list
-    var cache = getMomentumCache();
-    var top100Body = document.getElementById('top100-body');
-    if (top100Body && cache && cache.tickers) {
-      top100Body.innerHTML = renderTop100List(cache.tickers);
+    var fullCache = getMomentumCache();
+    var top100Body2 = document.getElementById('top100-body');
+    if (top100Body2 && fullCache && fullCache.tickers) {
+      top100Body2.innerHTML = renderTop100List(fullCache.tickers);
     }
 
-    // Update idle status for next time
     setTimeout(function() {
       if (progressWrap) progressWrap.style.display = 'none';
       if (idleStatus) {
-        var cacheDate = new Date(cache.ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
-        idleStatus.textContent = 'Last scanned ' + cacheDate + ' · ' + results.setups.length + ' setups · ' + cache.count + ' stocks';
+        var cacheDate = new Date(fullCache.ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+        idleStatus.textContent = 'Last scanned ' + cacheDate + ' · ' + results.setups.length + ' setups · ' + fullCache.count + ' stocks';
         idleStatus.style.display = 'block';
       }
     }, 2000);

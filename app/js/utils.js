@@ -23,7 +23,6 @@ function isMarketOpen() {
 }
 
 function getDataFreshnessLabel() {
-  // Polygon free tier: 15-min delayed during market hours, end-of-day after close
   var now = new Date();
   var et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
   var h = et.getHours(), m = et.getMinutes(), d = et.getDay();
@@ -34,7 +33,7 @@ function getDataFreshnessLabel() {
   var etTime = et.toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit',hour12:true});
 
   if(marketOpen) {
-    return 'Data via Polygon · 15-min delay · as of ~' + etTime + ' ET';
+    return 'Data via Polygon · Real-time · as of ~' + etTime + ' ET';
   } else if(afterHours) {
     return 'Data via Polygon · Close prices (4:00 PM ET)';
   } else if(preMarket) {
