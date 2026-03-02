@@ -1154,7 +1154,7 @@ async function loadEconCalendar() {
 function renderAutoEconCal(el, grouped, ts) {
   var html='';
   var dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  var today=new Date().toISOString().split('T')[0];
+  var _now=new Date();var today=_now.getFullYear()+'-'+String(_now.getMonth()+1).padStart(2,'0')+'-'+String(_now.getDate()).padStart(2,'0');
   var sortedDays=Object.keys(grouped).sort();
 
   if(sortedDays.length===0){

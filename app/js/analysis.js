@@ -279,8 +279,7 @@ function buildRollingInsights() {
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--amber);">';
     html += '<div style="font-size:12px;font-weight:800;color:var(--amber);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;">Developing Patterns</div>';
     activePatterns.slice(0, 4).forEach(function(p) {
-      var truncated = p.length > 120 ? p.substring(0, 120) + '...' : p;
-      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;padding:4px 0;border-bottom:1px solid var(--border);">' + truncated + '</div>';
+      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;padding:4px 0;border-bottom:1px solid var(--border);">' + p + '</div>';
     });
     html += '</div>';
   } else {
@@ -313,8 +312,7 @@ function renderAnalysis() {
     emptyHtml += '<div id="analysis-snapshot" style="margin-bottom:14px;">';
     emptyHtml += '<div class="card" style="padding:20px;">';
     emptyHtml += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">';
-    emptyHtml += '<div style="font-size:12px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:0.08em;">Market Snapshot</div>';
-    emptyHtml += '<div id="snapshot-timestamp" style="font-size:12px;color:var(--text-muted);">Loading...</div>';
+    emptyHtml += '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:0.08em;">Market Snapshot</span><span id="snapshot-timestamp" style="font-size:12px;color:var(--text-muted);">Loading...</span></div>';
     emptyHtml += '</div>';
     // Index cards row
     emptyHtml += '<div id="snapshot-indices" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">';
