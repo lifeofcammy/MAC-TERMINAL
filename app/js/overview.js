@@ -11,10 +11,35 @@
 // 8. Watchlist (manual ticker entry)
 
 // ==================== BREADTH AUTO-REFRESH ENGINE ====================
-// Stores 15-min breadth readings in session memory
-var _breadthHistory = []; // [{time: Date, pct: number, up: number, down: number, flat: number}]
+// Stores 15-min breadth readings — persisted to sessionStorage so page refreshes don't lose data
+var _breadthHistory = [];
 var _breadthInterval = null;
 var _breadthLastUpdate = null;
+
+// Restore breadth history from sessionStorage (survives page refreshes, clears on tab close)
+(function restoreBreadthHistory() {
+  try {
+    var key = 'mac_breadth_history_' + new Date().toISOString().split('T')[0];
+    var raw = sessionStorage.getItem(key);
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      if (parsed && parsed.length > 0) {
+        _breadthHistory = parsed.map(function(r) {
+          r.time = new Date(r.time);
+          return r;
+        });
+        _breadthLastUpdate = _breadthHistory[_breadthHistory.length - 1].time;
+      }
+    }
+  } catch(e) {}
+})();
+
+function saveBreadthHistory() {
+  try {
+    var key = 'mac_breadth_history_' + new Date().toISOString().split('T')[0];
+    sessionStorage.setItem(key, JSON.stringify(_breadthHistory));
+  } catch(e) {}
+}
 
 // Fetch breadth data only (lightweight — just the snapshot)
 async function fetchBreadthData() {
@@ -41,6 +66,11 @@ async function fetchBreadthData() {
 function recordBreadthReading(data) {
   if(!data) return;
   var now = new Date();
+  // Skip if last reading was less than 10 minutes ago (avoid duplicates on page reload)
+  if (_breadthHistory.length > 0) {
+    var lastTime = _breadthHistory[_breadthHistory.length - 1].time;
+    if (now - lastTime < 10 * 60 * 1000) return;
+  }
   _breadthHistory.push({
     time: now,
     pct: data.pct,
@@ -51,6 +81,7 @@ function recordBreadthReading(data) {
   _breadthLastUpdate = now;
   // Keep only last 20 readings (~5 hours)
   if(_breadthHistory.length > 20) _breadthHistory.shift();
+  saveBreadthHistory();
 }
 
 // Render just the breadth card body (partial refresh — no full page reload)
