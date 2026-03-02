@@ -160,12 +160,11 @@
       <div style="text-align:center;"><div class="card-header-bar">Analysis</div>
       <div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">AI-powered breakdown of your trading patterns</div></div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
-      <div style="display:flex;align-items:center;gap:8px;">
+    <div style="display:flex;align-items:center;justify-content:center;margin-bottom:16px;gap:8px;position:relative;">
         <button onclick="analysisNav(-1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">‹</button>
-        <div id="analysis-date-label" style="font-weight:800;font-size:16px;color:var(--text-primary);min-width:160px;text-align:center;"></div>
+        <div id="analysis-date-label" onclick="toggleAnalysisDateDropdown()" style="font-weight:800;font-size:16px;color:var(--text-primary);min-width:160px;text-align:center;cursor:pointer;padding:6px 12px;border-radius:6px;border:1px solid transparent;transition:all 0.15s ease;" onmouseover="this.style.borderColor='var(--border)';this.style.background='var(--bg-secondary)';" onmouseout="this.style.borderColor='transparent';this.style.background='transparent';"></div>
         <button onclick="analysisNav(1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:14px;">›</button>
-      </div>
+        <div id="analysis-date-dropdown" style="display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:4px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px;z-index:100;max-height:300px;overflow-y:auto;min-width:220px;"></div>
     </div>
     <div id="analysis-content"></div>
 

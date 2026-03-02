@@ -353,7 +353,6 @@ function renderAnalysis() {
     }
 
     contentEl.innerHTML = emptyHtml;
-    renderRecentEntries(contentEl);
 
     // Auto-fetch snapshot
     fetchMarketSnapshot(analysisCurrentDate);
@@ -362,206 +361,169 @@ function renderAnalysis() {
 
   var html = '';
 
-  // ── ANALYSIS SUB-NAV (pill tabs) ──
-  html += '<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;" id="analysis-subnav">';
+  // ── ANALYSIS SUB-NAV (3 grouped tabs) ──
+  html += '<div style="display:flex;gap:6px;margin-bottom:16px;justify-content:center;" id="analysis-subnav">';
   var subTabs = [
-    { id: 'an-overview', label: '\u{1F4CA} Overview', active: true },
-    { id: 'an-movers', label: '\u{1F680} Movers' },
-    { id: 'an-heatmap', label: '\u{1F3AF} Probability' },
-    { id: 'an-watchlist', label: '\u{1F4E1} Watchlist' },
-    { id: 'an-playbook', label: '\u{1F52E} Playbook' },
-    { id: 'an-mindset', label: '\u{1F9E0} Mindset' }
+    { id: 'an-summary', label: 'Summary', active: true },
+    { id: 'an-setups', label: 'Setups' },
+    { id: 'an-review', label: 'Review' }
   ];
   subTabs.forEach(function(t) {
-    html += '<button onclick="showAnalysisPanel(\'' + t.id + '\')" class="an-pill' + (t.active ? ' an-pill-active' : '') + '" data-panel="' + t.id + '" style="padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:' + (t.active ? 'var(--blue)' : 'var(--bg-card)') + ';color:' + (t.active ? '#fff' : 'var(--text-muted)') + ';font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s ease;white-space:nowrap;">' + t.label + '</button>';
+    html += '<button onclick="showAnalysisPanel(\'' + t.id + '\')" class="an-pill' + (t.active ? ' an-pill-active' : '') + '" data-panel="' + t.id + '" style="padding:8px 20px;border-radius:20px;border:1px solid var(--border);background:' + (t.active ? 'var(--blue)' : 'var(--bg-card)') + ';color:' + (t.active ? '#fff' : 'var(--text-muted)') + ';font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s ease;white-space:nowrap;">' + t.label + '</button>';
   });
   html += '</div>';
 
-  // ════════════════════════════
-  // PANEL 1: OVERVIEW
-  // ════════════════════════════
-  html += '<div id="an-overview" class="an-panel">';
+  // ════════════════════════════════════════
+  // TAB 1: SUMMARY (Context + Stats + Rotation + Patterns)
+  // ════════════════════════════════════════
+  html += '<div id="an-summary" class="an-panel">';
 
+  // Market Context
   if (analysis.marketContext) {
     html += '<div class="card" style="padding:16px 20px;margin-bottom:14px;border-left:4px solid var(--blue);">';
-    html += '<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">MARKET CONTEXT</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">Market Context</div>';
     html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">' + analysis.marketContext + '</div>';
     html += '</div>';
   }
 
+  // Stat cards row
   if (analysis.movers && analysis.movers.length > 0) {
     var catchableCount = analysis.movers.filter(function(m) { return m.catchable === 'yes'; }).length;
     var topGainer = analysis.movers.reduce(function(a, b) { return b.changePct > a.changePct ? b : a; });
     var topLoser = analysis.movers.reduce(function(a, b) { return b.changePct < a.changePct ? b : a; });
-
-    html += '<div class="an-stat-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">';
-    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Movers</div><div style="font-size:18px;font-weight:800;color:var(--text-primary);">' + analysis.movers.length + '</div></div>';
-    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Catchable</div><div style="font-size:18px;font-weight:800;color:var(--green);">' + catchableCount + '</div></div>';
-    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Gainer</div><div style="font-size:14px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">' + topGainer.ticker + ' +' + topGainer.changePct.toFixed(1) + '%</div></div>';
-    html += '<div class="card" style="padding:16px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Loser</div><div style="font-size:14px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + topLoser.ticker + ' ' + topLoser.changePct.toFixed(1) + '%</div></div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">';
+    html += '<div class="card" style="padding:14px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Movers</div><div style="font-size:18px;font-weight:800;color:var(--text-primary);">' + analysis.movers.length + '</div></div>';
+    html += '<div class="card" style="padding:14px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Catchable</div><div style="font-size:18px;font-weight:800;color:var(--green);">' + catchableCount + '</div></div>';
+    html += '<div class="card" style="padding:14px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Gainer</div><div style="font-size:14px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">' + topGainer.ticker + ' +' + topGainer.changePct.toFixed(1) + '%</div></div>';
+    html += '<div class="card" style="padding:14px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Loser</div><div style="font-size:14px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + topLoser.ticker + ' ' + topLoser.changePct.toFixed(1) + '%</div></div>';
     html += '</div>';
   }
 
-  html += '<div class="an-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
+  // Sector Rotation + Patterns side by side
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
   if (analysis.sectorRotation) {
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--amber);">';
-    html += '<div style="font-size:12px;font-weight:800;color:var(--amber);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u{1F504} Sector Rotation</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--amber);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Sector Rotation</div>';
     html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.65;white-space:pre-wrap;">' + analysis.sectorRotation + '</div>';
     html += '</div>';
   }
   if (analysis.patterns) {
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--green);">';
-    html += '<div style="font-size:12px;font-weight:800;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u{1F4C8} Developing Patterns</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Developing Patterns</div>';
     html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.65;white-space:pre-wrap;">' + analysis.patterns + '</div>';
     html += '</div>';
   }
   html += '</div>';
+  html += '</div>'; // end summary
 
-  html += '<div class="an-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
-  if (analysis.missed) {
-    html += '<div class="card" style="padding:16px;border-left:3px solid var(--red);">';
-    html += '<div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u{274C} Missed Opportunities</div>';
-    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.65;white-space:pre-wrap;">' + analysis.missed + '</div>';
-    html += '</div>';
-  }
-  if (analysis.mindset) {
-    var mso = analysis.mindset;
-    var sco = mso.score >= 8 ? 'var(--green)' : mso.score >= 5 ? 'var(--amber)' : 'var(--red)';
-    html += '<div class="card" style="padding:16px;border-left:3px solid ' + sco + '">';
-    html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">';
-    html += '<div style="width:44px;height:44px;border-radius:50%;background:' + sco + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-weight:900;font-size:18px;color:#fff;">' + mso.score + '</span></div>';
-    html += '<div><div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-primary);">Discipline ' + mso.score + '/10</div>';
-    if (mso.scoreNote) html += '<div style="font-size:14px;color:var(--text-muted);margin-top:2px;line-height:1.4;">' + mso.scoreNote + '</div>';
-    html += '</div></div>';
-    if (mso.violations && mso.violations.length > 0) {
-      mso.violations.forEach(function(v) {
-        html += '<div style="font-size:14px;color:var(--red);padding:3px 0;line-height:1.4;">\u26A0 <strong>' + v.rule + '</strong> \u2014 ' + v.detail.substring(0, 120) + (v.detail.length > 120 ? '...' : '') + '</div>';
-      });
-    }
-    if (mso.wins && mso.wins.length > 0) {
-      html += '<div style="margin-top:6px;">';
-      mso.wins.slice(0, 2).forEach(function(w) {
-        html += '<div style="font-size:12px;color:var(--green);padding:2px 0;line-height:1.4;">\u2713 ' + w.substring(0, 100) + (w.length > 100 ? '...' : '') + '</div>';
-      });
-      html += '</div>';
-    }
-    html += '</div>';
-  }
-  html += '</div>';
-  html += '</div>'; // end overview
+  // ════════════════════════════════════════
+  // TAB 2: SETUPS (Movers + Probability + Watchlist + Playbook)
+  // ════════════════════════════════════════
+  html += '<div id="an-setups" class="an-panel" style="display:none;">';
 
-  // ════════════════════════════
-  // PANEL 2: MOVERS
-  // ════════════════════════════
-  html += '<div id="an-movers" class="an-panel" style="display:none;">';
-  if (analysis.movers && analysis.movers.length > 0) {
-    html += '<div class="an-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
-    analysis.movers.forEach(function(m) {
-      var mc = m.changePct >= 0 ? 'var(--green)' : 'var(--red)';
-      var cb = m.catchable === 'yes' ? '<span style="font-size:12px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);">CATCHABLE</span>'
-        : m.catchable === 'partial' ? '<span style="font-size:12px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--amber-bg);color:var(--amber);">PARTIALLY</span>'
-        : '<span style="font-size:12px;font-weight:700;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.12);color:var(--text-muted);">NEWS-DRIVEN</span>';
-      html += '<div class="card" style="padding:16px;">';
-      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">';
-      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + m.ticker + '</span>';
-      html += '<span style="font-weight:800;color:' + mc + ';font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + (m.changePct >= 0 ? '+' : '') + m.changePct.toFixed(1) + '%</span>';
-      html += cb;
-      if (m.sector) html += '<span style="font-size:12px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;">' + m.sector + '</span>';
-      html += '</div>';
-      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.6;margin-bottom:6px;">' + m.why + '</div>';
-      if (m.lesson) html += '<div style="font-size:14px;color:var(--blue);font-weight:600;line-height:1.5;">\u2192 ' + m.lesson + '</div>';
-      html += '</div>';
-    });
-    html += '</div>';
-  }
-  html += '</div>';
-
-  // ════════════════════════════
-  // PANEL 3: PROBABILITY HEATMAP
-  // ════════════════════════════
-  html += '<div id="an-heatmap" class="an-panel" style="display:none;">';
-  if (analysis.probabilityMap && analysis.probabilityMap.length > 0) {
-    html += '<div style="font-size:14px;color:var(--text-muted);margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:8px;line-height:1.5;">Ranked by probability of a 3%+ move tomorrow. Based on multi-day patterns, catalyst proximity, IV levels, technical setup, and sector correlation.</div>';
-    html += '<div class="an-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
-    analysis.probabilityMap.forEach(function(p) {
-      var pc = p.probability >= 75 ? 'var(--green)' : p.probability >= 60 ? 'var(--amber)' : 'var(--text-muted)';
-      var tb = p.tier === 1 ? '<span style="font-size:12px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--purple-bg);color:var(--purple);">T1</span>'
-        : p.tier === 2 ? '<span style="font-size:12px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--blue-bg);color:var(--blue);">T2</span>'
-        : '<span style="font-size:12px;font-weight:800;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.1);color:var(--text-muted);">W</span>';
-      var di = p.direction === 'long' ? '\u2191' : p.direction === 'short' ? '\u2193' : '\u2195';
-      var dc = p.direction === 'long' ? 'var(--green)' : p.direction === 'short' ? 'var(--red)' : 'var(--amber)';
-      html += '<div class="card" style="padding:16px;position:relative;overflow:hidden;">';
-      html += '<div style="position:absolute;bottom:0;left:0;height:3px;width:' + p.probability + '%;background:' + pc + ';border-radius:0 2px 0 0;"></div>';
-      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">';
-      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + p.ticker + '</span>';
-      html += '<span style="font-weight:800;color:' + pc + ';font-family:\'JetBrains Mono\',monospace;font-size:18px;">' + p.probability + '%</span>';
-      html += '<span style="color:' + dc + ';font-size:14px;font-weight:900;">' + di + '</span>';
-      html += tb;
-      if (p.catalyst) html += '<span style="font-size:12px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + p.catalyst + '</span>';
-      html += '</div>';
-      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.55;margin-bottom:6px;">' + p.thesis.substring(0, 180) + (p.thesis.length > 180 ? '...' : '') + '</div>';
-      if (p.keyLevels) html += '<div style="font-size:12px;color:var(--purple);font-weight:600;font-family:\'JetBrains Mono\',monospace;margin-bottom:3px;">\u{1F4CD} ' + p.keyLevels + '</div>';
-      if (p.optionsPlay) html += '<div style="font-size:14px;color:var(--blue);font-weight:600;">\u{1F4B0} ' + p.optionsPlay.substring(0, 120) + (p.optionsPlay.length > 120 ? '...' : '') + '</div>';
-      html += '</div>';
-    });
-    html += '</div>';
-  }
-  html += '</div>';
-
-  // ════════════════════════════
-  // PANEL 4: WATCHLIST
-  // ════════════════════════════
-  html += '<div id="an-watchlist" class="an-panel" style="display:none;">';
-  if (analysis.watchlist && analysis.watchlist.length > 0) {
-    html += '<div class="an-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
-    analysis.watchlist.forEach(function(w) {
-      var sc2 = w.status === 'active' ? 'var(--green)' : w.status === 'watch' ? 'var(--amber)' : 'var(--text-muted)';
-      var sd = w.status === 'active' ? '\u25CF' : w.status === 'watch' ? '\u25D0' : '\u25CB';
-      html += '<div class="card" style="padding:16px;">';
-      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
-      html += '<span style="color:' + sc2 + ';font-size:14px;">' + sd + '</span>';
-      html += '<span style="font-weight:800;font-size:14px;color:var(--text-primary);">' + w.theme + '</span>';
-      html += '</div>';
-      html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">';
-      w.tickers.forEach(function(t) {
-        html += '<span style="font-size:12px;font-weight:700;padding:3px 8px;border-radius:4px;background:var(--bg-secondary);color:var(--text-secondary);font-family:\'JetBrains Mono\',monospace;">' + t + '</span>';
-      });
-      html += '</div>';
-      html += '<div style="font-size:14px;color:var(--text-muted);line-height:1.5;">' + w.note + '</div>';
-      html += '</div>';
-    });
-    html += '</div>';
-  }
-  html += '</div>';
-
-  // ════════════════════════════
-  // PANEL 5: PLAYBOOK
-  // ════════════════════════════
-  html += '<div id="an-playbook" class="an-panel" style="display:none;">';
+  // Tomorrow's Playbook (top of setups — most actionable)
   if (analysis.tomorrowWatch) {
-    html += '<div class="card" style="padding:16px;border-left:3px solid var(--blue);background:rgba(59,130,246,0.03);">';
-    html += '<div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;">\u{1F52E} Tomorrow\'s Playbook</div>';
+    html += '<div class="card" style="padding:16px;border-left:3px solid var(--blue);margin-bottom:14px;">';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;">Tomorrow\'s Playbook</div>';
     html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap;">' + analysis.tomorrowWatch + '</div>';
     html += '</div>';
   }
-  html += '</div>';
 
-  // ════════════════════════════
-  // PANEL 6: MINDSET
-  // ════════════════════════════
-  html += '<div id="an-mindset" class="an-panel" style="display:none;">';
+  // Probability Map
+  if (analysis.probabilityMap && analysis.probabilityMap.length > 0) {
+    html += '<div style="font-size:12px;font-weight:800;color:var(--purple);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Probability Map</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">';
+    analysis.probabilityMap.forEach(function(p) {
+      var pc = p.probability >= 75 ? 'var(--green)' : p.probability >= 60 ? 'var(--amber)' : 'var(--text-muted)';
+      var tb = p.tier === 1 ? '<span style="font-size:11px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--purple-bg);color:var(--purple);">T1</span>'
+        : p.tier === 2 ? '<span style="font-size:11px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--blue-bg);color:var(--blue);">T2</span>'
+        : '<span style="font-size:11px;font-weight:800;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.1);color:var(--text-muted);">W</span>';
+      var di = p.direction === 'long' ? '\u2191' : p.direction === 'short' ? '\u2193' : '\u2195';
+      var dc = p.direction === 'long' ? 'var(--green)' : p.direction === 'short' ? 'var(--red)' : 'var(--amber)';
+      html += '<div class="card" style="padding:14px;position:relative;overflow:hidden;">';
+      html += '<div style="position:absolute;bottom:0;left:0;height:3px;width:' + p.probability + '%;background:' + pc + ';border-radius:0 2px 0 0;"></div>';
+      html += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;flex-wrap:wrap;">';
+      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + p.ticker + '</span>';
+      html += '<span style="font-weight:800;color:' + pc + ';font-family:\'JetBrains Mono\',monospace;font-size:16px;">' + p.probability + '%</span>';
+      html += '<span style="color:' + dc + ';font-size:14px;font-weight:900;">' + di + '</span>';
+      html += tb;
+      if (p.catalyst) html += '<span style="font-size:11px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + p.catalyst + '</span>';
+      html += '</div>';
+      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:5px;">' + p.thesis + '</div>';
+      if (p.keyLevels) html += '<div style="font-size:12px;color:var(--purple);font-weight:600;font-family:\'JetBrains Mono\',monospace;margin-bottom:3px;">' + p.keyLevels + '</div>';
+      if (p.optionsPlay) html += '<div style="font-size:14px;color:var(--blue);font-weight:600;">' + p.optionsPlay + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Movers detail
+  if (analysis.movers && analysis.movers.length > 0) {
+    html += '<div style="font-size:12px;font-weight:800;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Movers Detail</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">';
+    analysis.movers.forEach(function(m) {
+      var mc = m.changePct >= 0 ? 'var(--green)' : 'var(--red)';
+      var cb = m.catchable === 'yes' ? '<span style="font-size:11px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);">CATCHABLE</span>'
+        : m.catchable === 'partial' ? '<span style="font-size:11px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--amber-bg);color:var(--amber);">PARTIAL</span>'
+        : '<span style="font-size:11px;font-weight:700;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.12);color:var(--text-muted);">NEWS</span>';
+      html += '<div class="card" style="padding:14px;">';
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">';
+      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + m.ticker + '</span>';
+      html += '<span style="font-weight:800;color:' + mc + ';font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + (m.changePct >= 0 ? '+' : '') + m.changePct.toFixed(1) + '%</span>';
+      html += cb;
+      if (m.sector) html += '<span style="font-size:11px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;">' + m.sector + '</span>';
+      html += '</div>';
+      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:4px;">' + m.why + '</div>';
+      if (m.lesson) html += '<div style="font-size:14px;color:var(--blue);font-weight:600;line-height:1.4;">\u2192 ' + m.lesson + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Watchlist themes
+  if (analysis.watchlist && analysis.watchlist.length > 0) {
+    html += '<div style="font-size:12px;font-weight:800;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Watchlist Themes</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+    analysis.watchlist.forEach(function(w) {
+      var sc2 = w.status === 'active' ? 'var(--green)' : w.status === 'watch' ? 'var(--amber)' : 'var(--text-muted)';
+      var sd = w.status === 'active' ? '\u25CF' : w.status === 'watch' ? '\u25D0' : '\u25CB';
+      html += '<div class="card" style="padding:14px;">';
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">';
+      html += '<span style="color:' + sc2 + ';font-size:12px;">' + sd + '</span>';
+      html += '<span style="font-weight:800;font-size:14px;color:var(--text-primary);">' + w.theme + '</span>';
+      html += '</div>';
+      html += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;">';
+      w.tickers.forEach(function(t) {
+        html += '<span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--bg-secondary);color:var(--text-secondary);font-family:\'JetBrains Mono\',monospace;">' + t + '</span>';
+      });
+      html += '</div>';
+      html += '<div style="font-size:14px;color:var(--text-muted);line-height:1.4;">' + w.note + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>'; // end setups
+
+  // ════════════════════════════════════════
+  // TAB 3: REVIEW (Mindset + Missed)
+  // ════════════════════════════════════════
+  html += '<div id="an-review" class="an-panel" style="display:none;">';
+
+  // Discipline score
   if (analysis.mindset) {
     var ms = analysis.mindset;
     var scc = ms.score >= 8 ? 'var(--green)' : ms.score >= 5 ? 'var(--amber)' : 'var(--red)';
     html += '<div class="card" style="padding:20px;text-align:center;margin-bottom:14px;">';
-    html += '<div style="width:72px;height:72px;border-radius:50%;background:' + scc + ';display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px;">';
-    html += '<span style="font-weight:900;font-size:18px;color:#fff;">' + ms.score + '</span></div>';
-    html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">DISCIPLINE SCORE: ' + ms.score + '/10</div>';
+    html += '<div style="width:64px;height:64px;border-radius:50%;background:' + scc + ';display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px;">';
+    html += '<span style="font-weight:900;font-size:24px;color:#fff;">' + ms.score + '</span></div>';
+    html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">Discipline Score: ' + ms.score + '/10</div>';
     if (ms.scoreNote) html += '<div style="font-size:14px;color:var(--text-muted);margin-top:6px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6;">' + ms.scoreNote + '</div>';
     html += '</div>';
-    html += '<div class="an-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
+    // Violations
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--red);">';
-    html += '<div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u26A0\uFE0F Violations</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Violations</div>';
     if (ms.violations && ms.violations.length > 0) {
       ms.violations.forEach(function(v) {
         html += '<div style="font-size:14px;color:var(--text-secondary);padding:6px 0;border-bottom:1px solid var(--border);line-height:1.5;"><strong style="color:var(--red);">' + v.rule + '</strong><br>' + v.detail + '</div>';
@@ -570,8 +532,9 @@ function renderAnalysis() {
       html += '<div style="font-size:14px;color:var(--green);padding:8px 0;">\u2713 Clean session</div>';
     }
     html += '</div>';
+    // Wins
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--green);">';
-    html += '<div style="font-size:12px;font-weight:800;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">\u2713 What Worked</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">What Worked</div>';
     if (ms.wins && ms.wins.length > 0) {
       ms.wins.forEach(function(w) {
         html += '<div style="font-size:14px;color:var(--text-secondary);padding:6px 0;border-bottom:1px solid var(--border);line-height:1.5;">' + w + '</div>';
@@ -580,10 +543,17 @@ function renderAnalysis() {
     html += '</div>';
     html += '</div>';
   }
-  html += '</div>';
+
+  // Missed Opportunities
+  if (analysis.missed) {
+    html += '<div class="card" style="padding:16px;border-left:3px solid var(--amber);">';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--amber);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Missed Opportunities</div>';
+    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.65;white-space:pre-wrap;">' + analysis.missed + '</div>';
+    html += '</div>';
+  }
+  html += '</div>'; // end review
 
   contentEl.innerHTML = html;
-  renderRecentEntries(contentEl);
 }
 
 
@@ -607,41 +577,19 @@ function showAnalysisPanel(panelId) {
   });
 }
 
-function renderRecentEntries(parentEl) {
+function toggleAnalysisDateDropdown() {
+  var dd = document.getElementById('analysis-date-dropdown');
+  if (!dd) return;
+  if (dd.style.display !== 'none') {
+    dd.style.display = 'none';
+    return;
+  }
   var allDates = getAllAnalysisDates();
-
-  // Determine how many weekdays are missing in the last 7 trading days
-  var missingCount = 0;
-  var today = new Date();
-  var checkDate = new Date(today);
-  var weekdaysChecked = 0;
-  while(weekdaysChecked < 7) {
-    checkDate.setDate(checkDate.getDate() - 1);
-    if(checkDate.getDay() >= 1 && checkDate.getDay() <= 5) {
-      weekdaysChecked++;
-      var ds = checkDate.toISOString().split('T')[0];
-      if(!getAnalysis(ds)) missingCount++;
-    }
-  }
-
-  var html = '<div style="margin-top:24px;">';
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">';
-  html += '<div style="flex:1;"></div>';
-  html += '<div class="card-header-bar" style="flex:none;">Recent Analysis Entries</div>';
-  html += '<div style="flex:1;display:flex;justify-content:flex-end;gap:6px;">';
-  if(missingCount > 0) {
-    html += '<button onclick="backfillAnalysis(7)" id="backfill-btn" class="refresh-btn" style="padding:4px 10px;">Scan</button>';
-  }
-  html += '</div></div>';
-  html += '<div id="backfill-status" style="font-size:14px;color:var(--text-muted);margin-bottom:6px;"></div>';
-  html += '<div class="card" style="padding:0;overflow:hidden;">';
-
-  // Show existing entries (or placeholders for last 7 weekdays if none exist)
-  var entriesToShow = allDates.slice(0, 15);
-  if(entriesToShow.length === 0) {
-    html += '<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:14px;">No entries yet. Click a button above to auto-generate.</div>';
+  var html = '';
+  if (allDates.length === 0) {
+    html = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:14px;">No analysis entries yet.</div>';
   } else {
-    entriesToShow.forEach(function(date) {
+    allDates.slice(0, 20).forEach(function(date) {
       var a = getAnalysis(date);
       if (!a) return;
       var dateObj = new Date(date + 'T12:00:00');
@@ -650,17 +598,24 @@ function renderRecentEntries(parentEl) {
       var moverCount = (a.movers || []).length;
       var topMover = moverCount > 0 ? a.movers[0].ticker + ' ' + (a.movers[0].changePct >= 0 ? '+' : '') + a.movers[0].changePct.toFixed(1) + '%' : '';
       var topColor = moverCount > 0 && a.movers[0].changePct >= 0 ? 'var(--green)' : 'var(--red)';
-
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;' + (isActive ? 'background:rgba(59,130,246,0.08);' : '') + '" onclick="analysisCurrentDate=\'' + date + '\';renderAnalysis();">';
-      html += '<span style="color:var(--text-secondary);font-weight:' + (isActive ? '700' : '400') + ';">' + dayName + '</span>';
-      html += '<span style="font-size:14px;color:var(--text-muted);">' + moverCount + ' movers</span>';
-      if (topMover) html += '<span style="font-weight:700;color:' + topColor + ';font-family:\'JetBrains Mono\',monospace;font-size:12px;">' + topMover + '</span>';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:14px;gap:8px;' + (isActive ? 'background:var(--blue-bg);' : '') + '" onclick="analysisCurrentDate=\'' + date + '\';document.getElementById(\'analysis-date-dropdown\').style.display=\'none\';renderAnalysis();" onmouseover="if(!' + isActive + ')this.style.background=\'var(--bg-secondary)\'" onmouseout="if(!' + isActive + ')this.style.background=\'transparent\'">';
+      html += '<span style="color:var(--text-secondary);font-weight:' + (isActive ? '700' : '500') + ';white-space:nowrap;">' + dayName + '</span>';
+      html += '<span style="font-size:12px;color:var(--text-muted);">' + moverCount + ' movers</span>';
+      if (topMover) html += '<span style="font-weight:700;color:' + topColor + ';font-family:\'JetBrains Mono\',monospace;font-size:11px;white-space:nowrap;">' + topMover + '</span>';
       html += '</div>';
     });
   }
-
-  html += '</div></div>';
-  parentEl.innerHTML += html;
+  dd.innerHTML = html;
+  dd.style.display = 'block';
+  // Close on outside click
+  setTimeout(function() {
+    document.addEventListener('click', function closeDD(e) {
+      if (!dd.contains(e.target) && e.target.id !== 'analysis-date-label') {
+        dd.style.display = 'none';
+        document.removeEventListener('click', closeDD);
+      }
+    });
+  }, 10);
 }
 
 // ==================== AUTO-GENERATE ANALYSIS FOR ANY DATE ====================
