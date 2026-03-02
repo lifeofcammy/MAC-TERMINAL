@@ -85,54 +85,270 @@ function renderBreadthBody(data) {
   if(lbl) { lbl.style.color='var(--blue)'; setTimeout(function(){ if(lbl) lbl.style.color='var(--text-muted)'; }, 1500); }
 }
 
-// Render the 15-min history timeline
+// Render the 15-min breadth direction timeline
+// Each bar = green if breadth improved vs prior reading, red if it dropped
+// Gives a quick visual: "is breadth expanding or contracting through the day?"
 function renderBreadthTimeline() {
   if(_breadthHistory.length < 2) return '';
   var html = '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">';
-  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Breadth Trend (15-min)</div>';
-  html += '<div style="display:flex;align-items:flex-end;gap:3px;height:50px;">';
-  // Mini bar chart — each reading is a bar
-  var maxPct = 100; // breadth % is 0-100
+
+  // Summary line: net direction
+  var first = _breadthHistory[0].pct;
+  var last = _breadthHistory[_breadthHistory.length-1].pct;
+  var delta = last - first;
+  var dirLabel = delta > 0 ? 'Expanding' : delta < 0 ? 'Contracting' : 'Flat';
+  var dirColor = delta > 0 ? 'var(--green)' : delta < 0 ? 'var(--red)' : 'var(--text-muted)';
+  var dirArrow = delta > 0 ? '\u25b2' : delta < 0 ? '\u25bc' : '\u25cf';
+
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Breadth Direction</div>';
+  html += '<span style="font-size:12px;font-weight:800;color:'+dirColor+';">'+dirArrow+' '+dirLabel+' ('+(delta>0?'+':'')+delta+'%)</span>';
+  html += '</div>';
+
+  // Direction bars: each bar is green (improving) or red (declining) vs previous
+  // 26 slots = market hours 9:30-4:00 in 15-min intervals
+  html += '<div style="display:flex;gap:2px;align-items:center;">';
   _breadthHistory.forEach(function(r, i) {
-    var h = Math.max(4, (r.pct / maxPct) * 46); // min 4px height
-    var barColor = r.pct>=65?'var(--green)':r.pct>=40?'var(--amber)':'var(--red)';
     var timeStr = r.time.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
-    var isLast = i === _breadthHistory.length - 1;
-    html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;max-width:40px;" title="'+timeStr+': '+r.pct+'% ('+r.up+' up / '+r.down+' dn)">';
-    html += '<div style="font-size:10px;font-weight:'+(isLast?'800':'600')+';color:'+(isLast?barColor:'var(--text-muted)')+';line-height:1;">'+r.pct+'</div>';
-    html += '<div style="width:100%;height:'+h+'px;background:'+barColor+';border-radius:3px 3px 0 0;opacity:'+(isLast?'1':'0.6')+';min-width:8px;"></div>';
-    html += '</div>';
+    if(i === 0) {
+      // First reading: neutral (no comparison)
+      html += '<div style="flex:1;height:24px;border-radius:4px;background:var(--bg-secondary);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;min-width:0;" title="'+timeStr+': '+r.pct+'% (starting point)">';
+      html += '<span style="font-size:10px;font-weight:700;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+r.pct+'</span>';
+      html += '</div>';
+    } else {
+      var prev = _breadthHistory[i-1].pct;
+      var diff = r.pct - prev;
+      var barColor, barBg;
+      if(diff > 0) { barColor = '#fff'; barBg = 'var(--green)'; }
+      else if(diff < 0) { barColor = '#fff'; barBg = 'var(--red)'; }
+      else { barColor = 'var(--text-muted)'; barBg = 'var(--bg-secondary)'; }
+      var isLast = i === _breadthHistory.length - 1;
+      html += '<div style="flex:1;height:24px;border-radius:4px;background:'+barBg+';display:flex;align-items:center;justify-content:center;min-width:0;opacity:'+(isLast?'1':'0.75')+';'+(isLast?'box-shadow:0 0 0 2px var(--bg-primary), 0 0 0 3px '+barBg+';':'')+'" title="'+timeStr+': '+r.pct+'% ('+(diff>0?'+':'')+diff+' vs prev)">';
+      html += '<span style="font-size:10px;font-weight:800;color:'+barColor+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(diff>0?'+':'')+diff+'</span>';
+      html += '</div>';
+    }
   });
   html += '</div>';
-  // Time labels: first and last
-  html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:2px;">';
+
+  // Time labels + breadth values at edges
+  html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:3px;">';
   var firstTime = _breadthHistory[0].time.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
   var lastTime = _breadthHistory[_breadthHistory.length-1].time.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
-  html += '<span>'+firstTime+'</span>';
-  if(_breadthHistory.length > 2) {
-    var delta = _breadthHistory[_breadthHistory.length-1].pct - _breadthHistory[0].pct;
-    var deltaColor = delta > 0 ? 'var(--green)' : delta < 0 ? 'var(--red)' : 'var(--text-muted)';
-    var arrow = delta > 0 ? '\u25b2' : delta < 0 ? '\u25bc' : '\u25cf';
-    html += '<span style="color:'+deltaColor+';font-weight:700;">'+arrow+' '+(delta>0?'+':'')+delta+'%</span>';
-  }
-  html += '<span>'+lastTime+'</span>';
+  html += '<span>'+firstTime+' ('+first+'%)</span>';
+  html += '<span>'+lastTime+' ('+last+'%)</span>';
   html += '</div>';
+
   html += '</div>';
   return html;
 }
 
-// Auto-refresh breadth every 15 minutes during market hours
+// ==================== REGIME + BREADTH COMBINED REFRESH ====================
+// Refreshes both cards in one pass — shares index snapshot data
+async function refreshRegimeAndBreadth() {
+  console.log('[Auto-Refresh] Updating regime + breadth...');
+  try {
+    // 1. Fetch index snapshots (live prices)
+    var snap = await getSnapshots(['SPY','QQQ','IWM','DIA','VIXY','UUP']);
+    function livePrice(ticker) {
+      var s = snap[ticker];
+      if(!s) return { price:0, pct:0 };
+      var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : (s.prevDay&&s.prevDay.c ? s.prevDay.c : (s.lastTrade?s.lastTrade.p:0));
+      var prev = s.prevDay ? s.prevDay.c : p;
+      return { price: p, pct: prev>0 ? ((p-prev)/prev)*100 : 0 };
+    }
+    var spyLive=livePrice('SPY'), qqqLive=livePrice('QQQ'), iwmLive=livePrice('IWM'), diaLive=livePrice('DIA'), vixyLive=livePrice('VIXY');
+
+    // 2. Fetch daily bars for SMAs (these don't change intraday but we need them)
+    var spyBars=[],qqqBars=[],iwmBars=[],diaBars=[];
+    try{spyBars=await getDailyBars('SPY',30);}catch(e){}
+    try{qqqBars=await getDailyBars('QQQ',30);}catch(e){}
+    try{iwmBars=await getDailyBars('IWM',30);}catch(e){}
+    try{diaBars=await getDailyBars('DIA',30);}catch(e){}
+
+    function calcSMA(bars, period) {
+      if(!bars||bars.length<period) return null;
+      var cl=bars.map(function(b){return b.c;}); var ln=cl.length;
+      var sum=0; for(var i=ln-period;i<ln;i++) sum+=cl[i]; return sum/period;
+    }
+
+    // 3. Calculate SMA positions
+    var indexes = [
+      {name:'SPY', price:spyLive.price, pct:spyLive.pct, s10:calcSMA(spyBars,10), s20:calcSMA(spyBars,20)},
+      {name:'QQQ', price:qqqLive.price, pct:qqqLive.pct, s10:calcSMA(qqqBars,10), s20:calcSMA(qqqBars,20)},
+      {name:'IWM', price:iwmLive.price, pct:iwmLive.pct, s10:calcSMA(iwmBars,10), s20:calcSMA(iwmBars,20)},
+      {name:'DIA', price:diaLive.price, pct:diaLive.pct, s10:calcSMA(diaBars,10), s20:calcSMA(diaBars,20)}
+    ];
+    indexes.forEach(function(idx) {
+      idx.a10 = idx.s10!==null && idx.price>idx.s10;
+      idx.a20 = idx.s20!==null && idx.price>idx.s20;
+    });
+
+    var idxAboveBoth=0, idxBelowBoth=0, idxMixed=0;
+    indexes.forEach(function(idx) {
+      if(idx.s10===null) return;
+      if(idx.a10&&idx.a20) idxAboveBoth++;
+      else if(!idx.a10&&!idx.a20) idxBelowBoth++;
+      else idxMixed++;
+    });
+
+    var avgPct = (spyLive.pct+qqqLive.pct+iwmLive.pct+diaLive.pct)/4;
+
+    // 4. Fetch sector data for sector breadth
+    var sectorETFs = ['XLK','SMH','XLF','XLE','XLV','XLY','XLI','XLRE','XLU','XLB','XLC','XLP'];
+    var sectorSnap = await getSnapshots(sectorETFs);
+    var sectorsUp=0, sectorsDown=0;
+    sectorETFs.forEach(function(etf) {
+      var s = sectorSnap[etf]; if(!s) return;
+      var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : (s.prevDay&&s.prevDay.c||0);
+      var prev = s.prevDay ? s.prevDay.c : p;
+      var chg = prev>0 ? ((p-prev)/prev)*100 : 0;
+      if(chg>0) sectorsUp++; else if(chg<0) sectorsDown++;
+    });
+    var breadthPct = Math.round((sectorsUp/sectorETFs.length)*100);
+
+    // 5. VIX context
+    var vixPct = vixyLive.pct;
+    var vixNote = '';
+    if(Math.abs(vixPct)>5) vixNote='VIX '+(vixPct>0?'spiking +':'dropping ')+Math.abs(vixPct).toFixed(1)+'% \u2014 '+(vixPct>0?'fear elevated.':'fear fading.');
+    else if(Math.abs(vixPct)>2) vixNote='VIX '+(vixPct>0?'rising +':'easing ')+Math.abs(vixPct).toFixed(1)+'%.';
+    else vixNote='VIX stable.';
+
+    // 6. Index notes
+    var indexNotes = indexes.map(function(idx) {
+      var smaStatus = idx.a10&&idx.a20 ? 'above both SMAs' : (!idx.a10&&!idx.a20 ? 'below both SMAs' : 'between SMAs');
+      return idx.name+' '+(idx.pct>=0?'+':'')+idx.pct.toFixed(1)+'% ('+smaStatus+')';
+    }).join(' \xb7 ');
+
+    // 7. Econ event check
+    var hasHighImpactEvent=false, eventName='';
+    try {
+      var td=new Date();var dw=td.getDay();var mon=new Date(td);mon.setDate(td.getDate()-(dw===0?6:dw-1));
+      var calKey='mac_econ_cal_auto_'+mon.toISOString().split('T')[0];
+      var calData=localStorage.getItem(calKey);
+      if(calData){
+        var parsed=JSON.parse(calData);
+        var todayStr=td.toISOString().split('T')[0];
+        var todayEvents=(parsed.events&&parsed.events[todayStr])||[];
+        var allTitles=todayEvents.map(function(ev){return (ev.title||'').toLowerCase();}).join(' ');
+        if(/cpi|fomc|fed fund|interest rate|nonfarm|payroll|gdp|pce/.test(allTitles)){
+          hasHighImpactEvent=true;
+          if(/cpi/.test(allTitles))eventName='CPI';
+          else if(/fomc|fed fund|interest rate/.test(allTitles))eventName='FOMC/Fed';
+          else if(/nonfarm|payroll/.test(allTitles))eventName='NFP';
+          else if(/gdp/.test(allTitles))eventName='GDP';
+          else if(/pce/.test(allTitles))eventName='PCE';
+          else eventName='major data';
+        }
+      }
+    } catch(e){}
+
+    // 8. Regime decision
+    var regimeLabel='Neutral', regimeColor='var(--text-muted)', regimeDetail='';
+    if(hasHighImpactEvent&&!isMarketOpen()){
+      regimeLabel='Wait for '+eventName; regimeColor='var(--purple)';
+      regimeDetail=eventName+' data expected \u2014 wait for the reaction before entering.';
+    }
+    else if(avgPct>0.8&&breadthPct>=65&&idxAboveBoth>=3){
+      regimeLabel='Risk On'; regimeColor='var(--green)';
+      regimeDetail='Broad strength. '+idxAboveBoth+'/4 indexes above 10 & 20 SMA. '+sectorsUp+'/'+sectorETFs.length+' sectors green. '+vixNote+'\n'+indexNotes;
+    }
+    else if(avgPct<-0.8&&breadthPct<=35&&idxBelowBoth>=3){
+      regimeLabel='Risk Off'; regimeColor='var(--red)';
+      regimeDetail='Broad weakness. '+idxBelowBoth+'/4 indexes below 10 & 20 SMA. '+sectorsDown+'/'+sectorETFs.length+' sectors red. '+vixNote+' Reduce size.\n'+indexNotes;
+    }
+    else if(Math.abs(avgPct)<0.3&&idxMixed>=2){
+      regimeLabel='Choppy / Low Conviction'; regimeColor='var(--amber)';
+      regimeDetail='Narrow range, mixed signals. '+idxAboveBoth+'/4 above both SMAs, '+idxBelowBoth+'/4 below both, '+idxMixed+'/4 mixed. '+vixNote+'\n'+indexNotes;
+    }
+    else if(avgPct>0.3||idxAboveBoth>=3){
+      regimeLabel='Lean Bullish'; regimeColor='var(--green)';
+      regimeDetail=idxAboveBoth+'/4 indexes above both SMAs. '+sectorsUp+'/'+sectorETFs.length+' sectors positive. '+vixNote+' Selective longs.\n'+indexNotes;
+    }
+    else if(avgPct<-0.3||idxBelowBoth>=3){
+      regimeLabel='Lean Bearish'; regimeColor='var(--red)';
+      regimeDetail=idxBelowBoth+'/4 indexes below both SMAs. '+sectorsDown+'/'+sectorETFs.length+' sectors negative. '+vixNote+' Cautious, reduce size.\n'+indexNotes;
+    }
+    else{
+      regimeLabel='Neutral'; regimeColor='var(--text-muted)';
+      regimeDetail='Mixed signals across indexes. '+idxAboveBoth+' above both SMAs, '+idxBelowBoth+' below both. '+vixNote+' A+ setups only.\n'+indexNotes;
+    }
+    if(hasHighImpactEvent&&isMarketOpen()) regimeDetail+=' \u26a0 '+eventName+' today \u2014 volatility expected.';
+
+    // 9. Render regime body
+    var regimeBody = document.getElementById('regime-body');
+    if(regimeBody) {
+      var rHtml = '';
+      rHtml += '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+regimeColor+';margin-top:4px;flex-shrink:0;"></span>';
+      rHtml += '<div style="min-width:0;flex:1;">';
+      rHtml += '<div style="font-size:14px;font-weight:800;color:'+regimeColor+';">'+regimeLabel+'</div>';
+      rHtml += '<div style="font-size:14px;color:var(--text-secondary);margin-top:2px;line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
+      // SMA badges
+      rHtml += '<div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;">';
+      indexes.forEach(function(idx) {
+        if(idx.s10===null) return;
+        var both = idx.a10 && idx.a20;
+        var neither = !idx.a10 && !idx.a20;
+        var smaColor = both ? 'var(--green)' : neither ? 'var(--red)' : 'var(--amber)';
+        var smaLabel = both ? 'Above Both' : neither ? 'Below Both' : 'Mixed';
+        rHtml += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+smaColor+'15;color:'+smaColor+';font-family:\'JetBrains Mono\',monospace;">'+idx.name+' '+smaLabel+'</span>';
+      });
+      rHtml += '</div>';
+      // Updated timestamp
+      var regimeTime = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
+      rHtml += '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;" id="regime-updated-label">Updated '+regimeTime+' ET</div>';
+      rHtml += '</div>';
+      regimeBody.innerHTML = rHtml;
+      // Pulse
+      var rLbl = document.getElementById('regime-updated-label');
+      if(rLbl) { rLbl.style.color='var(--blue)'; setTimeout(function(){ if(rLbl) rLbl.style.color='var(--text-muted)'; }, 1500); }
+    }
+
+    // 10. Also refresh breadth (uses the same snapshot call we already made)
+    var breadthData = await fetchBreadthData();
+    if(breadthData) {
+      recordBreadthReading(breadthData);
+      renderBreadthBody(breadthData);
+    }
+
+    // 11. Update the Market Snapshot card prices too
+    var snapBody = document.getElementById('snapshot-body');
+    if(snapBody) {
+      var snapItems = [
+        {ticker:'SPY',label:'S&P 500',data:spyLive},
+        {ticker:'QQQ',label:'Nasdaq',data:qqqLive},
+        {ticker:'IWM',label:'Russell',data:iwmLive},
+        {ticker:'DIA',label:'Dow',data:diaLive},
+        {ticker:'VIXY',label:'VIX Proxy',data:vixyLive},
+        {ticker:'UUP',label:'Dollar (DXY)',data:livePrice('UUP')}
+      ];
+      var sHtml = '<div class="ov-snap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">';
+      snapItems.forEach(function(idx) {
+        var d=idx.data; var color=d.pct>=0?'var(--green)':'var(--red)';
+        var bg=d.pct>=0?'rgba(16,185,129,0.04)':'rgba(239,68,68,0.04)';
+        var borderC=d.pct>=0?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)';
+        if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';bg=d.pct<=0?'rgba(16,185,129,0.04)':'rgba(239,68,68,0.04)';borderC=d.pct<=0?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)';}
+        sHtml += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:12px;padding:12px 14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);">';
+        sHtml += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">'+idx.label+'</div>';
+        sHtml += '<div style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">'+(d.price?'$'+price(d.price):'\u2014')+'</div>';
+        sHtml += '<div style="font-size:14px;font-weight:700;color:'+color+';margin-top:2px;">'+pct(d.pct)+'</div>';
+        sHtml += '</div>';
+      });
+      sHtml += '</div>';
+      snapBody.innerHTML = sHtml;
+    }
+
+    console.log('[Auto-Refresh] Done. Regime: '+regimeLabel);
+  } catch(e) {
+    console.warn('[Auto-Refresh] Failed:', e);
+  }
+}
+
+// Auto-refresh regime + breadth + snapshot every 15 minutes during market hours
 function startBreadthAutoRefresh() {
   if(_breadthInterval) clearInterval(_breadthInterval);
-  _breadthInterval = setInterval(async function() {
-    // Only refresh during market hours (9:30 AM - 4:00 PM ET, weekdays)
+  _breadthInterval = setInterval(function() {
     if(!isMarketOpen()) return;
-    console.log('[Breadth] Auto-refreshing...');
-    var data = await fetchBreadthData();
-    if(data) {
-      recordBreadthReading(data);
-      renderBreadthBody(data);
-    }
+    refreshRegimeAndBreadth();
   }, 15 * 60 * 1000); // 15 minutes
 }
 
@@ -478,7 +694,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'regime\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Market Regime</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Should you be aggressive or cautious today?</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Market Regime</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Should you be aggressive or cautious today?'+(live?' \xb7 <span style="color:var(--blue);">Auto-refreshes every 15 min</span>':'')+'</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;"><span id="regime-arrow" style="font-size:12px;color:var(--text-muted);">'+(regimeCollapsed?'▶':'▼')+'</span></div>';
   html += '</div>';
   html += '<div id="regime-body" style="'+(regimeCollapsed?'display:none;':'display:flex;')+'padding:14px 20px;align-items:flex-start;gap:12px;">';
@@ -506,6 +722,9 @@ async function renderOverview() {
     });
     html += '</div>';
   }
+  // Updated timestamp for initial load
+  var regimeInitTime = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
+  html += '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;" id="regime-updated-label">Updated '+regimeInitTime+' ET</div>';
   html += '</div></div>';
   html += '</div>';
 
