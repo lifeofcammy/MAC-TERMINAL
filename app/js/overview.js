@@ -66,10 +66,10 @@ async function fetchBreadthData() {
 function recordBreadthReading(data) {
   if(!data) return;
   var now = new Date();
-  // Skip if last reading was less than 10 minutes ago (avoid duplicates on page reload)
+  // Skip if last reading was less than 2 minutes ago (avoid duplicates from concurrent calls)
   if (_breadthHistory.length > 0) {
     var lastTime = _breadthHistory[_breadthHistory.length - 1].time;
-    if (now - lastTime < 10 * 60 * 1000) return;
+    if (now - lastTime < 2 * 60 * 1000) return;
   }
   _breadthHistory.push({
     time: now,
@@ -377,6 +377,26 @@ async function refreshRegimeAndBreadth() {
 // Auto-refresh regime + breadth + snapshot every 15 minutes during market hours
 function startBreadthAutoRefresh() {
   if(_breadthInterval) clearInterval(_breadthInterval);
+  // Catch-up logic: if last reading is >14 min old, do an immediate refresh
+  // This handles the case where the user refreshes the page — the interval resets,
+  // but we check elapsed time and fire immediately if enough time has passed.
+  if (_breadthHistory.length > 0) {
+    var elapsed = Date.now() - _breadthHistory[_breadthHistory.length - 1].time.getTime();
+    if (elapsed >= 14 * 60 * 1000) {
+      console.log('[Auto-Refresh] Catch-up: last reading is ' + Math.round(elapsed/60000) + ' min old, refreshing now.');
+      refreshRegimeAndBreadth();
+    }
+  }
+  // If we only have 0-1 readings, do a fast first refresh after 3 minutes
+  // so the direction bars show up quickly without waiting a full 15 min.
+  if (_breadthHistory.length < 2) {
+    var firstRefreshMs = 3 * 60 * 1000; // 3 minutes
+    console.log('[Auto-Refresh] Fast first refresh in 3 min to build direction bars.');
+    setTimeout(function() {
+      if(!isMarketOpen()) return;
+      refreshRegimeAndBreadth();
+    }, firstRefreshMs);
+  }
   _breadthInterval = setInterval(function() {
     if(!isMarketOpen()) return;
     refreshRegimeAndBreadth();
