@@ -1,6 +1,6 @@
 // ==================== feedback.js ====================
-// In-app feedback modal. Replaces old Google Forms link.
-// Stores feedback in Supabase user_settings table with 'feedback_' key prefix.
+// In-app feedback modal.
+// Stores feedback in Supabase user_settings.preferences JSONB as an array.
 
 // ── Open / Close Modal ──
 function openFeedbackModal() {
@@ -81,26 +81,39 @@ async function submitFeedback() {
   status.style.display = 'none';
 
   try {
-    // Try Edge Function first
-    var session = window._currentSession;
-    if (!session || !session.access_token) throw new Error('Not logged in');
+    var sb = window.supabaseClient;
+    var user = window.currentUser;
+    if (!sb || !user || !user.id) throw new Error('Not logged in');
 
-    var resp = await fetch(EDGE_FN_BASE + '/submit-feedback', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + session.access_token,
-        'apikey': typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : ''
-      },
-      body: JSON.stringify({ category: category, message: message })
+    // Read current preferences
+    var { data: settings, error: readErr } = await sb
+      .from('user_settings')
+      .select('preferences')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (readErr) throw readErr;
+
+    var prefs = (settings && settings.preferences) ? settings.preferences : {};
+    if (!prefs.feedback) prefs.feedback = [];
+
+    // Append new feedback entry
+    prefs.feedback.push({
+      category: category,
+      message: message,
+      created_at: new Date().toISOString()
     });
 
-    var data = await resp.json();
+    // Keep only last 50 entries to avoid bloating
+    if (prefs.feedback.length > 50) prefs.feedback = prefs.feedback.slice(-50);
 
-    if (!resp.ok && !data.success) {
-      // Edge function failed — fallback to direct insert
-      throw new Error(data.error || 'Edge function error');
-    }
+    // Update preferences
+    var { error: updateErr } = await sb
+      .from('user_settings')
+      .update({ preferences: prefs, updated_at: new Date().toISOString() })
+      .eq('user_id', user.id);
+
+    if (updateErr) throw updateErr;
 
     // Success
     status.style.display = 'block';
@@ -112,40 +125,10 @@ async function submitFeedback() {
     setTimeout(function() { closeFeedbackModal(); }, 1500);
 
   } catch (err) {
-    console.warn('[Feedback] Edge function failed, trying direct insert:', err.message);
-
-    // Fallback: insert directly via Supabase client into user_settings
-    try {
-      var user = window.currentUser;
-      var feedbackData = {
-        user_id: user ? user.id : null,
-        key: 'feedback_' + Date.now(),
-        value: JSON.stringify({
-          category: category,
-          message: message,
-          user_email: user ? user.email : 'unknown',
-          created_at: new Date().toISOString()
-        })
-      };
-
-      var { error: insertErr } = await window.supabaseClient
-        .from('user_settings')
-        .insert(feedbackData);
-
-      if (insertErr) throw insertErr;
-
-      status.style.display = 'block';
-      status.style.color = 'var(--green)';
-      status.textContent = 'Thank you! Feedback submitted.';
-      btn.textContent = 'Sent ✓';
-      setTimeout(function() { closeFeedbackModal(); }, 1500);
-
-    } catch (fallbackErr) {
-      status.style.display = 'block';
-      status.style.color = 'var(--red)';
-      status.textContent = 'Failed to send: ' + fallbackErr.message;
-      btn.disabled = false;
-      btn.textContent = 'Submit';
-    }
+    status.style.display = 'block';
+    status.style.color = 'var(--red)';
+    status.textContent = 'Failed to send: ' + err.message;
+    btn.disabled = false;
+    btn.textContent = 'Submit';
   }
 }

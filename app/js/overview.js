@@ -882,8 +882,18 @@ async function renderOverview() {
   // Top news headlines
   html += '<div style="padding:10px 16px;">';
   html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Top Headlines</div>';
-  // Filter to US stock news only (articles must have at least one ticker)
-  var usNewsArticles = newsArticles.filter(function(a){ return a.tickers && a.tickers.length > 0; });
+  // Filter to US stock news only
+  // Require at least one ticker, and exclude foreign ADR patterns (5+ chars ending in Y/F)
+  function hasUsTicker(tickers) {
+    if(!tickers || tickers.length===0) return false;
+    return tickers.some(function(t) {
+      if(!t || t.length===0) return false;
+      if(t.length >= 5 && /[YF]$/.test(t)) return false; // ADR/foreign OTC pattern
+      if(t.length > 5) return false; // warrants, units, etc.
+      return true;
+    });
+  }
+  var usNewsArticles = newsArticles.filter(function(a){ return hasUsTicker(a.tickers); });
   if(usNewsArticles.length>0) {
     var topNews = usNewsArticles.slice(0,5);
     html += '<div style="display:grid;gap:4px;">';
