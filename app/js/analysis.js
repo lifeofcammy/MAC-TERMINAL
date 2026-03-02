@@ -48,6 +48,250 @@ function getAllAnalysisDates() {
   return Object.keys(dates).sort().reverse();
 }
 
+// ==================== MARKET SNAPSHOT (auto-fetch for empty dates) ====================
+var _snapshotCache = {};
+
+async function fetchMarketSnapshot(dateStr) {
+  // If we already fetched for this date, use cache
+  if (_snapshotCache[dateStr]) {
+    renderSnapshotData(_snapshotCache[dateStr]);
+    return;
+  }
+
+  var polygonKey = ''; try { polygonKey = localStorage.getItem('mtp_polygon_key') || ''; } catch(e) {}
+  if (!polygonKey) polygonKey = 'cITeodtOFuLRZuppvB3hc6U4XMBQUT0u';
+
+  var indices = ['SPY', 'QQQ', 'IWM'];
+  var sectorETFs = ['XLK', 'XLF', 'XLE', 'XLV', 'XLY', 'XLI', 'XLRE', 'XLU', 'XLB', 'XLC', 'XLP', 'SMH'];
+  var sectorNames = { 'XLK':'Technology','XLF':'Financials','XLE':'Energy','XLV':'Healthcare','XLY':'Consumer Disc.','XLI':'Industrials','XLRE':'Real Estate','XLU':'Utilities','XLB':'Materials','XLC':'Comm. Services','XLP':'Consumer Staples','SMH':'Semiconductors' };
+  var moversUniverse = ['AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AMD','AVGO','CRM','NFLX','COIN','SNOW','PLTR','DKNG','UBER','SQ','SHOP','NET','CRWD','MU','MRVL','ANET','PANW','NOW','ADBE','ORCL','LLY','UNH','JPM','GS','V','MA','BAC','XOM','CVX','CAT','DE','LMT','BA','MSTR','SOFI','HOOD','RKLB','APP','HIMS','ARM','SMCI','TSM','ASML','WMT','COST','TGT','DIS','PYPL','INTC','DELL'];
+
+  // Date range: 5 days back to get prev close
+  var fromDate = new Date(dateStr + 'T12:00:00');
+  fromDate.setDate(fromDate.getDate() - 5);
+  var fromStr = fromDate.toISOString().split('T')[0];
+  var toDate = new Date(dateStr + 'T12:00:00');
+  toDate.setDate(toDate.getDate() + 1);
+  var toStr = toDate.toISOString().split('T')[0];
+
+  var allTickers = indices.concat(sectorETFs).concat(moversUniverse);
+  // Dedupe
+  var seen = {}; allTickers = allTickers.filter(function(t) { if (seen[t]) return false; seen[t] = true; return true; });
+
+  var barData = {};
+  var batchSize = 5;
+
+  for (var i = 0; i < allTickers.length; i++) {
+    try {
+      var url = 'https://api.polygon.io/v2/aggs/ticker/' + allTickers[i] + '/range/1/day/' + fromStr + '/' + toStr + '?adjusted=true&sort=asc&apiKey=' + polygonKey;
+      var resp = await fetch(url);
+      if (resp.ok) {
+        var json = await resp.json();
+        if (json.results && json.results.length > 0) barData[allTickers[i]] = json.results;
+      }
+    } catch(e) {}
+    if (i > 0 && i % batchSize === 0) await new Promise(function(r) { setTimeout(r, 250); });
+  }
+
+  // Find the most recent trading date available in the data
+  var targetDate = dateStr;
+  var spyBars = barData['SPY'];
+  if (spyBars && spyBars.length > 0) {
+    // Use the last bar available (closest to target date)
+    var lastBar = spyBars[spyBars.length - 1];
+    var lastBarDate = new Date(lastBar.t).toISOString().split('T')[0];
+    if (lastBarDate <= dateStr) targetDate = lastBarDate;
+  }
+
+  function getChange(ticker) {
+    var bars = barData[ticker];
+    if (!bars || bars.length < 2) return null;
+    // Find bar for targetDate or closest
+    for (var j = bars.length - 1; j >= 1; j--) {
+      var bd = new Date(bars[j].t).toISOString().split('T')[0];
+      if (bd <= targetDate) {
+        return { close: bars[j].c, pct: ((bars[j].c - bars[j-1].c) / bars[j-1].c) * 100, volume: bars[j].v, date: bd };
+      }
+    }
+    return null;
+  }
+
+  var result = { date: targetDate, indices: [], sectors: [], movers: [] };
+
+  indices.forEach(function(t) {
+    var chg = getChange(t);
+    if (chg) result.indices.push({ ticker: t, close: chg.close, pct: chg.pct });
+  });
+
+  sectorETFs.forEach(function(etf) {
+    var chg = getChange(etf);
+    if (chg) result.sectors.push({ etf: etf, name: sectorNames[etf] || etf, pct: chg.pct });
+  });
+  result.sectors.sort(function(a, b) { return b.pct - a.pct; });
+
+  moversUniverse.forEach(function(t) {
+    var chg = getChange(t);
+    if (chg) result.movers.push({ ticker: t, close: chg.close, pct: chg.pct, absPct: Math.abs(chg.pct), volume: chg.volume });
+  });
+  result.movers.sort(function(a, b) { return b.absPct - a.absPct; });
+  result.movers = result.movers.slice(0, 5);
+
+  _snapshotCache[dateStr] = result;
+  renderSnapshotData(result);
+}
+
+function renderSnapshotData(data) {
+  // Timestamp
+  var tsEl = document.getElementById('snapshot-timestamp');
+  if (tsEl) {
+    var dd = new Date(data.date + 'T12:00:00');
+    tsEl.textContent = dd.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+
+  // Index cards
+  var idxEl = document.getElementById('snapshot-indices');
+  if (idxEl && data.indices.length > 0) {
+    var ih = '';
+    data.indices.forEach(function(idx) {
+      var c = idx.pct >= 0 ? 'var(--green)' : 'var(--red)';
+      ih += '<div class="card" style="padding:14px;text-align:center;background:var(--bg-secondary);">';
+      ih += '<div style="font-size:12px;font-weight:800;color:var(--text-muted);margin-bottom:4px;font-family:\'JetBrains Mono\',monospace;">' + idx.ticker + '</div>';
+      ih += '<div style="font-size:18px;font-weight:900;color:' + c + ';font-family:\'JetBrains Mono\',monospace;">' + (idx.pct >= 0 ? '+' : '') + idx.pct.toFixed(2) + '%</div>';
+      ih += '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">$' + idx.close.toFixed(2) + '</div>';
+      ih += '</div>';
+    });
+    idxEl.innerHTML = ih;
+  }
+
+  // Sector pills
+  var secEl = document.getElementById('snapshot-sectors');
+  if (secEl && data.sectors.length > 0) {
+    var sh = '';
+    data.sectors.forEach(function(s) {
+      var c = s.pct >= 0 ? 'var(--green)' : 'var(--red)';
+      var bg = s.pct >= 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)';
+      sh += '<div style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:6px;background:' + bg + ';font-size:12px;">';
+      sh += '<span style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + s.etf + '</span>';
+      sh += '<span style="color:var(--text-muted);">' + s.name + '</span>';
+      sh += '<span style="font-weight:800;color:' + c + ';font-family:\'JetBrains Mono\',monospace;">' + (s.pct >= 0 ? '+' : '') + s.pct.toFixed(1) + '%</span>';
+      sh += '</div>';
+    });
+    secEl.innerHTML = sh;
+  }
+
+  // Top movers
+  var movEl = document.getElementById('snapshot-movers');
+  if (movEl && data.movers.length > 0) {
+    var mh = '';
+    data.movers.forEach(function(m) {
+      var c = m.pct >= 0 ? 'var(--green)' : 'var(--red)';
+      var arrow = m.pct >= 0 ? '\u25B2' : '\u25BC';
+      mh += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg-secondary);border-radius:6px;">';
+      mh += '<div style="display:flex;align-items:center;gap:8px;">';
+      mh += '<span style="font-weight:900;font-size:14px;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + m.ticker + '</span>';
+      mh += '<span style="font-size:12px;color:var(--text-muted);">$' + m.close.toFixed(2) + '</span>';
+      mh += '</div>';
+      mh += '<span style="font-weight:800;color:' + c + ';font-size:14px;font-family:\'JetBrains Mono\',monospace;">' + arrow + ' ' + (m.pct >= 0 ? '+' : '') + m.pct.toFixed(1) + '%</span>';
+      mh += '</div>';
+    });
+    movEl.innerHTML = mh;
+  }
+}
+
+// ==================== ROLLING INSIGHTS (from last 5 stored analyses) ====================
+function buildRollingInsights() {
+  var allDates = getAllAnalysisDates();
+  if (allDates.length === 0) return '';
+
+  var recentDates = allDates.slice(0, 5);
+  var themeCounts = {}; // theme name => { count, status, tickers, lastNote }
+  var activePatterns = [];
+  var allMissed = [];
+
+  recentDates.forEach(function(date) {
+    var a = getAnalysis(date);
+    if (!a) return;
+
+    // Aggregate watchlist themes
+    if (a.watchlist) {
+      a.watchlist.forEach(function(w) {
+        if (!themeCounts[w.theme]) {
+          themeCounts[w.theme] = { count: 0, status: w.status, tickers: w.tickers || [], lastNote: w.note || '' };
+        }
+        themeCounts[w.theme].count++;
+        // Keep the most recent status
+        if (themeCounts[w.theme].count === 1) {
+          themeCounts[w.theme].status = w.status;
+          themeCounts[w.theme].tickers = w.tickers || [];
+          themeCounts[w.theme].lastNote = w.note || '';
+        }
+      });
+    }
+
+    // Collect patterns
+    if (a.patterns) {
+      var devMatch = a.patterns.match(/DEVELOPING[:\s]*([\s\S]*?)(?:FADING|$)/i);
+      if (devMatch && devMatch[1]) {
+        var bullets = devMatch[1].split('\n').filter(function(l) { return l.trim().length > 10; });
+        bullets.forEach(function(b) {
+          var clean = b.replace(/^[\s\u2022\u2023\u25E6\-\*]+/, '').trim();
+          if (clean.length > 15 && activePatterns.length < 4) activePatterns.push(clean);
+        });
+      }
+    }
+  });
+
+  // Sort themes by frequency
+  var sortedThemes = Object.keys(themeCounts).sort(function(a, b) {
+    return themeCounts[b].count - themeCounts[a].count;
+  }).slice(0, 5);
+
+  if (sortedThemes.length === 0 && activePatterns.length === 0) return '';
+
+  var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
+
+  // Running Themes card
+  if (sortedThemes.length > 0) {
+    html += '<div class="card" style="padding:16px;border-left:3px solid var(--purple);">';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--purple);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;">Running Themes</div>';
+    sortedThemes.forEach(function(name) {
+      var t = themeCounts[name];
+      var sc = t.status === 'active' ? 'var(--green)' : t.status === 'watch' ? 'var(--amber)' : 'var(--text-muted)';
+      var dot = t.status === 'active' ? '\u25CF' : t.status === 'watch' ? '\u25D0' : '\u25CB';
+      html += '<div style="margin-bottom:8px;">';
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">';
+      html += '<span style="color:' + sc + ';font-size:10px;">' + dot + '</span>';
+      html += '<span style="font-size:14px;font-weight:700;color:var(--text-primary);">' + name + '</span>';
+      if (t.count > 1) html += '<span style="font-size:12px;color:var(--text-muted);">' + t.count + 'x</span>';
+      html += '</div>';
+      html += '<div style="display:flex;flex-wrap:wrap;gap:3px;">';
+      t.tickers.slice(0, 5).forEach(function(tk) {
+        html += '<span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--bg-secondary);color:var(--text-secondary);font-family:\'JetBrains Mono\',monospace;">' + tk + '</span>';
+      });
+      html += '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Developing Patterns card
+  if (activePatterns.length > 0) {
+    html += '<div class="card" style="padding:16px;border-left:3px solid var(--amber);">';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--amber);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;">Developing Patterns</div>';
+    activePatterns.slice(0, 4).forEach(function(p) {
+      var truncated = p.length > 120 ? p.substring(0, 120) + '...' : p;
+      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;padding:4px 0;border-bottom:1px solid var(--border);">' + truncated + '</div>';
+    });
+    html += '</div>';
+  } else {
+    // Fill the grid even if no patterns
+    html += '<div></div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
 function renderAnalysis() {
   var contentEl = document.getElementById('analysis-content');
   var dateLabel = document.getElementById('analysis-date-label');
@@ -59,22 +303,62 @@ function renderAnalysis() {
   var analysis = getAnalysis(analysisCurrentDate);
 
   if (!analysis) {
-    // Check if this is a weekday (potential trading day)
     var dow = d.getDay();
     var isWeekday = dow >= 1 && dow <= 5;
     var isPastOrToday = d <= new Date();
-    contentEl.innerHTML = '<div class="card" style="padding:40px;text-align:center;">' +
-      '<div style="font-size:18px;margin-bottom:16px;color:var(--text-muted);">◉</div>' +
-      '<div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">No market analysis for this date</div>' +
-      '<div style="font-size:14px;color:var(--text-muted);max-width:450px;margin:0 auto;line-height:1.6;">Click "Generate" to auto-scan this day\'s biggest movers, sector rotations, and key themes using market data and AI.</div>' +
-      (isWeekday && isPastOrToday ?
-        '<button onclick="autoGenerateAnalysis(\'' + analysisCurrentDate + '\')" id="auto-gen-btn" class="refresh-btn" style="margin-top:16px;padding:10px 24px;">Generate Analysis</button>' +
-        '<div id="auto-gen-status" style="margin-top:8px;font-size:14px;color:var(--text-muted);"></div>'
-        : '<div style="margin-top:12px;font-size:14px;color:var(--text-muted);">' + (isWeekday ? 'Future date — analysis not yet available.' : 'Weekend — markets closed.') + '</div>') +
-      '</div>';
 
-    // Still show recent entries and running themes below
+    var emptyHtml = '';
+
+    // ── LIVE MARKET SNAPSHOT (auto-fetches from Polygon) ──
+    emptyHtml += '<div id="analysis-snapshot" style="margin-bottom:14px;">';
+    emptyHtml += '<div class="card" style="padding:20px;">';
+    emptyHtml += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">';
+    emptyHtml += '<div style="font-size:12px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:0.08em;">Market Snapshot</div>';
+    emptyHtml += '<div id="snapshot-timestamp" style="font-size:12px;color:var(--text-muted);">Loading...</div>';
+    emptyHtml += '</div>';
+    // Index cards row
+    emptyHtml += '<div id="snapshot-indices" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">';
+    ['SPY','QQQ','IWM'].forEach(function() {
+      emptyHtml += '<div class="card" style="padding:14px;text-align:center;background:var(--bg-secondary);">';
+      emptyHtml += '<div style="height:14px;width:40px;margin:0 auto 6px;background:var(--border);border-radius:3px;"></div>';
+      emptyHtml += '<div style="height:18px;width:60px;margin:0 auto;background:var(--border);border-radius:3px;"></div>';
+      emptyHtml += '</div>';
+    });
+    emptyHtml += '</div>';
+    // Sector mini-heatmap
+    emptyHtml += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Sectors</div>';
+    emptyHtml += '<div id="snapshot-sectors" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">';
+    emptyHtml += '<div style="font-size:12px;color:var(--text-muted);">Loading...</div>';
+    emptyHtml += '</div>';
+    // Top movers
+    emptyHtml += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Top Movers</div>';
+    emptyHtml += '<div id="snapshot-movers" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+    emptyHtml += '<div style="font-size:12px;color:var(--text-muted);">Loading...</div>';
+    emptyHtml += '</div>';
+    emptyHtml += '</div>'; // end card
+    emptyHtml += '</div>'; // end snapshot
+
+    // ── ROLLING INSIGHTS from last 5 analyses ──
+    var rollingHtml = buildRollingInsights();
+    if (rollingHtml) emptyHtml += rollingHtml;
+
+    // ── Generate button for past trading days ──
+    if (isWeekday && isPastOrToday) {
+      emptyHtml += '<div style="text-align:center;margin:16px 0 8px;">';
+      emptyHtml += '<button onclick="autoGenerateAnalysis(\'' + analysisCurrentDate + '\')" id="auto-gen-btn" class="refresh-btn" style="padding:10px 24px;">Generate Full AI Analysis</button>';
+      emptyHtml += '<div id="auto-gen-status" style="margin-top:8px;font-size:14px;color:var(--text-muted);"></div>';
+      emptyHtml += '</div>';
+    } else if (!isWeekday) {
+      emptyHtml += '<div style="text-align:center;margin:12px 0;font-size:14px;color:var(--text-muted);">Weekend — markets closed.</div>';
+    } else {
+      emptyHtml += '<div style="text-align:center;margin:12px 0;font-size:14px;color:var(--text-muted);">Future date — analysis not yet available.</div>';
+    }
+
+    contentEl.innerHTML = emptyHtml;
     renderRecentEntries(contentEl);
+
+    // Auto-fetch snapshot
+    fetchMarketSnapshot(analysisCurrentDate);
     return;
   }
 
