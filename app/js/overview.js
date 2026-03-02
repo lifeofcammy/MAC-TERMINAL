@@ -47,6 +47,22 @@ async function renderOverview() {
     'XLP': [{etf:'PBJ',name:'Food & Beverage'},{etf:'XLP',name:'Staples Broad'}]
   };
 
+  // Top stocks per sector for Trend Leaders (click-to-expand)
+  var sectorStocks = {
+    'XLK': ['AAPL','MSFT','CRM','ADBE','NOW','ORCL','INTU','CSCO','ACN','IBM','PLTR','CDNS','SNPS','FTNT','PANW'],
+    'SMH': ['NVDA','AMD','AVGO','TSM','ASML','MRVL','ANET','MU','KLAC','LRCX','NXPI','ON','INTC','ARM','SMCI'],
+    'XLF': ['JPM','GS','V','MA','BAC','BX','AXP','MS','SCHW','C','BK','PNC','USB','WFC','COF'],
+    'XLE': ['XOM','CVX','COP','EOG','SLB','MPC','OXY','PSX','VLO','HAL','DVN','FANG','TRGP','OKE','WMB'],
+    'XLV': ['LLY','UNH','JNJ','MRK','ABBV','TMO','ABT','AMGN','ISRG','GILD','VRTX','REGN','SYK','BSX','MDT'],
+    'XLY': ['AMZN','TSLA','HD','MCD','NKE','LOW','SBUX','TJX','BKNG','CMG','LULU','ROST','DG','ABNB','DPZ'],
+    'XLI': ['CAT','GE','HON','UNP','RTX','BA','DE','LMT','ETN','ITW','GD','CSX','NSC','URI','FDX'],
+    'XLRE': ['PLD','AMT','EQIX','CCI','SPG','O','WELL','PSA','DLR','VICI','EQR','AVB','ARE','IRM','ESS'],
+    'XLU': ['NEE','SO','DUK','CEG','AEP','D','SRE','EXC','XEL','ED','WEC','PEG','ES','AES','AWK'],
+    'XLB': ['LIN','SHW','FCX','APD','NEM','ECL','VMC','MLM','NUE','DOW','DD','ALB','FMC','CF','MOS'],
+    'XLC': ['META','GOOGL','NFLX','DIS','CMCSA','T','VZ','TMUS','EA','TTWO','CHTR','OMC','LYV','MTCH','WBD'],
+    'XLP': ['PG','KO','PEP','COST','WMT','PM','MO','CL','KMB','GIS','SYY','KDP','KHC','HSY','MKC']
+  };
+
   var snap = {}, sectorSnap = {}, sectorBars = {}, spyBars = [], newsArticles = [];
   var dataFreshness = getDataFreshnessLabel();
 
@@ -432,8 +448,9 @@ async function renderOverview() {
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
-  // Store subsectorMap globally for the expand function
+  // Store maps globally for the expand function
   window._subsectorMap = subsectorMap;
+  window._sectorStocks = sectorStocks;
 
   html += '<div class="ov-heatmap-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:12px 14px;">';
   sectorData.forEach(function(sec){
@@ -461,12 +478,9 @@ async function renderOverview() {
 
   // ── SECTOR ROTATION ──
   // Compare daily vs weekly performance to identify rotation
-  var accel = sectorData.filter(function(s){ return s.dayChg > 0 && s.dayChg > s.weekPerf/5; }); // daily outperforming weekly avg
-  var decel = sectorData.filter(function(s){ return s.dayChg < 0 && s.dayChg < s.weekPerf/5; }); // daily underperforming weekly avg
-  // Also identify sectors with strongest momentum shift
   var rotationData = sectorData.map(function(s){
-    var weeklyDailyAvg = s.weekPerf / 5; // approx daily avg over the week
-    var rotationScore = s.dayChg - weeklyDailyAvg; // positive = accelerating, negative = decelerating
+    var weeklyDailyAvg = s.weekPerf / 5;
+    var rotationScore = s.dayChg - weeklyDailyAvg;
     return {etf:s.etf, name:s.name, dayChg:s.dayChg, weekPerf:s.weekPerf, rotation:rotationScore};
   });
   rotationData.sort(function(a,b){ return b.rotation - a.rotation; });
@@ -479,35 +493,33 @@ async function renderOverview() {
     html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;text-align:center;">Sector Rotation</div>';
     html += '<div style="display:flex;gap:10px;">';
 
-    // Money flowing in
     if(rotatingIn.length > 0) {
       html += '<div style="flex:1;">';
       html += '<div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px;text-align:center;">\u25b2 Accelerating</div>';
       rotatingIn.forEach(function(s){
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px;margin-bottom:2px;background:rgba(16,185,129,0.06);border-radius:4px;">';
-        html += '<span style="font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace;">' + s.etf + '</span>';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:2px;background:rgba(16,185,129,0.06);border-radius:4px;">';
+        html += '<span style="font-size:12px;font-weight:700;color:var(--text-primary);">' + s.name + '</span>';
         html += '<span style="font-size:12px;color:var(--green);font-weight:700;font-family:\'JetBrains Mono\',monospace;">+' + s.rotation.toFixed(1) + '</span>';
         html += '</div>';
       });
       html += '</div>';
     }
 
-    // Money flowing out
     if(rotatingOut.length > 0) {
       html += '<div style="flex:1;">';
       html += '<div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:4px;text-align:center;">\u25bc Decelerating</div>';
       rotatingOut.forEach(function(s){
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px;margin-bottom:2px;background:rgba(239,68,68,0.06);border-radius:4px;">';
-        html += '<span style="font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace;">' + s.etf + '</span>';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:2px;background:rgba(239,68,68,0.06);border-radius:4px;">';
+        html += '<span style="font-size:12px;font-weight:700;color:var(--text-primary);">' + s.name + '</span>';
         html += '<span style="font-size:12px;color:var(--red);font-weight:700;font-family:\'JetBrains Mono\',monospace;">' + s.rotation.toFixed(1) + '</span>';
         html += '</div>';
       });
       html += '</div>';
     }
 
-    html += '</div>'; // close flex
-    html += '<div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:4px;">Daily vs. weekly avg — shows where money is rotating</div>';
-    html += '</div>'; // close rotation section
+    html += '</div>';
+    html += '<div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:4px;">Daily vs. weekly avg \u2014 shows where money is rotating</div>';
+    html += '</div>';
   }
 
   html += '</div></div>'; // close heatmap-body, close card
@@ -705,57 +717,116 @@ function toggleCard(name) {
 }
 function toggleHeatmap(){toggleCard('heatmap');}
 
-// Subsector expand/collapse — fetches live data on first open
+// Subsector expand/collapse — fetches subsector ETFs + top trending stocks
 var _subsectorLoaded = {};
 async function toggleSubsectors(sectorEtf) {
   var el = document.getElementById('subsector-' + sectorEtf);
   if (!el) return;
-  // Toggle visibility
   if (el.style.display !== 'none') {
     el.style.display = 'none';
     return;
   }
   el.style.display = 'block';
-
-  // If already loaded, just show
   if (_subsectorLoaded[sectorEtf]) return;
 
-  var subs = (window._subsectorMap || {})[sectorEtf];
-  if (!subs || subs.length === 0) { el.style.display = 'none'; return; }
+  var subs = (window._subsectorMap || {})[sectorEtf] || [];
+  var stocks = (window._sectorStocks || {})[sectorEtf] || [];
+  if (subs.length === 0 && stocks.length === 0) { el.style.display = 'none'; return; }
 
-  el.innerHTML = '<div style="padding:6px 4px;font-size:12px;color:var(--text-muted);text-align:center;">Loading subsectors...</div>';
+  el.innerHTML = '<div style="padding:8px 4px;font-size:12px;color:var(--text-muted);text-align:center;">Loading sector data...</div>';
 
   try {
-    var tickers = subs.map(function(s) { return s.etf; });
-    var snapData = await getSnapshots(tickers);
-    var results = [];
-    for (var i = 0; i < subs.length; i++) {
-      var sub = subs[i];
-      var s = snapData[sub.etf];
-      var p = 0, prev = 0, pctVal = 0;
-      if (s) {
-        p = s.day && s.day.c && s.day.c > 0 ? s.day.c : (s.prevDay && s.prevDay.c ? s.prevDay.c : (s.lastTrade ? s.lastTrade.p : 0));
-        prev = s.prevDay ? s.prevDay.c : p;
-        if (prev > 0) pctVal = ((p - prev) / prev) * 100;
-      }
-      results.push({ etf: sub.etf, name: sub.name, pct: pctVal });
-    }
-    results.sort(function(a, b) { return b.pct - a.pct; });
+    var html = '';
 
-    var html = '<div style="padding:6px 4px;display:grid;gap:3px;">';
-    results.forEach(function(r) {
-      var color = r.pct >= 0 ? 'var(--green)' : 'var(--red)';
-      var bg = r.pct >= 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-radius:4px;background:' + bg + ';">';
-      html += '<div style="font-size:12px;"><span style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + r.etf + '</span> <span style="color:var(--text-muted);">' + r.name + '</span></div>';
-      html += '<span style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:' + color + ';">' + (r.pct >= 0 ? '+' : '') + r.pct.toFixed(1) + '%</span>';
-      html += '</div>';
-    });
-    html += '</div>';
-    el.innerHTML = html;
+    // ── SUBSECTOR ETFs ──
+    if (subs.length > 0) {
+      var subTickers = subs.map(function(s) { return s.etf; });
+      var subSnap = await getSnapshots(subTickers);
+      var subResults = [];
+      for (var i = 0; i < subs.length; i++) {
+        var sub = subs[i];
+        var s = subSnap[sub.etf];
+        var p = 0, prev = 0, pctVal = 0;
+        if (s) {
+          p = s.day && s.day.c && s.day.c > 0 ? s.day.c : (s.prevDay && s.prevDay.c ? s.prevDay.c : (s.lastTrade ? s.lastTrade.p : 0));
+          prev = s.prevDay ? s.prevDay.c : p;
+          if (prev > 0) pctVal = ((p - prev) / prev) * 100;
+        }
+        subResults.push({ etf: sub.etf, name: sub.name, pct: pctVal });
+      }
+      subResults.sort(function(a, b) { return b.pct - a.pct; });
+
+      html += '<div style="padding:6px 6px 2px;">';
+      html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Subsectors</div>';
+      html += '<div style="display:grid;gap:2px;">';
+      subResults.forEach(function(r) {
+        var color = r.pct >= 0 ? 'var(--green)' : 'var(--red)';
+        var bg = r.pct >= 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;background:' + bg + ';">';
+        html += '<div style="font-size:12px;"><span style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + r.etf + '</span> <span style="color:var(--text-muted);">' + r.name + '</span></div>';
+        html += '<span style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:' + color + ';">' + (r.pct >= 0 ? '+' : '') + r.pct.toFixed(1) + '%</span>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    // ── TREND LEADERS (top stocks in sector) ──
+    if (stocks.length > 0) {
+      // Fetch snapshots + 20-day bars for RS calculation
+      var stockSnap = {};
+      for (var bi = 0; bi < stocks.length; bi += 15) {
+        try { Object.assign(stockSnap, await getSnapshots(stocks.slice(bi, bi + 15))); } catch(e) {}
+      }
+      // Also get SPY for relative strength
+      var spyRef = stockSnap['SPY'] || null;
+      if (!spyRef) { try { var spyS = await getSnapshots(['SPY']); spyRef = spyS['SPY']; } catch(e) {} }
+
+      var leaders = [];
+      for (var si = 0; si < stocks.length; si++) {
+        var t = stocks[si];
+        var ss = stockSnap[t];
+        if (!ss) continue;
+        var pr = ss.day && ss.day.c && ss.day.c > 0 ? ss.day.c : (ss.prevDay && ss.prevDay.c ? ss.prevDay.c : (ss.lastTrade ? ss.lastTrade.p : 0));
+        var pv = ss.prevDay ? ss.prevDay.c : pr;
+        var dayPct = pv > 0 ? ((pr - pv) / pv) * 100 : 0;
+        var vol = ss.day ? ss.day.v : 0;
+        // Volume vs avg (simple: use prevDay volume as rough proxy)
+        var prevVol = ss.prevDay ? ss.prevDay.v : 0;
+        var volVsAvg = prevVol > 0 ? (vol / prevVol) : 0;
+        leaders.push({ ticker: t, price: pr, dayPct: dayPct, vol: vol, volVsAvg: volVsAvg });
+      }
+      // Sort by day % change descending (best performers first)
+      leaders.sort(function(a, b) { return b.dayPct - a.dayPct; });
+      var topLeaders = leaders.slice(0, 5);
+
+      if (topLeaders.length > 0) {
+        html += '<div style="padding:6px 6px 4px;">';
+        html += '<div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Trend Leaders</div>';
+        // Table header
+        html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:2px 8px;font-size:10px;font-weight:700;color:var(--text-muted);padding:0 8px 2px;text-transform:uppercase;letter-spacing:.03em;">';
+        html += '<span>Ticker</span><span style="text-align:right;">Price</span><span style="text-align:right;">Day %</span><span style="text-align:right;">Vol</span>';
+        html += '</div>';
+        // Rows
+        topLeaders.forEach(function(l) {
+          var c = l.dayPct >= 0 ? 'var(--green)' : 'var(--red)';
+          var bg = l.dayPct >= 0 ? 'rgba(16,185,129,0.04)' : 'rgba(239,68,68,0.04)';
+          var volStr = l.vol >= 1000000 ? (l.vol / 1000000).toFixed(1) + 'M' : l.vol >= 1000 ? (l.vol / 1000).toFixed(0) + 'K' : l.vol.toString();
+          var volColor = l.volVsAvg >= 1.5 ? 'var(--blue)' : 'var(--text-muted)';
+          html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:2px 8px;padding:4px 8px;border-radius:4px;background:' + bg + ';align-items:center;">';
+          html += '<span style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + l.ticker + '</span>';
+          html += '<span style="font-size:12px;font-family:\'JetBrains Mono\',monospace;color:var(--text-secondary);text-align:right;">$' + l.price.toFixed(2) + '</span>';
+          html += '<span style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:' + c + ';text-align:right;">' + (l.dayPct >= 0 ? '+' : '') + l.dayPct.toFixed(1) + '%</span>';
+          html += '<span style="font-size:12px;font-family:\'JetBrains Mono\',monospace;color:' + volColor + ';text-align:right;">' + volStr + '</span>';
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+    }
+
+    el.innerHTML = html || '<div style="padding:6px;font-size:12px;color:var(--text-muted);text-align:center;">No data available</div>';
     _subsectorLoaded[sectorEtf] = true;
   } catch (e) {
-    el.innerHTML = '<div style="padding:6px 4px;font-size:12px;color:var(--red);">Failed to load subsectors</div>';
+    el.innerHTML = '<div style="padding:6px 4px;font-size:12px;color:var(--red);">Failed to load sector data</div>';
   }
 }
 function toggleMindset(){
