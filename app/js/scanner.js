@@ -41,7 +41,16 @@ function isMomentumCacheFresh() {
 
 function getLastTradingDay() {
   var d = new Date();
-  // Walk back to last weekday
+  // If today is a weekday, check if market has closed (after 4:30 PM ET = 16:30)
+  // If market is still open or hasn't opened yet, use previous trading day
+  if (d.getDay() >= 1 && d.getDay() <= 5) {
+    var etHour = parseInt(d.toLocaleString('en-US', { hour: 'numeric', hour12: false, timeZone: 'America/New_York' }));
+    if (etHour < 17) {
+      // Market hasn't closed yet today, go back one day
+      d.setDate(d.getDate() - 1);
+    }
+  }
+  // Walk back past weekends
   while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1);
   return localDateStr(d);
 }
