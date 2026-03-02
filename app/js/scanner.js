@@ -1007,15 +1007,46 @@ async function runFullScanUI() {
     // ── ROUTE: Live scan during market hours, full scan after close ──
     var liveMode = isScannerMarketHours();
     var cache = getMomentumCache();
+    var hasFreshCache = cache && cache.tickers && cache.tickers.length > 0 && isMomentumCacheFresh();
 
-    if (liveMode && cache && cache.tickers && cache.tickers.length > 0) {
-      // ── LIVE SCAN MODE ──
-      updateProgress('Running live scan...', 10);
+    if (liveMode) {
+      // ── MARKET HOURS: build cache if needed, then live scan ──
+
+      // Step 1: Ensure we have a universe (build from prior close if missing)
+      if (!hasFreshCache) {
+        // Try server cache first
+        updateProgress('Checking for cached universe...', 5);
+        var serverData = await getServerScanResults();
+        if (serverData && serverData.momentum_universe && serverData.momentum_universe.tickers) {
+          saveMomentumCache(serverData.momentum_universe);
+          cache = serverData.momentum_universe;
+          updateProgress('Loaded universe from server.', 20);
+        } else {
+          // Build universe client-side from last trading day (e.g. Friday)
+          updateProgress('Building momentum universe from prior close...', 5);
+          await buildMomentumUniverse(function(msg) {
+            var match = msg.match(/(\d+)%/);
+            var pct = match ? Math.round(5 + parseInt(match[1]) * 0.55) : undefined;
+            updateProgress(msg, pct);
+          });
+          cache = getMomentumCache();
+          updateProgress('Universe built! Running live scan...', 65);
+        }
+      }
+
+      // Update top 100 list
+      var top100Body = document.getElementById('top100-body');
+      if (top100Body && cache && cache.tickers) {
+        top100Body.innerHTML = renderTop100List(cache.tickers);
+      }
+
+      // Step 2: Run live scan
+      updateProgress('Running live scan...', 70);
       var liveResults = await runLiveBreakoutScan(function(msg) {
         var match = msg.match(/(\d+)\/(\d+)/);
         if (match) {
-          var pct = 10 + Math.round(parseInt(match[1]) / parseInt(match[2]) * 85);
-          updateProgress(msg, Math.min(pct, 95));
+          var pct = 70 + Math.round(parseInt(match[1]) / parseInt(match[2]) * 28);
+          updateProgress(msg, Math.min(pct, 98));
         } else {
           updateProgress(msg);
         }
@@ -1027,7 +1058,7 @@ async function runFullScanUI() {
       setTimeout(function() {
         if (progressWrap) progressWrap.style.display = 'none';
         if (idleStatus) {
-          idleStatus.textContent = 'Live scan · ' + liveResults.etTime + ' ET · ' + liveResults.setups.length + ' setups from ' + cache.count + ' stocks';
+          idleStatus.textContent = 'Live scan · ' + liveResults.etTime + ' ET · ' + liveResults.setups.length + ' setups from ' + (cache.count || cache.tickers.length) + ' stocks';
           idleStatus.style.display = 'block';
         }
       }, 1500);
@@ -1035,8 +1066,8 @@ async function runFullScanUI() {
       return;
     }
 
-    // ── FULL SCAN MODE (after market close or no cache) ──
-    // Step 1: Check if Supabase already has today's results
+    // ── AFTER HOURS / WEEKEND: full end-of-day scan ──
+    // Step 1: Check Supabase for cached results
     updateProgress('Checking for cached results...', 5);
     var serverData = await getServerScanResults();
     
