@@ -1156,7 +1156,8 @@ var _autoBuildRunning = false;
 
 (function() {
   setTimeout(async function() {
-    if (!POLYGON_KEY) return;
+    // Allow auto-build if user is logged in (proxy handles key) or has own key
+    if (!window._currentSession && !POLYGON_KEY) return;
 
     // Try server cache
     try {
