@@ -65,6 +65,7 @@ function saveMomentumCache(data) {
 function isMomentumCacheFresh() {
   var cache = getMomentumCache();
   if (!cache || !cache.date) return false;
+  if (!cache.tickers || cache.tickers.length < 150) return false;
   var today = localDateStr();
   return cache.date === today || cache.date === getLastTradingDay();
 }
