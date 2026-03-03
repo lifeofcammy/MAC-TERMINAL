@@ -1,1 +1,271 @@
-Ly8gPT09PT09PT09PT09PT09PT09PT0gZGIuanMgPT09PT09PT09PT09PT09PT09PT0KLy8gU3VwYWJhc2UgZGF0YSBzeW5jIGxheWVyLgovLyBXaGVuIGxvZ2dlZCBpbjogcmVhZHMvd3JpdGVzIFN1cGFiYXNlICh3aXRoIGxvY2FsU3RvcmFnZSBhcyBmYXN0IGNhY2hlKS4KLy8gV2hlbiBsb2dnZWQgb3V0OiBmYWxscyBiYWNrIHRvIGxvY2FsU3RvcmFnZSBvbmx5LgovLyBEcm9wLWluIHJlcGxhY2VtZW50IGZvciBkaXJlY3QgbG9jYWxTdG9yYWdlIGNhbGxzLgoKLy8gPT09PT09PT09PT09PT09PT09PT0gSEVMUEVSUyA9PT09PT09PT09PT09PT09PT09PQoKZnVuY3Rpb24gZ2V0VXNlcigpIHsKICAvLyBSZXR1cm5zIGN1cnJlbnQgU3VwYWJhc2UgdXNlciBvciBudWxsCiAgdHJ5IHsKICAgIHZhciBzID0gd2luZG93Ll9jdXJyZW50U2Vzc2lvbjsKICAgIHJldHVybiBzICYmIHMudXNlciA/IHMudXNlciA6IG51bGw7CiAgfSBjYXRjaChlKSB7IHJldHVybiBudWxsOyB9Cn0KCmZ1bmN0aW9uIGdldFN1cGFiYXNlKCkgewogIHJldHVybiB3aW5kb3cuc3VwYWJhc2VDbGllbnQgfHwgbnVsbDsKfQoKLy8gPT09PT09PT09PT09PT09PT09PT0gR0VORVJJQyBVUFNFUlQgLyBTRUxFQ1QgPT09PT09PT09PT09PT09PT09PT0KCmFzeW5jIGZ1bmN0aW9uIGRiVXBzZXJ0KHRhYmxlLCBkYXRhLCBjb25mbGljdENvbHMpIHsKICB2YXIgc2IgPSBnZXRTdXBhYmFzZSgpOwogIHZhciB1c2VyID0gZ2V0VXNlcigpOwogIGlmICghc2IgfHwgIXVzZXIpIHJldHVybiBudWxsOwogIGRhdGEudXNlcl9pZCA9IHVzZXIuaWQ7CiAgZGF0YS51cGRhdGVkX2F0ID0gbmV3IERhdGUoKS50b0lTT1N0cmluZygpOwogIHRyeSB7CiAgICB2YXIgcSA9IHNiLmZyb20odGFibGUpLnVwc2VydChkYXRhLCB7IG9uQ29uZmxpY3Q6IGNvbmZsaWN0Q29scyB8fCAndXNlcl9pZCcgfSk7CiAgICB2YXIgcmVzID0gYXdhaXQgcS5zZWxlY3QoKTsKICAgIHJldHVybiByZXMuZGF0YSA/IHJlcy5kYXRhWzBdIDogbnVsbDsKICB9IGNhdGNoKGUpIHsgY29uc29sZS53YXJuKCdkYlVwc2VydCBlcnJvcjonLCB0YWJsZSwgZSk7IHJldHVybiBudWxsOyB9Cn0KCmFzeW5jIGZ1bmN0aW9uIGRiU2VsZWN0KHRhYmxlLCBleHRyYUZpbHRlcnMpIHsKICB2YXIgc2IgPSBnZXRTdXBhYmFzZSgpOwogIHZhciB1c2VyID0gZ2V0VXNlcigpOwogIGlmICghc2IgfHwgIXVzZXIpIHJldHVybiBudWxsOwogIHRyeSB7CiAgICB2YXIgcSA9IHNiLmZyb20odGFibGUpLnNlbGVjdCgnKicpLmVxKCd1c2VyX2lkJywgdXNlci5pZCk7CiAgICBpZiAoZXh0cmFGaWx0ZXJzKSB7CiAgICAgIGZvciAodmFyIGsgaW4gZXh0cmFGaWx0ZXJzKSBxID0gcS5lcShrLCBleHRyYUZpbHRlcnNba10pOwogICAgfQogICAgdmFyIHJlcyA9IGF3YWl0IHE7CiAgICByZXR1cm4gcmVzLmRhdGEgfHwgW107CiAgfSBjYXRjaChlKSB7IGNvbnNvbGUud2FybignZGJTZWxlY3QgZXJyb3I6JywgdGFibGUsIGUpOyByZXR1cm4gbnVsbDsgfQp9Cgphc3luYyBmdW5jdGlvbiBkYkRlbGV0ZSh0YWJsZSwgZXh0cmFGaWx0ZXJzKSB7CiAgdmFyIHNiID0gZ2V0U3VwYWJhc2UoKTsKICB2YXIgdXNlciA9IGdldFVzZXIoKTsKICBpZiAoIXNiIHx8ICF1c2VyKSByZXR1cm4gbnVsbDsKICB0cnkgewogICAgdmFyIHEgPSBzYi5mcm9tKHRhYmxlKS5kZWxldGUoKS5lcSgndXNlcl9pZCcsIHVzZXIuaWQpOwogICAgaWYgKGV4dHJhRmlsdGVycykgewogICAgICBmb3IgKHZhciBrIGluIGV4dHJhRmlsdGVycykgcSA9IHEuZXEoaywgZXh0cmFGaWx0ZXJzW2tdKTsKICAgIH0KICAgIGF3YWl0IHE7CiAgICByZXR1cm4gdHJ1ZTsKICB9IGNhdGNoKGUpIHsgY29uc29sZS53YXJuKCdkYkRlbGV0ZSBlcnJvcjonLCB0YWJsZSwgZSk7IHJldHVybiBudWxsOyB9Cn0KCgovLyA9PT09PT09PT09PT09PT09PT09PSBXQVRDSExJU1QgPT09PT09PT09PT09PT09PT09PT0KCmFzeW5jIGZ1bmN0aW9uIGRiU2F2ZVdhdGNobGlzdCh0aWNrZXJzKSB7CiAgLy8gQWx3YXlzIHNhdmUgdG8gbG9jYWxTdG9yYWdlIChmYXN0IGNhY2hlKQogIHRyeSB7IGxvY2FsU3RvcmFnZS5zZXRJdGVtKCdtY2Nfd2F0Y2hsaXN0JywgSlNPTi5zdHJpbmdpZnkodGlja2VycykpOyB9IGNhdGNoKGUpIHt9CiAgLy8gU3luYyB0byBTdXBhYmFzZQogIGF3YWl0IGRiVXBzZXJ0KCd3YXRjaGxpc3QnLCB7IHRpY2tlcnM6IHRpY2tlcnMgfSk7Cn0KCmFzeW5jIGZ1bmN0aW9uIGRiTG9hZFdhdGNobGlzdCgpIHsKICAvLyBUcnkgU3VwYWJhc2UgZmlyc3QKICB2YXIgcm93cyA9IGF3YWl0IGRiU2VsZWN0KCd3YXRjaGxpc3QnKTsKICBpZiAocm93cyAmJiByb3dzLmxlbmd0aCA+IDApIHsKICAgIHZhciB0aWNrZXJzID0gcm93c1swXS50aWNrZXJzIHx8IFtdOwogICAgdHJ5IHsgbG9jYWxTdG9yYWdlLnNldEl0ZW0oJ21jY193YXRjaGxpc3QnLCBKU09OLnN0cmluZ2lmeSh0aWNrZXJzKSk7IH0gY2F0Y2goZSkge30KICAgIHJldHVybiB0aWNrZXJzOwogIH0KICAvLyBGYWxsIGJhY2sgdG8gbG9jYWxTdG9yYWdlCiAgdHJ5IHsgcmV0dXJuIEpTT04ucGFyc2UobG9jYWxTdG9yYWdlLmdldEl0ZW0oJ21jY193YXRjaGxpc3QnKSB8fCAnW10nKTsgfSBjYXRjaChlKSB7IHJldHVybiBbXTsgfQp9CgoKLy8gPT09PT09PT09PT09PT09PT09PT0gSk9VUk5BTCBFTlRSSUVTID09PT09PT09PT09PT09PT09PT09Cgphc3luYyBmdW5jdGlvbiBkYlNhdmVKb3VybmFsKGVudHJpZXMpIHsKICB0cnkgeyBsb2NhbFN0b3JhZ2Uuc2V0SXRlbSgnbXRwX2pvdXJuYWwnLCBKU09OLnN0cmluZ2lmeShlbnRyaWVzKSk7IH0gY2F0Y2goZSkge30KICBhd2FpdCBkYlVwc2VydCgnam91cm5hbF9lbnRyaWVzJywgeyBlbnRyaWVzOiBlbnRyaWVzIH0pOwp9Cgphc3luYyBmdW5jdGlvbiBkYkxvYWRKb3VybmFsKCkgewogIHZhciByb3dzID0gYXdhaXQgZGJTZWxlY3QoJ2pvdXJuYWxfZW50cmllcycpOwogIGlmIChyb3dzICYmIHJvd3MubGVuZ3RoID4gMCkgewogICAgdmFyIGVudHJpZXMgPSByb3dzWzBdLmVudHJpZXMgfHwgW107CiAgICB0cnkgeyBsb2NhbFN0b3JhZ2Uuc2V0SXRlbSgnbXRwX2pvdXJuYWwnLCBKU09OLnN0cmluZ2lmeShlbnRyaWVzKSk7IH0gY2F0Y2goZSkge30KICAgIHJldHVybiBlbnRyaWVzOwogIH0KICB0cnkgeyByZXR1cm4gSlNPTi5wYXJzZShsb2NhbFN0b3JhZ2UuZ2V0SXRlbSgnbXRwX2pvdXJuYWwnKSB8fCAnW10nKTsgfSBjYXRjaChlKSB7IHJldHVybiBbXTsgfQp9CgoKLy8gPT09PT09PT09PT09PT09PT09PT0gQU5BTFlTSVMgKHBlci1kYXRlKSA9PT09PT09PT09PT09PT09PT09PQoKYXN5bmMgZnVuY3Rpb24gZGJTYXZlQW5hbHlzaXMoZGF0ZSwgZGF0YSkgewogIHRyeSB7IGxvY2FsU3RvcmFnZS5zZXRJdGVtKCdtdHBfYW5hbHlzaXNfJyArIGRhdGUsIEpTT04uc3RyaW5naWZ5KGRhdGEpKTsgfSBjYXRjaChlKSB7fQogIGF3YWl0IGRiVXBzZXJ0KCdhbmFseXNpcycsIHsgZGF0ZTogZGF0ZSwgZGF0YTogZGF0YSB9LCAndXNlcl9pZCxkYXRlJyk7Cn0KCmFzeW5jIGZ1bmN0aW9uIGRiTG9hZEFuYWx5c2lzKGRhdGUpIHsKICB2YXIgcm93cyA9IGF3YWl0IGRiU2VsZWN0KCdhbmFseXNpcycsIHsgZGF0ZTogZGF0ZSB9KTsKICBpZiAocm93cyAmJiByb3dzLmxlbmd0aCA+IDApIHsKICAgIHZhciBkYXRhID0gcm93c1swXS5kYXRhOwogICAgdHJ5IHsgbG9jYWxTdG9yYWdlLnNldEl0ZW0oJ210cF9hbmFseXNpc18nICsgZGF0ZSwgSlNPTi5zdHJpbmdpZnkoZGF0YSkpOyB9IGNhdGNoKGUpIHt9CiAgICByZXR1cm4gZGF0YTsKICB9CiAgdHJ5IHsKICAgIHZhciByYXcgPSBsb2NhbFN0b3JhZ2UuZ2V0SXRlbSgnbXRwX2FuYWx5c2lzXycgKyBkYXRlKTsKICAgIHJldHVybiByYXcgPyBKU09OLnBhcnNlKHJhdykgOiBudWxsOwogIH0gY2F0Y2goZSkgeyByZXR1cm4gbnVsbDsgfQp9CgovLyA9PT09PT09PT09PT09PT09PT09PSBDQUxFTkRBUiBTVU1NQVJJRVMgPT09PT09PT09PT09PT09PT09PT0KCmFzeW5jIGZ1bmN0aW9uIGRiU2F2ZUNhbFN1bW1hcmllcyhzdW1tYXJpZXMpIHsKICB0cnkgeyBsb2NhbFN0b3JhZ2Uuc2V0SXRlbSgnbXRwX2NhbF9zdW1tYXJpZXMnLCBKU09OLnN0cmluZ2lmeShzdW1tYXJpZXMpKTsgfSBjYXRjaChlKSB7fQogIGF3YWl0IGRiVXBzZXJ0KCdjYWxlbmRhcl9zdW1tYXJpZXMnLCB7IHN1bW1hcmllczogc3VtbWFyaWVzIH0pOwp9Cgphc3luYyBmdW5jdGlvbiBkYkxvYWRDYWxTdW1tYXJpZXMoKSB7CiAgdmFyIHJvd3MgPSBhd2FpdCBkYlNlbGVjdCgnY2FsZW5kYXJfc3VtbWFyaWVzJyk7CiAgaWYgKHJvd3MgJiYgcm93cy5sZW5ndGggPiAwKSB7CiAgICB2YXIgcyA9IHJvd3NbMF0uc3VtbWFyaWVzIHx8IHt9OwogICAgdHJ5IHsgbG9jYWxTdG9yYWdlLnNldEl0ZW0oJ210cF9jYWxfc3VtbWFyaWVzJywgSlNPTi5zdHJpbmdpZnkocykpOyB9IGNhdGNoKGUpIHt9CiAgICByZXR1cm4gczsKICB9CiAgdHJ5IHsgcmV0dXJuIEpTT04ucGFyc2UobG9jYWxTdG9yYWdlLmdldEl0ZW0oJ210cF9jYWxfc3VtbWFyaWVzJykgfHwgJ3t9Jyk7IH0gY2F0Y2goZSkgeyByZXR1cm4ge307IH0KfQoKCi8vID09PT09PT09PT09PT09PT09PT09IFJFQ0FQIERBVEEgKHBlci1kYXRlKSA9PT09PT09PT09PT09PT09PT09PQoKYXN5bmMgZnVuY3Rpb24gZGJTYXZlUmVjYXBEYXRhKGRhdGUsIGNzdkRhdGEsIGh0bWxSZWNhcCkgewogIGlmIChjc3ZEYXRhKSB0cnkgeyBsb2NhbFN0b3JhZ2Uuc2V0SXRlbSgnbXRwX3JlY2FwX2RhdGFfJyArIGRhdGUsIGNzdkRhdGEpOyB9IGNhdGNoKGUpIHt9CiAgaWYgKGh0bWxSZWNhcCkgdHJ5IHsgbG9jYWxTdG9yYWdlLnNldEl0ZW0oJ210cF9yZWNhcF8nICsgZGF0ZSwgaHRtbFJlY2FwKTsgfSBjYXRjaChlKSB7fQogIHZhciBwYXlsb2FkID0geyBkYXRlOiBkYXRlIH07CiAgaWYgKGNzdkRhdGEpIHBheWxvYWQuY3N2X2RhdGEgPSBjc3ZEYXRhOwogIGlmIChodG1sUmVjYXApIHBheWxvYWQuaHRtbF9yZWNhcCA9IGh0bWxSZWNhcDsKICBhd2FpdCBkYlVwc2VydCgncmVjYXBfZGF0YScsIHBheWxvYWQsICd1c2VyX2lkLGRhdGUnKTsKfQoKYXN5bmMgZnVuY3Rpb24gZGJMb2FkUmVjYXBEYXRhKGRhdGUpIHsKICB2YXIgcm93cyA9IGF3YWl0IGRiU2VsZWN0KCdyZWNhcF9kYXRhJywgeyBkYXRlOiBkYXRlIH0pOwogIGlmIChyb3dzICYmIHJvd3MubGVuZ3RoID4gMCkgewogICAgdmFyIHIgPSByb3dzWzBdOwogICAgaWYgKHIuY3N2X2RhdGEpIHRyeSB7IGxvY2FsU3RvcmFnZS5zZXRJdGVtKCdtdHBfcmVjYXBfZGF0YV8nICsgZGF0ZSwgci5jc3ZfZGF0YSk7IH0gY2F0Y2goZSkge30KICAgIGlmIChyLmh0bWxfcmVjYXApIHRyeSB7IGxvY2FsU3RvcmFnZS5zZXRJdGVtKCdtdHBfcmVjYXBfJyArIGRhdGUsIHIuaHRtbF9yZWNhcCk7IH0gY2F0Y2goZSkge30KICAgIHJldHVybiB7IGNzdjogci5jc3ZfZGF0YSwgaHRtbDogci5odG1sX3JlY2FwIH07CiAgfQogIHJldHVybiB7CiAgICBjc3Y6IGxvY2FsU3RvcmFnZS5nZXRJdGVtKCdtdHBfcmVjYXBfZGF0YV8nICsgZGF0ZSksCiAgICBodG1sOiBsb2NhbFN0b3JhZ2UuZ2V0SXRlbSgnbXRwX3JlY2FwXycgKyBkYXRlKQogIH07Cn0KCgovLyA9PT09PT09PT09PT09PT09PT09PSBVU0VSIFNFVFRJTkdTID09PT09PT09PT09PT09PT09PT09Cgphc3luYyBmdW5jdGlvbiBkYlNhdmVVc2VyU2V0dGluZ3Moc2V0dGluZ3MpIHsKICAvLyBzZXR0aW5ncyA9IHsgYWNjb3VudF9zaXplLCByaXNrX3BjdCwgcHJlZmVyZW5jZXMgfQogIGlmIChzZXR0aW5ncy5hY2NvdW50X3NpemUgIT09IHVuZGVmaW5lZCkgdHJ5IHsgbG9jYWxTdG9yYWdlLnNldEl0ZW0oJ21jY19hY2NvdW50Jywgc2V0dGluZ3MuYWNjb3VudF9zaXplKTsgfSBjYXRjaChlKSB7fQogIGlmIChzZXR0aW5ncy5yaXNrX3BjdCAhPT0gdW5kZWZpbmVkKSB0cnkgeyBsb2NhbFN0b3JhZ2Uuc2V0SXRlbSgnbWNjX3Jpc2snLCBzZXR0aW5ncy5yaXNrX3BjdCk7IH0gY2F0Y2goZSkge30KICBhd2FpdCBkYlVwc2VydCgndXNlcl9zZXR0aW5ncycsIHNldHRpbmdzKTsKfQoKYXN5bmMgZnVuY3Rpb24gZGJMb2FkVXNlclNldHRpbmdzKCkgewogIHZhciByb3dzID0gYXdhaXQgZGJTZWxlY3QoJ3VzZXJfc2V0dGluZ3MnKTsKICBpZiAocm93cyAmJiByb3dzLmxlbmd0aCA+IDApIHsKICAgIHZhciBzID0gcm93c1swXTsKICAgIC8vIFN5bmMgdG8gbG9jYWxTdG9yYWdlIGZvciBmYXN0IHJlYWRzCiAgICBpZiAocy5hY2NvdW50X3NpemUpIHRyeSB7IGxvY2FsU3RvcmFnZS5zZXRJdGVtKCdtY2NfYWNjb3VudCcsIHMuYWNjb3VudF9zaXplKTsgfSBjYXRjaChlKSB7fQogICAgaWYgKHMucmlza19wY3QpIHRyeSB7IGxvY2FsU3RvcmFnZS5zZXRJdGVtKCdtY2NfcmlzaycsIHMucmlza19wY3QpOyB9IGNhdGNoKGUpIHt9CiAgICByZXR1cm4gczsKICB9CiAgcmV0dXJuIHsKICAgIGFjY291bnRfc2l6ZTogbG9jYWxTdG9yYWdlLmdldEl0ZW0oJ21jY19hY2NvdW50JykgfHwgJycsCiAgICByaXNrX3BjdDogbG9jYWxTdG9yYWdlLmdldEl0ZW0oJ21jY19yaXNrJykgfHwgJycsCiAgfTsKfQoKCi8vID09PT09PT09PT09PT09PT09PT09IE1JR1JBVElPTjogbG9jYWxTdG9yYWdlIOKGkiBTdXBhYmFzZSA9PT09PT09PT09PT09PT09PT09PQovLyBDYWxsZWQgb25jZSBvbiBsb2dpbi4gQ2hlY2tzIGlmIFN1cGFiYXNlIGhhcyBkYXRhOyBpZiBlbXB0eSwgcHVzaGVzIGxvY2FsU3RvcmFnZSB1cC4KCmFzeW5jIGZ1bmN0aW9uIG1pZ3JhdGVMb2NhbFRvQ2xvdWQoKSB7CiAgdmFyIHVzZXIgPSBnZXRVc2VyKCk7CiAgaWYgKCF1c2VyKSByZXR1cm47CgogIC8vIENoZWNrIGlmIHVzZXIgYWxyZWFkeSBoYXMgY2xvdWQgZGF0YQogIHZhciBleGlzdGluZ1NldHRpbmdzID0gYXdhaXQgZGJTZWxlY3QoJ3VzZXJfc2V0dGluZ3MnKTsKICBpZiAoZXhpc3RpbmdTZXR0aW5ncyAmJiBleGlzdGluZ1NldHRpbmdzLmxlbmd0aCA+IDApIHsKICAgIC8vIFVzZXIgYWxyZWFkeSBoYXMgY2xvdWQgZGF0YSDigJQgcHVsbCBpdCBkb3duIHRvIGxvY2FsU3RvcmFnZQogICAgYXdhaXQgZGJMb2FkVXNlclNldHRpbmdzKCk7CiAgICBhd2FpdCBkYkxvYWRXYXRjaGxpc3QoKTsKICAgIGF3YWl0IGRiTG9hZEpvdXJuYWwoKTsKICAgIGF3YWl0IGRiTG9hZENhbFN1bW1hcmllcygpOwogICAgcmV0dXJuOwogIH0KCiAgLy8gTm8gY2xvdWQgZGF0YSB5ZXQg4oCUIHB1c2ggbG9jYWxTdG9yYWdlIHVwCgogIC8vIFNldHRpbmdzCiAgYXdhaXQgZGJTYXZlVXNlclNldHRpbmdzKHsKICAgIGFjY291bnRfc2l6ZTogbG9jYWxTdG9yYWdlLmdldEl0ZW0oJ21jY19hY2NvdW50JykgfHwgJycsCiAgICByaXNrX3BjdDogbG9jYWxTdG9yYWdlLmdldEl0ZW0oJ21jY19yaXNrJykgfHwgJycsCiAgfSk7CgogIC8vIFdhdGNobGlzdAogIHRyeSB7CiAgICB2YXIgd2wgPSBKU09OLnBhcnNlKGxvY2FsU3RvcmFnZS5nZXRJdGVtKCdtY2Nfd2F0Y2hsaXN0JykgfHwgJ1tdJyk7CiAgICBpZiAod2wubGVuZ3RoID4gMCkgYXdhaXQgZGJTYXZlV2F0Y2hsaXN0KHdsKTsKICB9IGNhdGNoKGUpIHt9CgogIC8vIEpvdXJuYWwKICB0cnkgewogICAgdmFyIGogPSBKU09OLnBhcnNlKGxvY2FsU3RvcmFnZS5nZXRJdGVtKCdtdHBfam91cm5hbCcpIHx8ICdbXScpOwogICAgaWYgKGoubGVuZ3RoID4gMCkgYXdhaXQgZGJTYXZlSm91cm5hbChqKTsKICB9IGNhdGNoKGUpIHt9CgogIC8vIENhbGVuZGFyIHN1bW1hcmllcwogIHRyeSB7CiAgICB2YXIgY3MgPSBKU09OLnBhcnNlKGxvY2FsU3RvcmFnZS5nZXRJdGVtKCdtdHBfY2FsX3N1bW1hcmllcycpIHx8ICd7fScpOwogICAgaWYgKE9iamVjdC5rZXlzKGNzKS5sZW5ndGggPiAwKSBhd2FpdCBkYlNhdmVDYWxTdW1tYXJpZXMoY3MpOwogIH0gY2F0Y2goZSkge30KCiAgLy8gQW5hbHlzaXMgZW50cmllcyAoc2NhbiBhbGwgbXRwX2FuYWx5c2lzXyoga2V5cykKICB0cnkgewogICAgZm9yICh2YXIgaSA9IDA7IGkgPCBsb2NhbFN0b3JhZ2UubGVuZ3RoOyBpKyspIHsKICAgICAgdmFyIGtleSA9IGxvY2FsU3RvcmFnZS5rZXkoaSk7CiAgICAgIGlmIChrZXkgJiYga2V5LnN0YXJ0c1dpdGgoJ210cF9hbmFseXNpc18nKSkgewogICAgICAgIHZhciBkYXRlID0ga2V5LnJlcGxhY2UoJ210cF9hbmFseXNpc18nLCAnJyk7CiAgICAgICAgdmFyIGRhdGEgPSBKU09OLnBhcnNlKGxvY2FsU3RvcmFnZS5nZXRJdGVtKGtleSkpOwogICAgICAgIGlmIChkYXRhKSBhd2FpdCBkYlNhdmVBbmFseXNpcyhkYXRlLCBkYXRhKTsKICAgICAgfQogICAgfQogIH0gY2F0Y2goZSkge30KCiAgLy8gUmVjYXAgZGF0YSAoc2NhbiBtdHBfcmVjYXBfZGF0YV8qIGFuZCBtdHBfcmVjYXBfKiBrZXlzKQogIHRyeSB7CiAgICB2YXIgcmVjYXBEYXRlcyA9IHt9OwogICAgZm9yICh2YXIgaSA9IDA7IGkgPCBsb2NhbFN0b3JhZ2UubGVuZ3RoOyBpKyspIHsKICAgICAgdmFyIGtleSA9IGxvY2FsU3RvcmFnZS5rZXkoaSk7CiAgICAgIGlmIChrZXkgJiYga2V5LnN0YXJ0c1dpdGgoJ210cF9yZWNhcF9kYXRhXycpKSB7CiAgICAgICAgdmFyIGRhdGUgPSBrZXkucmVwbGFjZSgnbXRwX3JlY2FwX2RhdGFfJywgJycpOwogICAgICAgIHJlY2FwRGF0ZXNbZGF0ZV0gPSByZWNhcERhdGVzW2RhdGVdIHx8IHt9OwogICAgICAgIHJlY2FwRGF0ZXNbZGF0ZV0uY3N2ID0gbG9jYWxTdG9yYWdlLmdldEl0ZW0oa2V5KTsKICAgICAgfQogICAgICBpZiAoa2V5ICYmIGtleS5zdGFydHNXaXRoKCdtdHBfcmVjYXBfJykgJiYgIWtleS5zdGFydHNXaXRoKCdtdHBfcmVjYXBfZGF0YV8nKSkgewogICAgICAgIHZhciBkYXRlID0ga2V5LnJlcGxhY2UoJ210cF9yZWNhcF8nLCAnJyk7CiAgICAgICAgcmVjYXBEYXRlc1tkYXRlXSA9IHJlY2FwRGF0ZXNbZGF0ZV0gfHwge307CiAgICAgICAgcmVjYXBEYXRlc1tkYXRlXS5odG1sID0gbG9jYWxTdG9yYWdlLmdldEl0ZW0oa2V5KTsKICAgICAgfQogICAgfQogICAgZm9yICh2YXIgZCBpbiByZWNhcERhdGVzKSB7CiAgICAgIGF3YWl0IGRiU2F2ZVJlY2FwRGF0YShkLCByZWNhcERhdGVzW2RdLmNzdiB8fCBudWxsLCByZWNhcERhdGVzW2RdLmh0bWwgfHwgbnVsbCk7CiAgICB9CiAgfSBjYXRjaChlKSB7fQoKfQo=
+// ==================== db.js ====================
+// Supabase data sync layer.
+// When logged in: reads/writes Supabase (with localStorage as fast cache).
+// When logged out: falls back to localStorage only.
+// Drop-in replacement for direct localStorage calls.
+
+// ==================== HELPERS ====================
+
+function getUser() {
+  // Returns current Supabase user or null
+  try {
+    var s = window._currentSession;
+    return s && s.user ? s.user : null;
+  } catch(e) { return null; }
+}
+
+function getSupabase() {
+  return window.supabaseClient || null;
+}
+
+// ==================== GENERIC UPSERT / SELECT ====================
+
+async function dbUpsert(table, data, conflictCols) {
+  var sb = getSupabase();
+  var user = getUser();
+  if (!sb || !user) return null;
+  data.user_id = user.id;
+  data.updated_at = new Date().toISOString();
+  try {
+    var q = sb.from(table).upsert(data, { onConflict: conflictCols || 'user_id' });
+    var res = await q.select();
+    return res.data ? res.data[0] : null;
+  } catch(e) { console.warn('dbUpsert error:', table, e); return null; }
+}
+
+async function dbSelect(table, extraFilters) {
+  var sb = getSupabase();
+  var user = getUser();
+  if (!sb || !user) return null;
+  try {
+    var q = sb.from(table).select('*').eq('user_id', user.id);
+    if (extraFilters) {
+      for (var k in extraFilters) q = q.eq(k, extraFilters[k]);
+    }
+    var res = await q;
+    return res.data || [];
+  } catch(e) { console.warn('dbSelect error:', table, e); return null; }
+}
+
+async function dbDelete(table, extraFilters) {
+  var sb = getSupabase();
+  var user = getUser();
+  if (!sb || !user) return null;
+  try {
+    var q = sb.from(table).delete().eq('user_id', user.id);
+    if (extraFilters) {
+      for (var k in extraFilters) q = q.eq(k, extraFilters[k]);
+    }
+    await q;
+    return true;
+  } catch(e) { console.warn('dbDelete error:', table, e); return null; }
+}
+
+
+// ==================== WATCHLIST ====================
+
+async function dbSaveWatchlist(tickers) {
+  // Always save to localStorage (fast cache)
+  try { localStorage.setItem('mcc_watchlist', JSON.stringify(tickers)); } catch(e) {}
+  // Sync to Supabase
+  await dbUpsert('watchlist', { tickers: tickers });
+}
+
+async function dbLoadWatchlist() {
+  // Try Supabase first
+  var rows = await dbSelect('watchlist');
+  if (rows && rows.length > 0) {
+    var tickers = rows[0].tickers || [];
+    try { localStorage.setItem('mcc_watchlist', JSON.stringify(tickers)); } catch(e) {}
+    return tickers;
+  }
+  // Fall back to localStorage
+  try { return JSON.parse(localStorage.getItem('mcc_watchlist') || '[]'); } catch(e) { return []; }
+}
+
+
+// ==================== JOURNAL ENTRIES ====================
+
+async function dbSaveJournal(entries) {
+  try { localStorage.setItem('mtp_journal', JSON.stringify(entries)); } catch(e) {}
+  await dbUpsert('journal_entries', { entries: entries });
+}
+
+async function dbLoadJournal() {
+  var rows = await dbSelect('journal_entries');
+  if (rows && rows.length > 0) {
+    var entries = rows[0].entries || [];
+    try { localStorage.setItem('mtp_journal', JSON.stringify(entries)); } catch(e) {}
+    return entries;
+  }
+  try { return JSON.parse(localStorage.getItem('mtp_journal') || '[]'); } catch(e) { return []; }
+}
+
+
+// ==================== ANALYSIS (per-date) ====================
+
+async function dbSaveAnalysis(date, data) {
+  try { localStorage.setItem('mtp_analysis_' + date, JSON.stringify(data)); } catch(e) {}
+  await dbUpsert('analysis', { date: date, data: data }, 'user_id,date');
+}
+
+async function dbLoadAnalysis(date) {
+  var rows = await dbSelect('analysis', { date: date });
+  if (rows && rows.length > 0) {
+    var data = rows[0].data;
+    try { localStorage.setItem('mtp_analysis_' + date, JSON.stringify(data)); } catch(e) {}
+    return data;
+  }
+  try {
+    var raw = localStorage.getItem('mtp_analysis_' + date);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+// ==================== CALENDAR SUMMARIES ====================
+
+async function dbSaveCalSummaries(summaries) {
+  try { localStorage.setItem('mtp_cal_summaries', JSON.stringify(summaries)); } catch(e) {}
+  await dbUpsert('calendar_summaries', { summaries: summaries });
+}
+
+async function dbLoadCalSummaries() {
+  var rows = await dbSelect('calendar_summaries');
+  if (rows && rows.length > 0) {
+    var s = rows[0].summaries || {};
+    try { localStorage.setItem('mtp_cal_summaries', JSON.stringify(s)); } catch(e) {}
+    return s;
+  }
+  try { return JSON.parse(localStorage.getItem('mtp_cal_summaries') || '{}'); } catch(e) { return {}; }
+}
+
+
+// ==================== RECAP DATA (per-date) ====================
+
+async function dbSaveRecapData(date, csvData, htmlRecap) {
+  if (csvData) try { localStorage.setItem('mtp_recap_data_' + date, csvData); } catch(e) {}
+  if (htmlRecap) try { localStorage.setItem('mtp_recap_' + date, htmlRecap); } catch(e) {}
+  var payload = { date: date };
+  if (csvData) payload.csv_data = csvData;
+  if (htmlRecap) payload.html_recap = htmlRecap;
+  await dbUpsert('recap_data', payload, 'user_id,date');
+}
+
+async function dbLoadRecapData(date) {
+  var rows = await dbSelect('recap_data', { date: date });
+  if (rows && rows.length > 0) {
+    var r = rows[0];
+    if (r.csv_data) try { localStorage.setItem('mtp_recap_data_' + date, r.csv_data); } catch(e) {}
+    if (r.html_recap) try { localStorage.setItem('mtp_recap_' + date, r.html_recap); } catch(e) {}
+    return { csv: r.csv_data, html: r.html_recap };
+  }
+  return {
+    csv: localStorage.getItem('mtp_recap_data_' + date),
+    html: localStorage.getItem('mtp_recap_' + date)
+  };
+}
+
+
+// ==================== USER SETTINGS ====================
+
+async function dbSaveUserSettings(settings) {
+  // settings = { account_size, risk_pct, preferences }
+  if (settings.account_size !== undefined) try { localStorage.setItem('mcc_account', settings.account_size); } catch(e) {}
+  if (settings.risk_pct !== undefined) try { localStorage.setItem('mcc_risk', settings.risk_pct); } catch(e) {}
+  await dbUpsert('user_settings', settings);
+}
+
+async function dbLoadUserSettings() {
+  var rows = await dbSelect('user_settings');
+  if (rows && rows.length > 0) {
+    var s = rows[0];
+    // Sync to localStorage for fast reads
+    if (s.account_size) try { localStorage.setItem('mcc_account', s.account_size); } catch(e) {}
+    if (s.risk_pct) try { localStorage.setItem('mcc_risk', s.risk_pct); } catch(e) {}
+    return s;
+  }
+  return {
+    account_size: localStorage.getItem('mcc_account') || '',
+    risk_pct: localStorage.getItem('mcc_risk') || '',
+  };
+}
+
+
+// ==================== MIGRATION: localStorage → Supabase ====================
+// Called once on login. Checks if Supabase has data; if empty, pushes localStorage up.
+
+async function migrateLocalToCloud() {
+  var user = getUser();
+  if (!user) return;
+
+  // Check if user already has cloud data
+  var existingSettings = await dbSelect('user_settings');
+  if (existingSettings && existingSettings.length > 0) {
+    // User already has cloud data — pull it down to localStorage
+    await dbLoadUserSettings();
+    await dbLoadWatchlist();
+    await dbLoadJournal();
+    await dbLoadCalSummaries();
+    return;
+  }
+
+  // No cloud data yet — push localStorage up
+
+  // Settings
+  await dbSaveUserSettings({
+    account_size: localStorage.getItem('mcc_account') || '',
+    risk_pct: localStorage.getItem('mcc_risk') || '',
+  });
+
+  // Watchlist
+  try {
+    var wl = JSON.parse(localStorage.getItem('mcc_watchlist') || '[]');
+    if (wl.length > 0) await dbSaveWatchlist(wl);
+  } catch(e) {}
+
+  // Journal
+  try {
+    var j = JSON.parse(localStorage.getItem('mtp_journal') || '[]');
+    if (j.length > 0) await dbSaveJournal(j);
+  } catch(e) {}
+
+  // Calendar summaries
+  try {
+    var cs = JSON.parse(localStorage.getItem('mtp_cal_summaries') || '{}');
+    if (Object.keys(cs).length > 0) await dbSaveCalSummaries(cs);
+  } catch(e) {}
+
+  // Analysis entries (scan all mtp_analysis_* keys)
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      if (key && key.startsWith('mtp_analysis_')) {
+        var date = key.replace('mtp_analysis_', '');
+        var data = JSON.parse(localStorage.getItem(key));
+        if (data) await dbSaveAnalysis(date, data);
+      }
+    }
+  } catch(e) {}
+
+  // Recap data (scan mtp_recap_data_* and mtp_recap_* keys)
+  try {
+    var recapDates = {};
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      if (key && key.startsWith('mtp_recap_data_')) {
+        var date = key.replace('mtp_recap_data_', '');
+        recapDates[date] = recapDates[date] || {};
+        recapDates[date].csv = localStorage.getItem(key);
+      }
+      if (key && key.startsWith('mtp_recap_') && !key.startsWith('mtp_recap_data_')) {
+        var date = key.replace('mtp_recap_', '');
+        recapDates[date] = recapDates[date] || {};
+        recapDates[date].html = localStorage.getItem(key);
+      }
+    }
+    for (var d in recapDates) {
+      await dbSaveRecapData(d, recapDates[d].csv || null, recapDates[d].html || null);
+    }
+  } catch(e) {}
+
+}
