@@ -369,14 +369,19 @@ details[open] summary { color: var(--blue) !important; }
 /* ================================================================
    RESPONSIVE DESIGN
    Breakpoints:
+     - 1280px: Hide center tagline before it overlaps header elements
      - 1024px: Tablet landscape / small desktop
      - 768px:  Tablet portrait / iPad
      - 480px:  Mobile phones
    ================================================================ */
 
+/* --- 1280px: Hide tagline on mid-size screens --- */
+@media (max-width: 1280px) {
+  .header-tagline { display: none !important; }
+}
+
 /* --- 1024px: Tablet landscape --- */
 @media (max-width: 1024px) {
-  .header-tagline { display: none; }
   .main { padding: 20px 16px; }
 
   /* Overview: Market Snapshot 6-col → 3-col */
