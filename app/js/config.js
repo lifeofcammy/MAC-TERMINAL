@@ -19,8 +19,10 @@ Object.defineProperty(window, 'POLYGON_KEY', { get: getPolygonKey });
 Object.defineProperty(window, 'ALPHA_KEY', { get: getAlphaKey });
 
 // ==================== AI PROXY ====================
-// All Anthropic calls go through the Edge Function — key is server-side only.
+// All AI calls go through the Edge Function — key is server-side only.
 // Requires user to be logged in (sends Supabase JWT).
+// The server only accepts structured tasks (generate_analysis, analysis_chat).
+// Model, prompts, and max_tokens are controlled server-side — not by the client.
 async function callAIProxy(body) {
   var session = window._currentSession;
   if (!session || !session.access_token) {
