@@ -1,1 +1,145 @@
-Ly8gPT09PT09PT09PT09PT09PT09PT0gYXBpLmpzID09PT09PT09PT09PT09PT09PT09Ci8vIFBvbHlnb24uaW8gQVBJIHdyYXBwZXIgZnVuY3Rpb25zLgovLyBnZXRPcHRpb25zU25hcHNob3QgaXMgYWxzbyBoZXJlICh1c2VzIHBvbHlHZXQpLgoKLy8gPT09PT09PT09PT09PT09PT09PT0gUE9MWUdPTiBDQUNIRSA9PT09PT09PT09PT09PT09PT09PQovLyBDYWNoZSBQb2x5Z29uIHJlc3BvbnNlcyBpbiBzZXNzaW9uU3RvcmFnZSB3aXRoIFRUTCBwZXIgZW5kcG9pbnQgdHlwZS4KLy8gUHJldmVudHMgcmVkdW5kYW50IEFQSSBjYWxscyBvbiBwYWdlIHJlbG9hZCAvIHRhYiBzd2l0Y2hpbmcuCi8vIENhY2hlIGNsZWFycyB3aGVuIGJyb3dzZXIgdGFiIGlzIGNsb3NlZCAoc2Vzc2lvblN0b3JhZ2UpLgovLyBVc2VyIGNhbiBmb3JjZS1yZWZyZXNoIHZpYSB0aGUgUmVmcmVzaCBidXR0b24gKHNldHMgX3BvbHlCeXBhc3NDYWNoZSBmbGFnKS4KdmFyIF9wb2x5Q2FjaGUgPSB7fTsKdmFyIF9wb2x5QnlwYXNzQ2FjaGUgPSBmYWxzZTsKCmZ1bmN0aW9uIF9wb2x5Q2FjaGVUVEwocGF0aCkgewogIC8vIERhaWx5IGJhcnMgYmFyZWx5IGNoYW5nZSDigJQgY2FjaGUgMTUgbWluCiAgaWYgKHBhdGguaW5kZXhPZignL3YyL2FnZ3MvJykgPT09IDApIHJldHVybiAxNSAqIDYwICogMTAwMDsKICAvLyBOZXdzIOKAlCBjYWNoZSAxMCBtaW4KICBpZiAocGF0aC5pbmRleE9mKCcvdjIvcmVmZXJlbmNlL25ld3MnKSA9PT0gMCkgcmV0dXJuIDEwICogNjAgKiAxMDAwOwogIC8vIFNuYXBzaG90cyDigJQgY2FjaGUgMiBtaW4gKHByaWNlcyBtb3ZlIGJ1dCBub3QgZXZlcnkgc2Vjb25kKQogIGlmIChwYXRoLmluZGV4T2YoJy92Mi9zbmFwc2hvdC8nKSA9PT0gMCB8fCBwYXRoLmluZGV4T2YoJy92My9zbmFwc2hvdC8nKSA9PT0gMCkgcmV0dXJuIDIgKiA2MCAqIDEwMDA7CiAgLy8gUmVmZXJlbmNlIGRhdGEg4oCUIGNhY2hlIDMwIG1pbgogIGlmIChwYXRoLmluZGV4T2YoJy92Mi9yZWZlcmVuY2UvJykgPT09IDAgfHwgcGF0aC5pbmRleE9mKCcvdjMvcmVmZXJlbmNlLycpID09PSAwKSByZXR1cm4gMzAgKiA2MCAqIDEwMDA7CiAgLy8gRGVmYXVsdCDigJQgMiBtaW4KICByZXR1cm4gMiAqIDYwICogMTAwMDsKfQoKZnVuY3Rpb24gX3BvbHlDYWNoZUtleShwYXRoKSB7CiAgcmV0dXJuICdwY18nICsgcGF0aDsKfQoKZnVuY3Rpb24gX3BvbHlDYWNoZUdldChwYXRoKSB7CiAgaWYgKF9wb2x5QnlwYXNzQ2FjaGUpIHJldHVybiBudWxsOwogIHZhciBrZXkgPSBfcG9seUNhY2hlS2V5KHBhdGgpOwogIC8vIENoZWNrIG1lbW9yeSBmaXJzdAogIHZhciBtZW0gPSBfcG9seUNhY2hlW2tleV07CiAgaWYgKG1lbSAmJiBEYXRlLm5vdygpIDwgbWVtLmV4cCkgcmV0dXJuIG1lbS5kYXRhOwogIC8vIENoZWNrIHNlc3Npb25TdG9yYWdlCiAgdHJ5IHsKICAgIHZhciByYXcgPSBzZXNzaW9uU3RvcmFnZS5nZXRJdGVtKGtleSk7CiAgICBpZiAocmF3KSB7CiAgICAgIHZhciBwYXJzZWQgPSBKU09OLnBhcnNlKHJhdyk7CiAgICAgIGlmIChwYXJzZWQgJiYgRGF0ZS5ub3coKSA8IHBhcnNlZC5leHApIHsKICAgICAgICBfcG9seUNhY2hlW2tleV0gPSBwYXJzZWQ7IC8vIFdhcm0gbWVtb3J5IGNhY2hlCiAgICAgICAgcmV0dXJuIHBhcnNlZC5kYXRhOwogICAgICB9CiAgICAgIHNlc3Npb25TdG9yYWdlLnJlbW92ZUl0ZW0oa2V5KTsKICAgIH0KICB9IGNhdGNoKGUpIHt9CiAgcmV0dXJuIG51bGw7Cn0KCmZ1bmN0aW9uIF9wb2x5Q2FjaGVTZXQocGF0aCwgZGF0YSkgewogIHZhciBrZXkgPSBfcG9seUNhY2hlS2V5KHBhdGgpOwogIHZhciBlbnRyeSA9IHsgZGF0YTogZGF0YSwgZXhwOiBEYXRlLm5vdygpICsgX3BvbHlDYWNoZVRUTChwYXRoKSB9OwogIF9wb2x5Q2FjaGVba2V5XSA9IGVudHJ5OwogIHRyeSB7IHNlc3Npb25TdG9yYWdlLnNldEl0ZW0oa2V5LCBKU09OLnN0cmluZ2lmeShlbnRyeSkpOyB9IGNhdGNoKGUpIHt9Cn0KCi8vIENhbGwgdGhpcyB0byBjbGVhciBhbGwgUG9seWdvbiBjYWNoZSAodXNlZCBieSBSZWZyZXNoIGJ1dHRvbikKZnVuY3Rpb24gY2xlYXJQb2x5Q2FjaGUoKSB7CiAgX3BvbHlDYWNoZSA9IHt9OwogIF9wb2x5QnlwYXNzQ2FjaGUgPSB0cnVlOwogIHRyeSB7CiAgICB2YXIga2V5cyA9IFtdOwogICAgZm9yICh2YXIgaSA9IDA7IGkgPCBzZXNzaW9uU3RvcmFnZS5sZW5ndGg7IGkrKykgewogICAgICB2YXIgayA9IHNlc3Npb25TdG9yYWdlLmtleShpKTsKICAgICAgaWYgKGsgJiYgay5pbmRleE9mKCdwY18nKSA9PT0gMCkga2V5cy5wdXNoKGspOwogICAgfQogICAga2V5cy5mb3JFYWNoKGZ1bmN0aW9uKGspIHsgc2Vzc2lvblN0b3JhZ2UucmVtb3ZlSXRlbShrKTsgfSk7CiAgfSBjYXRjaChlKSB7fQogIC8vIFJlc2V0IGJ5cGFzcyBmbGFnIGFmdGVyIDEgc2Vjb25kIChzbyBvbmx5IHRoZSBpbW1lZGlhdGUgcmVmcmVzaCBieXBhc3NlcykKICBzZXRUaW1lb3V0KGZ1bmN0aW9uKCkgeyBfcG9seUJ5cGFzc0NhY2hlID0gZmFsc2U7IH0sIDEwMDApOwp9CgovLyA9PT09PT09PT09PT09PT09PT09PSBQT0xZR09OIEFQSSA9PT09PT09PT09PT09PT09PT09PQovLyBBbGwgUG9seWdvbiBjYWxscyByb3V0ZSB0aHJvdWdoIHRoZSBzZXJ2ZXItc2lkZSBwcm94eS4KLy8gVGhlIFBvbHlnb24ga2V5IGlzIHN0b3JlZCBhcyBhIFN1cGFiYXNlIHNlY3JldCDigJQgbmV2ZXIgZXhwb3NlZCB0byB0aGUgY2xpZW50LgovLyBSZXNwb25zZXMgYXJlIGNhY2hlZCBjbGllbnQtc2lkZSB0byByZWR1Y2UgcmVkdW5kYW50IGNhbGxzLgphc3luYyBmdW5jdGlvbiBwb2x5R2V0KHBhdGgpIHsKICAvLyBDaGVjayBjYWNoZSBmaXJzdAogIHZhciBjYWNoZWQgPSBfcG9seUNhY2hlR2V0KHBhdGgpOwogIGlmIChjYWNoZWQpIHJldHVybiBjYWNoZWQ7CgogIHZhciBzZXNzaW9uID0gd2luZG93Ll9jdXJyZW50U2Vzc2lvbjsKICBpZiAoIXNlc3Npb24gfHwgIXNlc3Npb24uYWNjZXNzX3Rva2VuKSB7CiAgICB0aHJvdyBuZXcgRXJyb3IoJ1BsZWFzZSBsb2cgaW4gdG8gdXNlIG1hcmtldCBkYXRhLicpOwogIH0KICB2YXIgcmVzcCA9IGF3YWl0IGZldGNoKEVER0VfRk5fQkFTRSArICcvcG9seWdvbi1wcm94eScsIHsKICAgIG1ldGhvZDogJ1BPU1QnLAogICAgaGVhZGVyczogewogICAgICAnQ29udGVudC1UeXBlJzogJ2FwcGxpY2F0aW9uL2pzb24nLAogICAgICAnQXV0aG9yaXphdGlvbic6ICdCZWFyZXIgJyArIHNlc3Npb24uYWNjZXNzX3Rva2VuLAogICAgICAnYXBpa2V5JzogdHlwZW9mIFNVUEFCQVNFX0tFWSAhPT0gJ3VuZGVmaW5lZCcgPyBTVVBBQkFTRV9LRVkgOiAnJwogICAgfSwKICAgIGJvZHk6IEpTT04uc3RyaW5naWZ5KHsgcGF0aDogcGF0aCB9KQogIH0pOwogIHZhciBkYXRhID0gYXdhaXQgcmVzcC5qc29uKCk7CiAgaWYgKCFyZXNwLm9rKSB7CiAgICB2YXIgZXJyTXNnID0gKGRhdGEgJiYgZGF0YS5lcnJvcikgPyBkYXRhLmVycm9yIDogKCdQb2x5Z29uIHByb3h5IGVycm9yICcgKyByZXNwLnN0YXR1cyk7CiAgICB0aHJvdyBuZXcgRXJyb3IoZXJyTXNnKTsKICB9CgogIC8vIENhY2hlIHRoZSBzdWNjZXNzZnVsIHJlc3BvbnNlCiAgX3BvbHlDYWNoZVNldChwYXRoLCBkYXRhKTsKICByZXR1cm4gZGF0YTsKfQoKYXN5bmMgZnVuY3Rpb24gZ2V0U25hcHNob3RzKHRpY2tlcnMpIHsKICBjb25zdCBkID0gYXdhaXQgcG9seUdldCgnL3YyL3NuYXBzaG90L2xvY2FsZS91cy9tYXJrZXRzL3N0b2Nrcy90aWNrZXJzP3RpY2tlcnM9JyArIHRpY2tlcnMuam9pbignLCcpKTsKICBjb25zdCBtYXAgPSB7fTsKICAoZC50aWNrZXJzIHx8IFtdKS5mb3JFYWNoKHQgPT4gbWFwW3QudGlja2VyXSA9IHQpOwogIHJldHVybiBtYXA7Cn0KCmFzeW5jIGZ1bmN0aW9uIGdldERhaWx5QmFycyh0aWNrZXIsIGRheXMpIHsKICBpZiAoIWRheXMpIGRheXMgPSA2MDsKICBjb25zdCBub3cgPSBuZXcgRGF0ZSgpOwogIGNvbnN0IHRvID0gbm93LmdldEZ1bGxZZWFyKCkgKyAnLScgKyBTdHJpbmcobm93LmdldE1vbnRoKCkrMSkucGFkU3RhcnQoMiwnMCcpICsgJy0nICsgU3RyaW5nKG5vdy5nZXREYXRlKCkpLnBhZFN0YXJ0KDIsJzAnKTsKICBjb25zdCBmZCA9IG5ldyBEYXRlKERhdGUubm93KCkgLSBkYXlzICogMjQgKiA2MCAqIDYwICogMTAwMCk7CiAgY29uc3QgZnJvbSA9IGZkLmdldEZ1bGxZZWFyKCkgKyAnLScgKyBTdHJpbmcoZmQuZ2V0TW9udGgoKSsxKS5wYWRTdGFydCgyLCcwJykgKyAnLScgKyBTdHJpbmcoZmQuZ2V0RGF0ZSgpKS5wYWRTdGFydCgyLCcwJyk7CiAgY29uc3QgZCA9IGF3YWl0IHBvbHlHZXQoJy92Mi9hZ2dzL3RpY2tlci8nICsgdGlja2VyICsgJy9yYW5nZS8xL2RheS8nICsgZnJvbSArICcvJyArIHRvICsgJz9hZGp1c3RlZD10cnVlJnNvcnQ9YXNjJmxpbWl0PScgKyBkYXlzKTsKICByZXR1cm4gZC5yZXN1bHRzIHx8IFtdOwp9CgovLyA9PT09PT09PT09PT09PT09PT09PSBURUNITklDQUwgSEVMUEVSUyA9PT09PT09PT09PT09PT09PT09PQoKLy8gPT09PT09PT09PT09PT09PT09PT0gUE9MWUdPTiBORVdTIEFQSSA9PT09PT09PT09PT09PT09PT09PQphc3luYyBmdW5jdGlvbiBnZXRQb2x5Z29uTmV3cyh0aWNrZXJzLCBsaW1pdCkgewogIGlmICghbGltaXQpIGxpbWl0ID0gMjA7CiAgdmFyIHBhdGggPSAnL3YyL3JlZmVyZW5jZS9uZXdzP2xpbWl0PScgKyAobGltaXQgKyAxNSkgKyAnJm9yZGVyPWRlc2Mmc29ydD1wdWJsaXNoZWRfdXRjJzsKICBpZiAodGlja2VycyAmJiB0aWNrZXJzLmxlbmd0aCkgcGF0aCArPSAnJnRpY2tlcj0nICsgdGlja2Vycy5qb2luKCcsJyk7CiAgY29uc3QgZCA9IGF3YWl0IHBvbHlHZXQocGF0aCk7CiAgLy8gRmlsdGVyIG91dCBub24tRW5nbGlzaCBhcnRpY2xlcyAoQ0pLIGNoYXJhY3RlcnMsIGV0Yy4pCiAgY29uc3QgaXNFbmdsaXNoID0gKHRleHQpID0+ICEvW1x1MzAwMC1cdTlGRkZcdUFDMDAtXHVEN0FGXHUzMDQwLVx1MzBGRl0vLnRlc3QodGV4dCB8fCAnJyk7CiAgcmV0dXJuIChkLnJlc3VsdHMgfHwgW10pLmZpbHRlcihhID0+IGlzRW5nbGlzaChhLnRpdGxlKSAmJiBpc0VuZ2xpc2goYS5kZXNjcmlwdGlvbikpLnNsaWNlKDAsIGxpbWl0KTsKfQoKCi8vID09PT09PT09PT09PT09PT09PT09IE9QVElPTlMgU05BUFNIT1QgPT09PT09PT09PT09PT09PT09PT0KYXN5bmMgZnVuY3Rpb24gZ2V0T3B0aW9uc1NuYXBzaG90KHRpY2tlcikgewogIHRyeSB7CiAgICBjb25zdCBwYXRoID0gJy92My9zbmFwc2hvdC9vcHRpb25zLycgKyB0aWNrZXIgKyAnP2xpbWl0PTI1MCc7CiAgICBjb25zdCBkID0gYXdhaXQgcG9seUdldChwYXRoKTsKICAgIHJldHVybiBkLnJlc3VsdHMgfHwgW107CiAgfSBjYXRjaCAoZSkgeyByZXR1cm4gW107IH0KfQo=
+// ==================== api.js ====================
+// Polygon.io API wrapper functions.
+// getOptionsSnapshot is also here (uses polyGet).
+
+// ==================== POLYGON CACHE ====================
+// Cache Polygon responses in sessionStorage with TTL per endpoint type.
+// Prevents redundant API calls on page reload / tab switching.
+// Cache clears when browser tab is closed (sessionStorage).
+// User can force-refresh via the Refresh button (sets _polyBypassCache flag).
+var _polyCache = {};
+var _polyBypassCache = false;
+
+function _polyCacheTTL(path) {
+  // Daily bars barely change — cache 15 min
+  if (path.indexOf('/v2/aggs/') === 0) return 15 * 60 * 1000;
+  // News — cache 10 min
+  if (path.indexOf('/v2/reference/news') === 0) return 10 * 60 * 1000;
+  // Snapshots — cache 2 min (prices move but not every second)
+  if (path.indexOf('/v2/snapshot/') === 0 || path.indexOf('/v3/snapshot/') === 0) return 2 * 60 * 1000;
+  // Reference data — cache 30 min
+  if (path.indexOf('/v2/reference/') === 0 || path.indexOf('/v3/reference/') === 0) return 30 * 60 * 1000;
+  // Default — 2 min
+  return 2 * 60 * 1000;
+}
+
+function _polyCacheKey(path) {
+  return 'pc_' + path;
+}
+
+function _polyCacheGet(path) {
+  if (_polyBypassCache) return null;
+  var key = _polyCacheKey(path);
+  // Check memory first
+  var mem = _polyCache[key];
+  if (mem && Date.now() < mem.exp) return mem.data;
+  // Check sessionStorage
+  try {
+    var raw = sessionStorage.getItem(key);
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      if (parsed && Date.now() < parsed.exp) {
+        _polyCache[key] = parsed; // Warm memory cache
+        return parsed.data;
+      }
+      sessionStorage.removeItem(key);
+    }
+  } catch(e) {}
+  return null;
+}
+
+function _polyCacheSet(path, data) {
+  var key = _polyCacheKey(path);
+  var entry = { data: data, exp: Date.now() + _polyCacheTTL(path) };
+  _polyCache[key] = entry;
+  try { sessionStorage.setItem(key, JSON.stringify(entry)); } catch(e) {}
+}
+
+// Call this to clear all Polygon cache (used by Refresh button)
+function clearPolyCache() {
+  _polyCache = {};
+  _polyBypassCache = true;
+  try {
+    var keys = [];
+    for (var i = 0; i < sessionStorage.length; i++) {
+      var k = sessionStorage.key(i);
+      if (k && k.indexOf('pc_') === 0) keys.push(k);
+    }
+    keys.forEach(function(k) { sessionStorage.removeItem(k); });
+  } catch(e) {}
+  // Reset bypass flag after 1 second (so only the immediate refresh bypasses)
+  setTimeout(function() { _polyBypassCache = false; }, 1000);
+}
+
+// ==================== POLYGON API ====================
+// All Polygon calls route through the server-side proxy.
+// The Polygon key is stored as a Supabase secret — never exposed to the client.
+// Responses are cached client-side to reduce redundant calls.
+async function polyGet(path) {
+  // Check cache first
+  var cached = _polyCacheGet(path);
+  if (cached) return cached;
+
+  var session = window._currentSession;
+  if (!session || !session.access_token) {
+    throw new Error('Please log in to use market data.');
+  }
+  var resp = await fetch(EDGE_FN_BASE + '/polygon-proxy', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + session.access_token,
+      'apikey': typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : ''
+    },
+    body: JSON.stringify({ path: path })
+  });
+  var data = await resp.json();
+  if (!resp.ok) {
+    var errMsg = (data && data.error) ? data.error : ('Polygon proxy error ' + resp.status);
+    throw new Error(errMsg);
+  }
+
+  // Cache the successful response
+  _polyCacheSet(path, data);
+  return data;
+}
+
+async function getSnapshots(tickers) {
+  const d = await polyGet('/v2/snapshot/locale/us/markets/stocks/tickers?tickers=' + tickers.join(','));
+  const map = {};
+  (d.tickers || []).forEach(t => map[t.ticker] = t);
+  return map;
+}
+
+async function getDailyBars(ticker, days) {
+  if (!days) days = 60;
+  const now = new Date();
+  const to = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  const fd = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const from = fd.getFullYear() + '-' + String(fd.getMonth()+1).padStart(2,'0') + '-' + String(fd.getDate()).padStart(2,'0');
+  const d = await polyGet('/v2/aggs/ticker/' + ticker + '/range/1/day/' + from + '/' + to + '?adjusted=true&sort=asc&limit=' + days);
+  return d.results || [];
+}
+
+// ==================== TECHNICAL HELPERS ====================
+
+// ==================== POLYGON NEWS API ====================
+async function getPolygonNews(tickers, limit) {
+  if (!limit) limit = 20;
+  var path = '/v2/reference/news?limit=' + (limit + 15) + '&order=desc&sort=published_utc';
+  if (tickers && tickers.length) path += '&ticker=' + tickers.join(',');
+  const d = await polyGet(path);
+  // Filter out non-English articles (CJK characters, etc.)
+  const isEnglish = (text) => !/[\u3000-\u9FFF\uAC00-\uD7AF\u3040-\u30FF]/.test(text || '');
+  return (d.results || []).filter(a => isEnglish(a.title) && isEnglish(a.description)).slice(0, limit);
+}
+
+
+// ==================== OPTIONS SNAPSHOT ====================
+async function getOptionsSnapshot(ticker) {
+  try {
+    const path = '/v3/snapshot/options/' + ticker + '?limit=250';
+    const d = await polyGet(path);
+    return d.results || [];
+  } catch (e) { return []; }
+}
