@@ -2,17 +2,16 @@
 // API endpoint constants and key getters.
 
 // ==================== API CONFIG ====================
-// Default Polygon key (fallback). User's own key from localStorage takes priority.
-const DEFAULT_POLYGON_KEY = 'cITeodtOFuLRZuppvB3hc6U4XMBQUT0u';
-
-// Supabase Edge Function base URL for server-side AI proxy
-const EDGE_FN_BASE = 'https://urpblscayyeadecozgvo.supabase.co/functions/v1';
-
-function getPolygonKey() { try { return localStorage.getItem('mac_polygon_key') || DEFAULT_POLYGON_KEY; } catch(e) { return DEFAULT_POLYGON_KEY; } }
-function getAlphaKey() { try { return localStorage.getItem('mac_alpha_key') || ''; } catch(e) { return ''; } }
-
+// Polygon key is now server-side only (Edge Function secret).
+// Users can optionally set their own key in Settings (stored in localStorage).
 const POLY = 'https://api.polygon.io';
 const ALPHA = 'https://www.alphavantage.co/query';
+
+// Supabase Edge Function base URL for server-side proxies (AI + Polygon)
+const EDGE_FN_BASE = 'https://urpblscayyeadecozgvo.supabase.co/functions/v1';
+
+function getPolygonKey() { try { return localStorage.getItem('mac_polygon_key') || ''; } catch(e) { return ''; } }
+function getAlphaKey() { try { return localStorage.getItem('mac_alpha_key') || ''; } catch(e) { return ''; } }
 
 // Legacy compat — some functions reference POLYGON_KEY / ALPHA_KEY directly
 Object.defineProperty(window, 'POLYGON_KEY', { get: getPolygonKey });
