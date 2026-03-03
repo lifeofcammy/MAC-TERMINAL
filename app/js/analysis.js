@@ -529,7 +529,7 @@ function renderAnalysis() {
         html += '<div style="font-size:14px;color:var(--text-secondary);padding:6px 0;border-bottom:1px solid var(--border);line-height:1.5;"><strong style="color:var(--red);">' + v.rule + '</strong><br>' + v.detail + '</div>';
       });
     } else {
-      html += '<div style="font-size:14px;color:var(--green);padding:8px 0;">' + '\u2713' + ' Clean session</div>';
+      html += '<div style="font-size:14px;color:var(--green);padding:8px 0;">\u2713 Clean session</div>';
     }
     html += '</div>';
     // Wins
@@ -544,377 +544,475 @@ function renderAnalysis() {
     html += '</div>';
   }
 
-  // Missed Moves
-  if (analysis.missedMoves && analysis.missedMoves.length > 0) {
-    html += '<div style="font-size:12px;font-weight:800;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Missed Moves</div>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
-    analysis.missedMoves.forEach(function(mm) {
-      html += '<div class="card" style="padding:14px;">';
-      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">';
-      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:14px;color:var(--amber);">' + mm.ticker + '</span>';
-      html += '<span style="font-size:12px;color:var(--text-muted);">' + (mm.potentialPct ? '+' + mm.potentialPct + '% potential' : '') + '</span>';
-      html += '</div>';
-      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:4px;">' + mm.setup + '</div>';
-      if (mm.lesson) html += '<div style="font-size:14px;color:var(--blue);font-weight:600;line-height:1.4;">\u2192 ' + mm.lesson + '</div>';
-      html += '</div>';
-    });
+  // Missed Opportunities
+  if (analysis.missed) {
+    html += '<div class="card" style="padding:16px;border-left:3px solid var(--amber);">';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--amber);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Missed Opportunities</div>';
+    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.65;white-space:pre-wrap;">' + analysis.missed + '</div>';
     html += '</div>';
   }
-
   html += '</div>'; // end review
 
   contentEl.innerHTML = html;
-  // Ensure first tab is visible
-  showAnalysisPanel('an-summary');
 }
 
-function showAnalysisPanel(id) {
+
+function showAnalysisPanel(panelId) {
+  // Hide all panels
   document.querySelectorAll('.an-panel').forEach(function(p) { p.style.display = 'none'; });
-  var el = document.getElementById(id);
-  if (el) el.style.display = 'block';
+  // Show selected
+  var target = document.getElementById(panelId);
+  if (target) target.style.display = 'block';
+  // Update pills
   document.querySelectorAll('.an-pill').forEach(function(btn) {
-    var active = btn.getAttribute('data-panel') === id;
-    btn.style.background = active ? 'var(--blue)' : 'var(--bg-card)';
-    btn.style.color = active ? '#fff' : 'var(--text-muted)';
-    btn.style.borderColor = active ? 'var(--blue)' : 'var(--border)';
-    if (active) btn.classList.add('an-pill-active'); else btn.classList.remove('an-pill-active');
+    if (btn.getAttribute('data-panel') === panelId) {
+      btn.style.background = 'var(--blue)';
+      btn.style.color = '#fff';
+      btn.style.borderColor = 'var(--blue)';
+    } else {
+      btn.style.background = 'var(--bg-card)';
+      btn.style.color = 'var(--text-muted)';
+      btn.style.borderColor = 'var(--border)';
+    }
   });
 }
 
-function formatAnalysisHTML(text) {
-  return text
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>');
-}
-
-// ==================== ANALYSIS ENTRY WRITING ====================
-function addAnalysisEntry(text) {
-  var analysis = getAnalysis(analysisCurrentDate) || {};
-  var lines = text.split('\n');
-  // ... existing entry parsing logic ...
-  saveAnalysis(analysisCurrentDate, analysis);
-  renderAnalysis();
-}
-
-// ==================== ANALYSIS CHAT ENGINE ====================
-function saveAnalysisApiKey(key) {
-  try { localStorage.setItem('analysis_api_key', key); } catch(e) {}
-}
-
-function loadAnalysisApiKey() {
-  try { return localStorage.getItem('analysis_api_key') || ''; } catch(e) { return ''; }
-}
-
-function addChatMessage(role, content) {
-  var chatEl = document.getElementById('analysis-chat-messages');
-  if (!chatEl) return;
-  var div = document.createElement('div');
-  div.className = 'chat-message chat-' + role;
-  div.style.cssText = 'margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:14px;line-height:1.6;';
-  if (role === 'user') {
-    div.style.background = 'var(--blue)';
-    div.style.color = '#fff';
-    div.style.marginLeft = '20%';
+function toggleAnalysisDateDropdown() {
+  var dd = document.getElementById('analysis-date-dropdown');
+  if (!dd) return;
+  if (dd.style.display !== 'none') {
+    dd.style.display = 'none';
+    return;
+  }
+  var allDates = getAllAnalysisDates();
+  var html = '';
+  if (allDates.length === 0) {
+    html = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:14px;">No analysis entries yet.</div>';
   } else {
-    div.style.background = 'var(--bg-secondary)';
-    div.style.color = 'var(--text-secondary)';
-    div.style.marginRight = '20%';
-  }
-  div.innerHTML = formatAnalysisHTML(content);
-  chatEl.appendChild(div);
-  chatEl.scrollTop = chatEl.scrollHeight;
-}
-
-async function sendAnalysisChat() {
-  var inputEl = document.getElementById('analysis-chat-input');
-  var sendBtn = document.getElementById('analysis-chat-send');
-  if (!inputEl) return;
-  var msg = inputEl.value.trim();
-  if (!msg) return;
-
-  inputEl.value = '';
-  addChatMessage('user', msg);
-  if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = '...'; }
-
-  // Build context from current analysis
-  var analysis = getAnalysis(analysisCurrentDate);
-  var contextStr = analysis ? JSON.stringify(analysis, null, 2) : 'No analysis loaded for ' + analysisCurrentDate;
-
-  try {
-    var apiKey = loadAnalysisApiKey();
-    if (!apiKey) {
-      addChatMessage('assistant', 'No API key set. Please add your Claude API key in Settings.');
-      if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send'; }
-      return;
-    }
-
-    var response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-5',
-        max_tokens: 1024,
-        system: 'You are a trading analysis assistant. You have access to the following market analysis data for ' + analysisCurrentDate + ':\n\n' + contextStr + '\n\nAnswer questions about the analysis concisely and helpfully.',
-        messages: [{ role: 'user', content: msg }]
-      })
+    allDates.slice(0, 20).forEach(function(date) {
+      var a = getAnalysis(date);
+      if (!a) return;
+      var dateObj = new Date(date + 'T12:00:00');
+      var dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      var isActive = date === analysisCurrentDate;
+      var moverCount = (a.movers || []).length;
+      var topMover = moverCount > 0 ? a.movers[0].ticker + ' ' + (a.movers[0].changePct >= 0 ? '+' : '') + a.movers[0].changePct.toFixed(1) + '%' : '';
+      var topColor = moverCount > 0 && a.movers[0].changePct >= 0 ? 'var(--green)' : 'var(--red)';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:14px;gap:8px;' + (isActive ? 'background:var(--blue-bg);' : '') + '" onclick="analysisCurrentDate=\'' + date + '\';document.getElementById(\'analysis-date-dropdown\').style.display=\'none\';renderAnalysis();" onmouseover="if(!' + isActive + ')this.style.background=\'var(--bg-secondary)\'" onmouseout="if(!' + isActive + ')this.style.background=\'transparent\'">';
+      html += '<span style="color:var(--text-secondary);font-weight:' + (isActive ? '700' : '500') + ';white-space:nowrap;">' + dayName + '</span>';
+      html += '<span style="font-size:12px;color:var(--text-muted);">' + moverCount + ' movers</span>';
+      if (topMover) html += '<span style="font-weight:700;color:' + topColor + ';font-family:\'JetBrains Mono\',monospace;font-size:11px;white-space:nowrap;">' + topMover + '</span>';
+      html += '</div>';
     });
-
-    if (!response.ok) {
-      var err = await response.json();
-      addChatMessage('assistant', 'API error: ' + (err.error?.message || response.status));
-    } else {
-      var data = await response.json();
-      addChatMessage('assistant', data.content[0].text);
-    }
-  } catch(e) {
-    addChatMessage('assistant', 'Error: ' + e.message);
   }
-
-  if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send'; }
+  dd.innerHTML = html;
+  dd.style.display = 'block';
+  // Close on outside click
+  setTimeout(function() {
+    document.addEventListener('click', function closeDD(e) {
+      if (!dd.contains(e.target) && e.target.id !== 'analysis-date-label') {
+        dd.style.display = 'none';
+        document.removeEventListener('click', closeDD);
+      }
+    });
+  }, 10);
 }
 
-// ==================== AUTO-GENERATE ANALYSIS ====================
-async function autoGenerateAnalysis(date) {
+// ==================== AUTO-GENERATE ANALYSIS FOR ANY DATE ====================
+async function autoGenerateAnalysis(dateStr) {
   var btn = document.getElementById('auto-gen-btn');
-  var statusEl = document.getElementById('auto-gen-status');
-  if (btn) { btn.disabled = true; btn.textContent = 'Fetching market data...'; }
-  if (statusEl) statusEl.textContent = 'Step 1/3: Fetching price data from Polygon...';
+  var status = document.getElementById('auto-gen-status');
+  if(btn){btn.disabled=true;btn.textContent='Generating...';}
 
-  var polygonKey = ''; try { polygonKey = localStorage.getItem('mtp_polygon_key') || ''; } catch(e) {}
-  if (!polygonKey) polygonKey = 'cITeodtOFuLRZuppvB3hc6U4XMBQUT0u';
-
-  var tickers = ['SPY','QQQ','IWM','XLK','XLF','XLE','XLV','XLY','XLI','XLRE','XLU','XLB','XLC','XLP','SMH',
-    'AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AMD','AVGO','CRM','NFLX','COIN','SNOW','PLTR',
-    'DKNG','UBER','SQ','SHOP','NET','CRWD','MU','MRVL','ANET','PANW','NOW','ADBE','ORCL',
-    'LLY','UNH','JPM','GS','V','MA','BAC','XOM','CVX','CAT','DE','LMT','BA',
-    'MSTR','SOFI','HOOD','RKLB','APP','HIMS','ARM','SMCI','TSM','ASML','WMT','COST','TGT','DIS','PYPL','INTC','DELL'];
-
-  var fromDate = new Date(date + 'T12:00:00');
-  fromDate.setDate(fromDate.getDate() - 5);
-  var fromStr = fromDate.toISOString().split('T')[0];
-  var toDate = new Date(date + 'T12:00:00');
-  toDate.setDate(toDate.getDate() + 1);
-  var toStr = toDate.toISOString().split('T')[0];
-
-  var priceData = {};
-  var batchSize = 5;
-  for (var i = 0; i < tickers.length; i++) {
-    try {
-      var url = 'https://api.polygon.io/v2/aggs/ticker/' + tickers[i] + '/range/1/day/' + fromStr + '/' + toStr + '?adjusted=true&sort=asc&apiKey=' + polygonKey;
-      var resp = await fetch(url);
-      if (resp.ok) {
-        var j2 = await resp.json();
-        if (j2.results && j2.results.length >= 2) {
-          var bars = j2.results;
-          var last = bars[bars.length - 1];
-          var prev = bars[bars.length - 2];
-          priceData[tickers[i]] = {
-            close: last.c, open: last.o, high: last.h, low: last.l, volume: last.v,
-            prevClose: prev.c,
-            changePct: ((last.c - prev.c) / prev.c) * 100,
-            date: new Date(last.t).toISOString().split('T')[0]
-          };
-        }
-      }
-    } catch(e) {}
-    if (i > 0 && i % batchSize === 0) await new Promise(function(r) { setTimeout(r, 200); });
-  }
-
-  if (Object.keys(priceData).length === 0) {
-    if (statusEl) statusEl.textContent = 'No price data found for ' + date + '. This may be a holiday or weekend.';
-    if (btn) { btn.disabled = false; btn.textContent = 'Generate Full AI Analysis'; }
+  // AI calls go through server-side proxy (no client key needed)
+  if(!window._currentSession || !window._currentSession.access_token){
+    if(status)status.innerHTML='<span style="color:var(--amber);">You must be logged in to generate analysis.</span>';
+    if(btn){btn.disabled=false;btn.textContent='Generate Analysis';}
     return;
   }
 
-  if (statusEl) statusEl.textContent = 'Step 2/3: Building analysis prompt...';
+  function setStatus(msg){if(status)status.textContent=msg;}
 
-  // Build a compact market summary for Claude
-  var indices = ['SPY','QQQ','IWM'];
-  var sectorETFs = ['XLK','XLF','XLE','XLV','XLY','XLI','XLRE','XLU','XLB','XLC','XLP','SMH'];
-  var stocks = tickers.filter(function(t) { return !indices.includes(t) && !sectorETFs.includes(t) && priceData[t]; });
+  try{
+    // Step 1: Get daily bars for that date and the day before
+    setStatus('Fetching market data...');
+    var universe=['SPY','QQQ','IWM','DIA','AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AMD','AVGO','CRM','NFLX','COIN','SNOW','PLTR','DKNG','UBER','SQ','SHOP','NET','CRWD','MU','MRVL','ANET','PANW','NOW','ADBE','ORCL','LLY','UNH','JPM','GS','V','MA','BAC','XOM','CVX','CAT','DE','LMT','BA','MSTR','SOFI','HOOD','RKLB','APP','HIMS','ARM','SMCI','TSM','ASML','WMT','COST','TGT','DIS','PYPL','INTC','DELL','PARA','DUOL','ZS','AXP','RIVN','NIO','BABA','SPOT','RBLX','ABNB','DASH','TTD','ROKU','PINS','SNAP'];
+    var sectorETFs=['XLK','XLF','XLE','XLV','XLY','XLI','XLRE','XLU','XLB','XLC','XLP','SMH'];
+    var allTickers=universe.concat(sectorETFs);
 
-  var summaryLines = [];
-  summaryLines.push('=== MARKET DATA FOR ' + date + ' ===');
-  summaryLines.push('\nINDICES:');
-  indices.forEach(function(t) {
-    var d = priceData[t];
-    if (d) summaryLines.push(t + ': ' + (d.changePct >= 0 ? '+' : '') + d.changePct.toFixed(2) + '% close=' + d.close.toFixed(2));
-  });
-  summaryLines.push('\nSECTOR ETFs:');
-  sectorETFs.forEach(function(t) {
-    var d = priceData[t];
-    if (d) summaryLines.push(t + ': ' + (d.changePct >= 0 ? '+' : '') + d.changePct.toFixed(2) + '%');
-  });
-  summaryLines.push('\nSTOCKS (sorted by abs move):');
-  var sortedStocks = stocks.filter(function(t) { return priceData[t]; }).sort(function(a, b) {
-    return Math.abs(priceData[b].changePct) - Math.abs(priceData[a].changePct);
-  });
-  sortedStocks.forEach(function(t) {
-    var d = priceData[t];
-    summaryLines.push(t + ': ' + (d.changePct >= 0 ? '+' : '') + d.changePct.toFixed(2) + '% vol=' + (d.volume/1e6).toFixed(1) + 'M close=' + d.close.toFixed(2));
-  });
+    // Fetch bars around the target date
+    var fromDate=new Date(dateStr+'T12:00:00');
+    fromDate.setDate(fromDate.getDate()-5);
+    var fromStr=fromDate.toISOString().split('T')[0];
+    var toDate=new Date(dateStr+'T12:00:00');
+    toDate.setDate(toDate.getDate()+1);
+    var toStr=toDate.toISOString().split('T')[0];
 
-  var marketSummary = summaryLines.join('\n');
+    var polygonKey='';try{polygonKey=localStorage.getItem('mtp_polygon_key')||'';}catch(e){}
+    if(!polygonKey)polygonKey='cITeodtOFuLRZuppvB3hc6U4XMBQUT0u';
 
-  if (statusEl) statusEl.textContent = 'Step 3/3: Calling AI for structured analysis...';
-
-  try {
-    var apiKey = loadAnalysisApiKey();
-    if (!apiKey) {
-      if (statusEl) statusEl.textContent = 'No API key. Set your Claude API key in Settings first.';
-      if (btn) { btn.disabled = false; btn.textContent = 'Generate Full AI Analysis'; }
-      return;
-    }
-
-    // Build the task object instead of the prompt string
-    var taskData = {
-      date: date,
-      marketData: marketSummary
-    };
-
-    var response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-5',
-        max_tokens: 4096,
-        system: 'You are a professional market analyst and active trader. Analyze the provided market data and return a structured JSON analysis object. Return ONLY valid JSON with no markdown, no explanation text.',
-        messages: [{
-          role: 'user',
-          content: JSON.stringify({
-            task: 'generate_daily_analysis',
-            instructions: 'Analyze this market data and return a structured JSON object with the following fields: marketContext (string, 2-3 sentence market overview), sectorRotation (string, describe leading/lagging sectors), patterns (string, developing chart/momentum patterns), movers (array of objects with: ticker, changePct, why, catchable [yes/partial/no], sector, lesson), probabilityMap (array of top 4-6 setups, each with: ticker, probability [0-100], direction [long/short/either], tier [1/2/3], thesis, keyLevels, optionsPlay, catalyst), watchlist (array of themes, each with: theme, status [active/watch/cooling], tickers array, note), tomorrowWatch (string, tomorrow plabook), missedMoves (array of missed setups, each with: ticker, setup, lesson, potentialPct), mindset (object with: score [1-10], scoreNote, violations array, strengths array, focusTomorrow). Use professional trader language. Be specific with price levels and percentages.',
-            data: taskData
-          })
-        }]
-      })
-    });
-
-    if (!response.ok) {
-      var errData = await response.json();
-      if (statusEl) statusEl.textContent = 'API error: ' + (errData.error?.message || response.status);
-      if (btn) { btn.disabled = false; btn.textContent = 'Generate Full AI Analysis'; }
-      return;
-    }
-
-    var aiResp = await response.json();
-    var rawText = aiResp.content[0].text;
-
-    // Clean and parse JSON
-    var cleaned = rawText.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
-    var analysis;
-    try {
-      analysis = JSON.parse(cleaned);
-    } catch(parseErr) {
-      // Try to extract JSON object
-      var match = cleaned.match(/\{[\s\S]*\}/);
-      if (match) {
-        analysis = JSON.parse(match[0]);
-      } else {
-        throw new Error('Could not parse AI response as JSON: ' + cleaned.substring(0, 200));
+    // Fetch in batches
+    var barData={};
+    setStatus('Fetching price data (this may take a moment)...');
+    for(var i=0;i<allTickers.length;i++){
+      var ticker=allTickers[i];
+      try{
+        var url='https://api.polygon.io/v2/aggs/ticker/'+ticker+'/range/1/day/'+fromStr+'/'+toStr+'?adjusted=true&sort=asc&apiKey='+polygonKey;
+        var resp=await fetch(url);
+        if(resp.ok){
+          var json=await resp.json();
+          if(json.results&&json.results.length>0)barData[ticker]=json.results;
+        }
+      }catch(e){}
+      // Rate limit: small delay every 5 tickers (free tier = 5/min)
+      if(i>0&&i%5===0){
+        setStatus('Fetching price data... ('+i+'/'+allTickers.length+')');
+        await new Promise(function(r){setTimeout(r,1200);});
       }
     }
 
-    saveAnalysis(date, analysis);
-    if (statusEl) statusEl.textContent = '';
+    // Step 2: Calculate % change for target date
+    setStatus('Calculating movers...');
+    var movers=[];
+    universe.forEach(function(t){
+      var bars=barData[t];
+      if(!bars||bars.length<2)return;
+      // Find the bar for target date
+      var targetBar=null,prevBar=null;
+      for(var j=0;j<bars.length;j++){
+        var barDate=new Date(bars[j].t).toISOString().split('T')[0];
+        if(barDate===dateStr){targetBar=bars[j];if(j>0)prevBar=bars[j-1];break;}
+      }
+      if(!targetBar||!prevBar)return;
+      var pctChg=((targetBar.c-prevBar.c)/prevBar.c)*100;
+      movers.push({ticker:t,close:targetBar.c,prevClose:prevBar.c,pct:pctChg,absPct:Math.abs(pctChg),volume:targetBar.v});
+    });
+    movers.sort(function(a,b){return b.absPct-a.absPct;});
+    var topMovers=movers.slice(0,15);
+
+    // Sector performance
+    var sectorPerf=[];
+    var sectorNames={'XLK':'Technology','XLF':'Financials','XLE':'Energy','XLV':'Healthcare','XLY':'Consumer Disc.','XLI':'Industrials','XLRE':'Real Estate','XLU':'Utilities','XLB':'Materials','XLC':'Comm. Services','XLP':'Consumer Staples','SMH':'Semiconductors'};
+    sectorETFs.forEach(function(etf){
+      var bars=barData[etf];
+      if(!bars||bars.length<2)return;
+      var targetBar=null,prevBar=null;
+      for(var j=0;j<bars.length;j++){
+        var barDate=new Date(bars[j].t).toISOString().split('T')[0];
+        if(barDate===dateStr){targetBar=bars[j];if(j>0)prevBar=bars[j-1];break;}
+      }
+      if(!targetBar||!prevBar)return;
+      var pctChg=((targetBar.c-prevBar.c)/prevBar.c)*100;
+      sectorPerf.push({etf:etf,name:sectorNames[etf]||etf,pct:pctChg});
+    });
+    sectorPerf.sort(function(a,b){return b.pct-a.pct;});
+
+    // SPY data for context
+    var spyBar=barData['SPY'];
+    var spyChg=0;
+    if(spyBar){
+      for(var si=0;si<spyBar.length;si++){
+        var sd=new Date(spyBar[si].t).toISOString().split('T')[0];
+        if(sd===dateStr&&si>0){spyChg=((spyBar[si].c-spyBar[si-1].c)/spyBar[si-1].c)*100;break;}
+      }
+    }
+
+    if(topMovers.length===0){
+      if(status)status.innerHTML='<span style="color:var(--amber);">No trading data found for this date. It may be a holiday.</span>';
+      if(btn){btn.disabled=false;btn.textContent='Generate Analysis';}
+      return;
+    }
+
+    // Step 3: Fetch news for top movers on that date
+    setStatus('Fetching news...');
+    var moverNews={};
+    for(var ni=0;ni<Math.min(topMovers.length,10);ni++){
+      try{
+        var newsUrl='https://api.polygon.io/v2/reference/news?ticker='+topMovers[ni].ticker+'&published_utc.gte='+dateStr+'T00:00:00Z&published_utc.lte='+dateStr+'T23:59:59Z&limit=5&apiKey='+polygonKey;
+        var nResp=await fetch(newsUrl);if(nResp.ok){var nJson=await nResp.json();moverNews[topMovers[ni].ticker]=(nJson.results||[]).map(function(a){return a.title||'';}).filter(function(t){return t.length>0;});}
+      }catch(e){}
+      if(ni>0&&ni%5===0) await new Promise(function(r){setTimeout(r,1200);});
+    }
+
+    // Step 4: Send structured data to secure server-side AI proxy
+    setStatus('AI analyzing the session...');
+    var moverPayload=topMovers.map(function(m){
+      return {ticker:m.ticker,pct:m.pct,close:m.close,newsHeadlines:(moverNews[m.ticker]||[]).slice(0,3)};
+    });
+    var sectorPayload=sectorPerf.map(function(s){
+      return {etf:s.etf,name:s.name,pct:s.pct};
+    });
+
+    var data=await callAIProxy({task:'generate_analysis',date:dateStr,spyChange:spyChg,movers:moverPayload,sectors:sectorPayload});
+    var text=data.content&&data.content[0]?data.content[0].text:'';
+    var jsonMatch=text.match(/\{[\s\S]*\}/);if(!jsonMatch)throw new Error('Could not parse AI response');
+    var result=JSON.parse(jsonMatch[0]);
+
+    // Save it
+    saveAnalysis(dateStr,result);
+    setStatus('');
+    analysisCurrentDate=dateStr;
     renderAnalysis();
 
-  } catch(e) {
-    if (statusEl) statusEl.textContent = 'Error: ' + e.message;
-    if (btn) { btn.disabled = false; btn.textContent = 'Generate Full AI Analysis'; }
+  }catch(e){
+    if(status)status.innerHTML='<span style="color:var(--red);">Error: '+e.message+'</span>';
+    if(btn){btn.disabled=false;btn.textContent='Generate Analysis';}
   }
 }
 
-// ==================== SEED DATA ====================
-(function() {
-  // ── Feb 23 2026 ──
-  if (!getAnalysis('2026-02-23')) {
-    var feb23 = {
-      marketContext: "Monday opened with broad risk-off tone as tariff concerns and weekend geopolitical noise weighed on sentiment. SPY gapped down ~0.8% at the open before buyers stepped in around the 200-day MA. QQQ led the recovery, closing green on the session while IWM lagged, suggesting large-cap tech held up better than small caps. Volume was above average on the morning flush, signaling a capitulation low.",
-      sectorRotation: "LEADING: XLK +1.2%, XLC +0.9%, XLRE +0.4%\nLAGGING: XLE -1.8%, XLB -1.1%, XLI -0.7%\n\nTech and communication services led the bounce. Energy sold off hard on oil weakness. Real estate caught a bid on falling rate expectations. Classic flight to quality within equities.",
-      patterns: "DEVELOPING:\n• QQQ reclaim of 21-day EMA — watching for follow-through above $485\n• NVDA coiling at $130 support — 3rd test, decreasing volume\n• Biotech (XBI) base building after 3-week consolidation\n\nFADING:\n• Energy momentum completely broken — XLE below all MAs\n• Small-cap leadership from last month clearly over",
-      movers: [
-        { ticker: 'NVDA', changePct: 4.2, why: 'Bounced off $130 key support with above-avg volume. GTC partnership announcement after close Friday acted as catalyst on open.', catchable: 'yes', sector: 'Semiconductors', lesson: 'Strong stocks hold key levels — the $130 support was well-telegraphed and worth the risk.' },
-        { ticker: 'PLTR', changePct: 6.8, why: 'New DoD contract announcement pre-market. Gap held all day with no fill — pure institutional accumulation.', catchable: 'partial', sector: 'Software', lesson: 'News gaps on PLTR rarely fill same day. Better to buy the first 5-min ORB than chase the open.' },
-        { ticker: 'XOM', changePct: -2.9, why: 'Oil dropped 3% on surprise inventory build + demand concerns. XOM broke below 50-day MA on volume.', catchable: 'no', sector: 'Energy', lesson: 'Commodity-driven moves are hard to trade without macro edge.' },
-        { ticker: 'COIN', changePct: 5.1, why: 'BTC pushed back above $95k. COIN moved in lockstep with 1.8x beta to crypto.', catchable: 'yes', sector: 'Crypto/Fintech', lesson: 'When BTC reclaims key levels, COIN is the cleanest equity expression.' }
-      ],
-      probabilityMap: [
-        { ticker: 'NVDA', probability: 78, direction: 'long', tier: 1, thesis: 'Held $130 support for 3rd time, decreasing selling volume. Next resistance $142. Risk/reward favors long with stop below $128.', keyLevels: 'Support: $130 | Resistance: $142, $150', optionsPlay: 'Sell $125P / Buy $140C spread expiring 2 weeks', catalyst: 'GTC 2026 in 2 weeks' },
-        { ticker: 'PLTR', probability: 72, direction: 'long', tier: 1, thesis: 'DoD contract gap held. Government AI spending continues. Chart breaking out of 3-week base. Target $95.', keyLevels: 'Support: $83 | Resistance: $90, $95', optionsPlay: 'Buy $85C 3 weeks out', catalyst: 'DoD contract' },
-        { ticker: 'COIN', probability: 65, direction: 'long', tier: 2, thesis: 'BTC above $95k is bullish for COIN. Watching for BTC to hold $95k and COIN to break $280 resistance.', keyLevels: 'Support: $255 | Resistance: $280, $300', optionsPlay: 'Long stock or buy $270C', catalyst: 'BTC price action' },
-        { ticker: 'XLE', probability: 60, direction: 'short', tier: 2, thesis: 'Energy broke structure. Oil inventory overhang. Could see continued selling toward $85 ETF level.', keyLevels: 'Resistance: $92 | Target: $87, $85', optionsPlay: 'Buy XLE $88P 2 weeks', catalyst: 'Oil supply data' }
-      ],
-      watchlist: [
-        { theme: 'AI Infrastructure', status: 'active', tickers: ['NVDA','AVGO','ANET','SMCI','ARM'], note: 'Core theme of 2025-2026. Any dip to key support levels is buyable. NVDA leading, ANET building base.' },
-        { theme: 'Defense/DoD AI', status: 'active', tickers: ['PLTR','LMT','BA','RKLB'], note: 'Government AI spending accelerating. PLTR is the pure play. LMT and BA catching secondary bid.' },
-        { theme: 'Crypto Ecosystem', status: 'watch', tickers: ['COIN','MSTR','HOOD'], note: 'BTC above $95k keeps this alive. COIN is primary vehicle. Watching BTC for direction.' },
-        { theme: 'Energy (Short)', status: 'watch', tickers: ['XOM','CVX','XLE'], note: 'Structure broken. Not chasing short yet but on radar if oil continues weak.' }
-      ],
-      tomorrowWatch: "1. NVDA above $135 = buy trigger for move to $142. Below $128 = stop out.\n2. PLTR hold $85 + market green = add to position.\n3. QQQ above $487 = broader market health confirmed, add tech longs.\n4. BTC hold $95k = COIN long setup still valid.\n5. Watch FOMC speakers (2pm) — could inject volatility.",
-      missedMoves: [
-        { ticker: 'APP', setup: 'Broke out of 2-week consolidation at open on mobile ad data. Ran 8% before I saw it.', lesson: 'APP is in momentum phase — need it on radar every morning.', potentialPct: 8 },
-        { ticker: 'HIMS', setup: 'FDA positive decision pre-market, gapped up 12%. Missed the news entirely.', lesson: 'Subscribe to FDA calendar alerts for positions in biotech/pharma adjacent names.', potentialPct: 12 }
-      ],
-      mindset: {
-        score: 7,
-        scoreNote: 'Followed the plan on NVDA and COIN, sized correctly. Missed APP due to poor pre-market scan. One impatient entry on PLTR (bought open instead of waiting for 5-min ORB) — worked out but bad process.',
-        violations: ['Bought PLTR at open instead of waiting for 5-min ORB confirmation'],
-        strengths: ['Honored NVDA stop level without hesitation', 'Sized COIN position correctly at 2% risk', 'No revenge trading after morning gap-down'],
-        focusTomorrow: 'Complete pre-market scan 30 minutes before open. No entries in first 2 minutes. Wait for the ORB setup on any gapper.'
-      }
-    };
-    _analysisCache['2026-02-23'] = feb23;
-    try { localStorage.setItem('mtp_analysis_2026-02-23', JSON.stringify(feb23)); } catch(e) {}
+// ==================== SILENT AUTO-GENERATE (for backfill, no DOM updates) ====================
+async function autoGenerateAnalysisSilent(dateStr) {
+  // AI calls go through server-side proxy
+  if(!window._currentSession || !window._currentSession.access_token) throw new Error('You must be logged in');
+
+  var universe=['SPY','QQQ','IWM','DIA','AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AMD','AVGO','CRM','NFLX','COIN','SNOW','PLTR','DKNG','UBER','SQ','SHOP','NET','CRWD','MU','MRVL','ANET','PANW','NOW','ADBE','ORCL','LLY','UNH','JPM','GS','V','MA','BAC','XOM','CVX','CAT','DE','LMT','BA','MSTR','SOFI','HOOD','RKLB','APP','HIMS','ARM','SMCI','TSM','ASML','WMT','COST','TGT','DIS','PYPL','INTC','DELL','PARA','DUOL','ZS','AXP','RIVN','NIO','BABA','SPOT','RBLX','ABNB','DASH','TTD','ROKU','PINS','SNAP'];
+  var sectorETFs=['XLK','XLF','XLE','XLV','XLY','XLI','XLRE','XLU','XLB','XLC','XLP','SMH'];
+  var allTickers=universe.concat(sectorETFs);
+
+  var fromDate=new Date(dateStr+'T12:00:00');
+  fromDate.setDate(fromDate.getDate()-5);
+  var fromStr=fromDate.toISOString().split('T')[0];
+  var toDate=new Date(dateStr+'T12:00:00');
+  toDate.setDate(toDate.getDate()+1);
+  var toStr=toDate.toISOString().split('T')[0];
+
+  var polygonKey='';try{polygonKey=localStorage.getItem('mtp_polygon_key')||'';}catch(e){}
+  if(!polygonKey)polygonKey='cITeodtOFuLRZuppvB3hc6U4XMBQUT0u';
+
+  var barData={};
+  for(var i=0;i<allTickers.length;i++){
+    var ticker=allTickers[i];
+    try{
+      var url='https://api.polygon.io/v2/aggs/ticker/'+ticker+'/range/1/day/'+fromStr+'/'+toStr+'?adjusted=true&sort=asc&apiKey='+polygonKey;
+      var resp=await fetch(url);
+      if(resp.ok){var json=await resp.json();if(json.results&&json.results.length>0)barData[ticker]=json.results;}
+    }catch(e){}
+    if(i>0&&i%5===0) await new Promise(function(r){setTimeout(r,1200);});
   }
 
-  // ── Feb 20 2026 ──
-  if (!getAnalysis('2026-02-20')) {
-    var feb20 = {
-      marketContext: "Thursday was a high-volatility session driven by hotter-than-expected PPI data (+0.4% vs +0.3% est). SPY dropped 1.4% in the first 30 minutes, found support at the 50-day MA ($570), and staged a partial recovery into close. Fed rate-cut expectations pushed out further, pressuring rate-sensitive sectors. The afternoon bounce was unconvincing on below-average volume, suggesting institutional sellers are not done.",
-      sectorRotation: "LEADING: XLE +0.8%, XLV +0.3%, XLP +0.1%\nLAGGING: XLRE -2.1%, XLU -1.9%, XLK -1.6%\n\nClassic 'hot inflation' rotation: defensives and energy held, rate-sensitive (utilities, real estate) and high-multiple tech got crushed. Flight from growth to value.",
-      patterns: "DEVELOPING:\n• SPY 50-day MA defense — critical level for bulls\n• XLV breaking out of 6-week base — healthcare leadership shift?\n• XLE momentum continuing — energy leading for 2nd week\n\nFADING:\n• QQQ 21-day EMA broken — bearish near-term\n• XLRE trend completely broken below 200-day MA",
-      movers: [
-        { ticker: 'LLY', changePct: -5.2, why: 'Phase 3 trial miss for oral GLP-1 — not as effective as semaglutide. Entire GLP-1 space sold off in sympathy.', catchable: 'no', sector: 'Pharma', lesson: 'Binary events in pharma are not tradeable setups — the move happened at open with no clean entry.' },
-        { ticker: 'NVDA', changePct: -3.1, why: 'Macro selloff hit semis disproportionately. NVDA broke below $133 (20-day MA) on volume. No company-specific news.', catchable: 'partial', sector: 'Semiconductors', lesson: 'In risk-off macro, even the best stocks go down. Had we been watching, shorting the break of $133 was clean.' },
-        { ticker: 'XOM', changePct: 1.9, why: 'Oil up on Middle East supply concerns. XOM held 50-day and bounced. Clean long setup that we had on watchlist.', catchable: 'yes', sector: 'Energy', lesson: 'When the macro backdrop shifts to inflation fears, energy is a great hedge — caught this one.' },
-        { ticker: 'AMZN', changePct: -2.4, why: 'Broader tech selloff. No specific news. Just rates pressure on high-multiple tech.', catchable: 'no', sector: 'Tech/Retail', lesson: 'In macro-driven days, individual stock analysis matters less than sector/index positioning.' }
-      ],
-      probabilityMap: [
-        { ticker: 'SPY', probability: 68, direction: 'short', tier: 1, thesis: 'Failed to reclaim 21-day EMA after inflation print. If 50-day MA ($570) breaks tomorrow, next stop is $560. Risk/reward favors short.', keyLevels: 'Resistance: $575 | Support: $570, $560', optionsPlay: 'Buy SPY $568P 1 week out', catalyst: 'PPI follow-through, Fed speakers' },
-        { ticker: 'XOM', probability: 71, direction: 'long', tier: 1, thesis: 'Oil supply concerns + inflation hedge. XOM holding 50-day in today\'s selloff is relative strength. Target $122.', keyLevels: 'Support: $116 | Resistance: $120, $122', optionsPlay: 'Buy XOM $118C 2 weeks', catalyst: 'Oil supply' },
-        { ticker: 'NVDA', probability: 55, direction: 'either', tier: 2, thesis: 'Broke 20-day MA. Watch for either reclaim ($135+) for long or further breakdown ($125) for short. Needs a direction.', keyLevels: 'Key level: $133 | Above=long, Below=short', optionsPlay: 'Wait for direction, then buy directional call/put', catalyst: 'Market sentiment' },
-        { ticker: 'XLRE', probability: 62, direction: 'short', tier: 2, thesis: 'Broken below 200-day MA on hot inflation. Rate cuts getting priced out. XLRE could see another 3-5% drawdown.', keyLevels: 'Resistance: $38.50 | Target: $36', optionsPlay: 'Buy XLRE $37P', catalyst: 'Rates/Fed' }
-      ],
-      watchlist: [
-        { theme: 'Inflation Hedge Basket', status: 'active', tickers: ['XOM','CVX','GLD','XLE'], note: 'Hot PPI print validates this theme for the week. XOM is the cleanest single-stock play.' },
-        { theme: 'AI Infrastructure', status: 'watch', tickers: ['NVDA','AVGO','ANET'], note: 'On pause during macro selloff. NVDA broke 20-day — wait for stabilization before re-entering longs.' },
-        { theme: 'Rate-Sensitive (Short)', status: 'active', tickers: ['XLRE','XLU','TLT'], note: 'If inflation stays hot, these sectors have more downside. XLRE is the cleanest short vehicle.' },
-        { theme: 'Healthcare Breakout', status: 'watch', tickers: ['LLY','UNH','XLV'], note: 'XLV showing relative strength despite LLY news. Watch for XLV breakout above $150 resistance.' }
-      ],
-      tomorrowWatch: "1. SPY $570 level — bulls must defend or short is on.\n2. XOM above $118 = add to position.\n3. NVDA: watch $133 level — reclaim = buy, break = short opportunity.\n4. Fed speakers at 10am and 2pm — potential volatility injectors.\n5. Avoid rate-sensitive sectors (XLRE, XLU) until rates stabilize.",
-      missedMoves: [
-        { ticker: 'UVXY', setup: 'VIX spiked to 22 on the PPI print. UVXY ran 15% in first 30 minutes. Had the setup in mind but hesitated.', lesson: 'On known macro event days (CPI/PPI), have a volatility play ready pre-market.', potentialPct: 15 }
-      ],
-      mindset: {
-        score: 8,
-        scoreNote: 'Strong day overall. Caught XOM early, took profits at target. Did not chase the QQQ short after it already moved 1.5%. Avoided revenge trading on NVDA drop. The one miss was not having UVXY ready for the VIX spike.',
-        violations: [],
-        strengths: ['Caught XOM long early — was on watchlist the night before', 'Did not chase the QQQ short after the setup was gone', 'Took profits at target on XOM without being greedy'],
-        focusTomorrow: 'On macro days, prepare volatility play (UVXY/SQQQ) pre-market. Watch SPY $570 as the key bull/bear line. Size down until the macro picture clears.'
-      }
-    };
-    _analysisCache['2026-02-20'] = feb20;
-    try { localStorage.setItem('mtp_analysis_2026-02-20', JSON.stringify(feb20)); } catch(e) {}
+  var movers=[];
+  universe.forEach(function(t){
+    var bars=barData[t];if(!bars||bars.length<2)return;
+    var targetBar=null,prevBar=null;
+    for(var j=0;j<bars.length;j++){
+      var barDate=new Date(bars[j].t).toISOString().split('T')[0];
+      if(barDate===dateStr){targetBar=bars[j];if(j>0)prevBar=bars[j-1];break;}
+    }
+    if(!targetBar||!prevBar)return;
+    var pctChg=((targetBar.c-prevBar.c)/prevBar.c)*100;
+    movers.push({ticker:t,close:targetBar.c,prevClose:prevBar.c,pct:pctChg,absPct:Math.abs(pctChg),volume:targetBar.v});
+  });
+  movers.sort(function(a,b){return b.absPct-a.absPct;});
+  var topMovers=movers.slice(0,15);
+
+  var sectorPerf=[];
+  var sectorNames={'XLK':'Technology','XLF':'Financials','XLE':'Energy','XLV':'Healthcare','XLY':'Consumer Disc.','XLI':'Industrials','XLRE':'Real Estate','XLU':'Utilities','XLB':'Materials','XLC':'Comm. Services','XLP':'Consumer Staples','SMH':'Semiconductors'};
+  sectorETFs.forEach(function(etf){
+    var bars=barData[etf];if(!bars||bars.length<2)return;
+    var targetBar=null,prevBar=null;
+    for(var j=0;j<bars.length;j++){
+      var barDate=new Date(bars[j].t).toISOString().split('T')[0];
+      if(barDate===dateStr){targetBar=bars[j];if(j>0)prevBar=bars[j-1];break;}
+    }
+    if(!targetBar||!prevBar)return;
+    var pctChg=((targetBar.c-prevBar.c)/prevBar.c)*100;
+    sectorPerf.push({etf:etf,name:sectorNames[etf]||etf,pct:pctChg});
+  });
+  sectorPerf.sort(function(a,b){return b.pct-a.pct;});
+
+  var spyBar=barData['SPY'];var spyChg=0;
+  if(spyBar){for(var si=0;si<spyBar.length;si++){var sd=new Date(spyBar[si].t).toISOString().split('T')[0];if(sd===dateStr&&si>0){spyChg=((spyBar[si].c-spyBar[si-1].c)/spyBar[si-1].c)*100;break;}}}
+
+  if(topMovers.length===0) throw new Error('No trading data for '+dateStr);
+
+  var moverNews={};
+  for(var ni=0;ni<Math.min(topMovers.length,10);ni++){
+    try{
+      var newsUrl='https://api.polygon.io/v2/reference/news?ticker='+topMovers[ni].ticker+'&published_utc.gte='+dateStr+'T00:00:00Z&published_utc.lte='+dateStr+'T23:59:59Z&limit=5&apiKey='+polygonKey;
+      var nResp=await fetch(newsUrl);if(nResp.ok){var nJson=await nResp.json();moverNews[topMovers[ni].ticker]=(nJson.results||[]).map(function(a){return a.title||'';}).filter(function(t){return t.length>0;});}
+    }catch(e){}
+    if(ni>0&&ni%5===0) await new Promise(function(r){setTimeout(r,1200);});
   }
-})();
+
+  var moverPayload=topMovers.map(function(m){
+    return {ticker:m.ticker,pct:m.pct,close:m.close,newsHeadlines:(moverNews[m.ticker]||[]).slice(0,3)};
+  });
+  var sectorPayload=sectorPerf.map(function(s){
+    return {etf:s.etf,name:s.name,pct:s.pct};
+  });
+
+  var data=await callAIProxy({task:'generate_analysis',date:dateStr,spyChange:spyChg,movers:moverPayload,sectors:sectorPayload});
+  var text=data.content&&data.content[0]?data.content[0].text:'';
+  var jsonMatch=text.match(/\{[\s\S]*\}/);if(!jsonMatch) throw new Error('Could not parse AI response');
+  var result=JSON.parse(jsonMatch[0]);
+  saveAnalysis(dateStr, result);
+}
+
+// ==================== BACKFILL MULTIPLE DATES ====================
+async function backfillAnalysis(lookbackDays) {
+  lookbackDays = lookbackDays || 7;
+  var statusEl = document.getElementById('backfill-status');
+  var btn7 = document.getElementById('backfill-btn');
+  var btn14 = document.getElementById('backfill-2wk-btn');
+  function setStatus(msg) { if(statusEl) statusEl.innerHTML = msg; }
+
+  // Find all weekdays in the lookback window that are missing
+  var today = new Date();
+  var missing = [];
+  var d = new Date(today);
+  // Go back lookbackDays calendar days (to cover enough weekdays)
+  d.setDate(d.getDate() - Math.ceil(lookbackDays * 1.5));
+  while(d <= today) {
+    if(d.getDay() >= 1 && d.getDay() <= 5) {
+      var ds = d.toISOString().split('T')[0];
+      if(!getAnalysis(ds)) missing.push(ds);
+    }
+    d.setDate(d.getDate() + 1);
+  }
+
+  if(missing.length === 0) {
+    setStatus('<span style="color:var(--green);">All trading days in the last ' + lookbackDays + ' days have analysis entries.</span>');
+    return;
+  }
+
+  var ok = window.confirm('Generate analysis for ' + missing.length + ' missing day(s)?\n\n' + missing.join(', ') + '\n\nThis uses your Anthropic API key and may take a few minutes.');
+  if(!ok) return;
+
+  // Disable buttons during backfill
+  if(btn7) { btn7.disabled = true; btn7.textContent = 'Working...'; }
+  if(btn14) { btn14.disabled = true; btn14.textContent = 'Working...'; }
+
+  for(var i = 0; i < missing.length; i++) {
+    setStatus('Generating ' + (i+1) + '/' + missing.length + ': ' + missing[i] + '...');
+    try {
+      await autoGenerateAnalysisSilent(missing[i]);
+    } catch(e) {
+      setStatus('<span style="color:var(--red);">Error on ' + missing[i] + ': ' + e.message + '</span>');
+      // Stop on credit/auth errors — no point retrying
+      if(e.message.indexOf('credit') >= 0 || e.message.indexOf('401') >= 0 || e.message.indexOf('authentication') >= 0) {
+        if(btn7) { btn7.disabled = false; btn7.textContent = 'Fill Missing (' + missing.length + ')'; }
+        if(btn14) { btn14.disabled = false; btn14.textContent = 'Look Back 2 Weeks'; }
+        return;
+      }
+    }
+    // Wait between generations to avoid rate limits
+    if(i < missing.length - 1) await new Promise(function(r) { setTimeout(r, 3000); });
+  }
+
+  setStatus('<span style="color:var(--green);">Done! Generated ' + missing.length + ' entries.</span>');
+  // Refresh the analysis view to show new entries
+  setTimeout(function() { renderAnalysis(); }, 500);
+}
+
+// ==================== SHAKEOUT RECLAIM SCANNER ====================
+
+// ==================== ANALYSIS CHAT ENGINE ====================
+var analysisChatHistory = [];
+
+function addChatMessage(role, text) {
+  var container = document.getElementById('analysis-chat-messages');
+  if (!container) return;
+
+  var msgDiv = document.createElement('div');
+  msgDiv.style.cssText = 'margin-bottom:12px;display:flex;gap:8px;align-items:flex-start;';
+
+  var isUser = role === 'user';
+  var avatar = document.createElement('div');
+  avatar.style.cssText = 'width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;' +
+    (isUser ? 'background:var(--green-bg);color:var(--green);' : 'background:rgba(59,130,246,0.15);color:var(--blue);');
+  avatar.textContent = isUser ? 'U' : 'AI';
+
+  var bubble = document.createElement('div');
+  bubble.style.cssText = 'flex:1;font-size:14px;line-height:1.6;color:var(--text-secondary);padding:8px 12px;border-radius:8px;white-space:pre-wrap;' +
+    (isUser ? 'background:var(--bg-secondary);' : 'background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.15);');
+  bubble.textContent = text;
+
+  msgDiv.appendChild(avatar);
+  msgDiv.appendChild(bubble);
+  container.appendChild(msgDiv);
+  container.scrollTop = container.scrollHeight;
+
+  return bubble;
+}
+
+async function sendAnalysisChat() {
+  var input = document.getElementById('analysis-chat-input');
+  if (!input) return;
+  var msg = input.value.trim();
+  if (!msg) return;
+
+  var apiKey = true; // AI calls go through server proxy now
+  if (!window._currentSession || !window._currentSession.access_token) {
+    addChatMessage('assistant', '→ Please log in to use the AI chat feature.');
+    return;
+  }
+
+  input.value = '';
+  addChatMessage('user', msg);
+  var typingBubble = addChatMessage('assistant', 'Thinking...');
+
+  // Build context
+  var analysis = getAnalysis(analysisCurrentDate);
+  var contextStr = 'No analysis data for this date.';
+  if (analysis) {
+    contextStr = 'Date: ' + analysisCurrentDate + '\n';
+    if (analysis.marketContext) contextStr += 'MARKET CONTEXT: ' + analysis.marketContext + '\n\n';
+    if (analysis.movers) {
+      contextStr += 'BIGGEST MOVERS:\n';
+      analysis.movers.forEach(function(m) {
+        contextStr += '• ' + m.ticker + ' ' + (m.changePct >= 0 ? '+' : '') + m.changePct.toFixed(1) + '% (' + m.sector + ') - ' + m.why;
+        if (m.lesson) contextStr += ' LESSON: ' + m.lesson;
+        contextStr += ' [Catchable: ' + m.catchable + ']\n';
+      });
+      contextStr += '\n';
+    }
+    if (analysis.sectorRotation) contextStr += 'SECTOR ROTATION:\n' + analysis.sectorRotation + '\n\n';
+    if (analysis.patterns) contextStr += 'DEVELOPING PATTERNS:\n' + analysis.patterns + '\n\n';
+    if (analysis.missed) contextStr += 'MISSED OPPORTUNITIES:\n' + analysis.missed + '\n\n';
+    if (analysis.tomorrowWatch) contextStr += 'SETUP WATCH:\n' + analysis.tomorrowWatch + '\n\n';
+  }
+
+  // Add pattern engine results if available
+  var patternData = '';
+  try {
+    var patterns = runPatternEngine();
+    if (!patterns.insufficient) {
+      patternData = '\n\nTRADE JOURNAL PATTERN ENGINE RESULTS:\n';
+      patternData += 'Overall: ' + patterns.overall.totalTrades + ' trades, ' + patterns.overall.winRate + ' win rate, $' + patterns.overall.totalPL + ' total P&L\n';
+      patternData += 'Avg win: $' + patterns.overall.avgWin + ' | Avg loss: $' + patterns.overall.avgLoss + '\n';
+      Object.keys(patterns.byStrategy).forEach(function(s) {
+        var st = patterns.byStrategy[s];
+        patternData += s + ': ' + st.winRate + ' win rate, ' + st.trades + ' trades, $' + st.totalPL + ' total\n';
+      });
+      if (patterns.edges.length > 0) {
+        patternData += '\nEDGES FOUND:\n' + patterns.edges.join('\n') + '\n';
+      }
+    }
+  } catch(e) {}
+
+  analysisChatHistory.push({ role: 'user', content: msg });
+
+  try {
+    var response = await callAIProxy({
+      task: 'analysis_chat',
+      analysisContext: contextStr,
+      patternData: patternData,
+      chatHistory: analysisChatHistory
+    });
+
+    var reply = response.content && response.content[0] ? response.content[0].text : 'No response received.';
+
+    analysisChatHistory.push({ role: 'assistant', content: reply });
+    typingBubble.textContent = reply;
+
+  } catch(e) {
+    typingBubble.textContent = 'Error: ' + e.message;
+    if (e.message.includes('401') || e.message.includes('logged in')) {
+      typingBubble.textContent += '\n\nPlease log in to use AI features.';
+    } else if (e.message.includes('CORS') || e.message.includes('Failed to fetch')) {
+      typingBubble.textContent += '\n\nNetwork error. Check your connection and try again.';
+    }
+    // Remove failed message from history
+    analysisChatHistory.pop();
+  }
+}
