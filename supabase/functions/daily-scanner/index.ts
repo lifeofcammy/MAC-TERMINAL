@@ -4,13 +4,13 @@
 // OLD approach: Fetched individual 60-day bar series for each of ~3000 filtered stocks.
 //   → 3000+ API calls per run → Supabase Edge Function CPU/timeout limits exceeded.
 //
-// NEW approach: Fetch 60 days of GROUPED daily data (~45 API calls total for trading days),
+// NEW approach: Fetch 30 days of GROUPED daily data (~10 API batches),
 //   then assemble per-ticker bar arrays entirely in memory.
-//   → ~45 API calls per run → completes well within Edge Function limits.
+//   → ~30 API calls per run → completes well within Edge Function limits.
 //
 // Algorithm:
-//   1. Calculate last 60 trading days (weekdays, skip Sat/Sun)
-//   2. Fetch grouped daily data for each trading day in batches of 5
+//   1. Calculate last 30 trading days (weekdays, skip Sat/Sun)
+//   2. Fetch grouped daily data for each trading day in batches of 3
 //   3. Build ticker → [{o,h,l,c,v,t}, ...] map in memory
 //   4. Filter tickers: price >= $5, vol >= 500K, len <= 5 chars, no dots/dashes, min 20 days
 //   5. Score each ticker with calcUniverseScore (ported from scanner.js)
@@ -97,16 +97,19 @@ function getLastTradingDay(): string {
 }
 
 /**
- * Return an array of trading day date strings (YYYY-MM-DD) for the last ~60 trading days,
- * ending on lastTradingDay.  We look back ~85 calendar days to guarantee >= 60 trading days.
+ * Return an array of trading day date strings (YYYY-MM-DD) for the last ~30 trading days,
+ * ending on lastTradingDay.  We look back ~45 calendar days to guarantee >= 30 trading days.
  * Only weekdays are included; holidays will return empty groups and be skipped later.
+ *
+ * 30 days supports 10 SMA and 20 SMA fully. 50 SMA degrades gracefully (returns null).
+ * This keeps CPU usage well within Supabase Edge Function limits.
  */
-function getLast60TradingDays(lastTradingDay: string): string[] {
+function getTradingDays(lastTradingDay: string): string[] {
   const end = new Date(lastTradingDay + 'T12:00:00Z')  // noon UTC avoids DST edge cases
   const days: string[] = []
 
-  // Walk backwards ~85 calendar days and collect weekdays
-  for (let offset = 0; offset < 85; offset++) {
+  // Walk backwards ~45 calendar days and collect weekdays
+  for (let offset = 0; offset < 45; offset++) {
     const d = new Date(end)
     d.setUTCDate(d.getUTCDate() - offset)
     const dow = d.getUTCDay()  // 0=Sun, 6=Sat
@@ -115,10 +118,10 @@ function getLast60TradingDays(lastTradingDay: string): string[] {
     const mo = String(d.getUTCMonth() + 1).padStart(2, '0')
     const day = String(d.getUTCDate()).padStart(2, '0')
     days.push(`${y}-${mo}-${day}`)
-    if (days.length === 60) break
+    if (days.length === 30) break
   }
 
-  // days[0] = most recent, days[59] = oldest — reverse so oldest first
+  // days[0] = most recent, days[29] = oldest — reverse so oldest first
   return days.reverse()
 }
 
@@ -189,6 +192,24 @@ function sma(arr: number[], period: number): number | null {
   return sum / period
 }
 
+// ── Fast min/max helpers (avoid spread operator overhead) ──
+
+function arrMax(arr: number[], fromIdx = 0, toIdx = arr.length): number {
+  let max = -Infinity
+  for (let i = fromIdx; i < toIdx; i++) {
+    if (arr[i] > max) max = arr[i]
+  }
+  return max
+}
+
+function arrMin(arr: number[], fromIdx = 0, toIdx = arr.length): number {
+  let min = Infinity
+  for (let i = fromIdx; i < toIdx; i++) {
+    if (arr[i] < min) min = arr[i]
+  }
+  return min
+}
+
 // ── Universe Scoring (ported exactly from scanner.js) ───
 //
 // Rewards: compression, trend alignment, volume dry-up, proximity to breakout
@@ -224,12 +245,12 @@ function calcUniverseScore(bars: Bar[], currentPrice: number): UniverseScoreResu
   }
 
   // ── 1. COMPRESSION / TIGHTNESS (0-30 pts) ──
-  const recent5H  = Math.max(...highs.slice(-5))
-  const recent5L  = Math.min(...lows.slice(-5))
+  const recent5H  = arrMax(highs, Math.max(0, len - 5))
+  const recent5L  = arrMin(lows, Math.max(0, len - 5))
   const range5    = ((recent5H - recent5L) / currentPrice) * 100
 
-  const recent10H = Math.max(...highs.slice(-10))
-  const recent10L = Math.min(...lows.slice(-10))
+  const recent10H = arrMax(highs, Math.max(0, len - 10))
+  const recent10L = arrMin(lows, Math.max(0, len - 10))
   const range10   = ((recent10H - recent10L) / currentPrice) * 100
 
   let ptsTight = 0
@@ -282,7 +303,7 @@ function calcUniverseScore(bars: Bar[], currentPrice: number): UniverseScoreResu
   // ── 6. PULLBACK BONUS (0-15 pts) ──
   let pullbackDepth = 0
   if (len >= 10) {
-    const recentHigh = Math.max(...highs.slice(-15))
+    const recentHigh = arrMax(highs, Math.max(0, len - 15))
     pullbackDepth = recentHigh > 0 ? ((recentHigh - currentPrice) / recentHigh) * 100 : 0
   }
   let ptsPullback = 0
@@ -308,8 +329,8 @@ function calcUniverseScore(bars: Bar[], currentPrice: number): UniverseScoreResu
         const postGapHighs = highs.slice(gi + 2)
         const postGapLows  = lows.slice(gi + 2)
         if (postGapHighs.length >= 3) {
-          const postH     = Math.max(...postGapHighs)
-          const postL     = Math.min(...postGapLows)
+          const postH     = arrMax(postGapHighs, 0)
+          const postL     = arrMin(postGapLows, 0)
           const postRange = ((postH - postL) / currentPrice) * 100
           if (postRange < 3.5) {
             return { total: 0, range5: Math.round(range5 * 10) / 10, range10: Math.round(range10 * 10) / 10, extFromSma20: 0, aboveSMAs: aboveSMAsCount + '/3', volDryUp: Math.round(volRatio * 100), distToBreakout: Math.round(distToBreakout * 10) / 10, pullbackDepth: Math.round(pullbackDepth * 10) / 10 }
@@ -433,12 +454,12 @@ function analyzeSetups(
   if (!sma20) return { eb: null, pb: null }
 
   // ── Compression metrics ──
-  const recent5H  = Math.max(...highs.slice(-5))
-  const recent5L  = Math.min(...lows.slice(-5))
+  const recent5H  = arrMax(highs, Math.max(0, len - 5))
+  const recent5L  = arrMin(lows, Math.max(0, len - 5))
   const range5    = ((recent5H - recent5L) / prevClose) * 100
 
-  const recent10H = Math.max(...highs.slice(-10))
-  const recent10L = Math.min(...lows.slice(-10))
+  const recent10H = arrMax(highs, Math.max(0, len - 10))
+  const recent10L = arrMin(lows, Math.max(0, len - 10))
   const range10   = ((recent10H - recent10L) / prevClose) * 100
 
   // Buyout filter
@@ -454,7 +475,7 @@ function analyzeSetups(
   const distToBreakout = breakoutLevel > 0 ? ((breakoutLevel - curPrice) / curPrice) * 100 : 0
   const breakingOut    = curPrice > breakoutLevel
 
-  const recentHigh15 = len >= 15 ? Math.max(...highs.slice(-15)) : Math.max(...highs)
+  const recentHigh15 = len >= 15 ? arrMax(highs, len - 15) : arrMax(highs, 0)
   const pullbackDepth = recentHigh15 > 0 ? ((recentHigh15 - curPrice) / recentHigh15) * 100 : 0
 
   const nearSma10 = sma10 !== null && Math.abs(curPrice - sma10) / curPrice * 100 <= 2
@@ -685,21 +706,22 @@ Deno.serve(async (req: Request) => {
     }
 
     // ══════════════════════════════════════════════════
-    // STEP 1: Calculate the list of ~60 trading days to fetch
+    // STEP 1: Calculate the list of ~30 trading days to fetch
     // ══════════════════════════════════════════════════
-    const tradingDays = getLast60TradingDays(scanDate)
+    const tradingDays = getTradingDays(scanDate)
     console.log(`[daily-scanner] Fetching grouped data for ${tradingDays.length} trading days ending ${scanDate}`)
 
     // ══════════════════════════════════════════════════
-    // STEP 2: Fetch grouped daily data in batches of 5
+    // STEP 2: Fetch grouped daily data in batches of 3
     // Each batch call returns ALL US stocks for that single date.
+    // Early-filter tickers during map building to reduce CPU/memory.
     // ══════════════════════════════════════════════════
     //
     // Result structure: Map<ticker, Bar[]> sorted oldest → newest
     const tickerBars: Map<string, Bar[]> = new Map()
     let   successfulDays = 0
 
-    const BATCH_SIZE = 5
+    const BATCH_SIZE = 3
     const BATCH_DELAY_MS = 200  // gentle on Polygon API between batches
 
     for (let i = 0; i < tradingDays.length; i += BATCH_SIZE) {
@@ -723,7 +745,6 @@ Deno.serve(async (req: Request) => {
       // Merge each day's results into the ticker map
       for (const { date, bars: dayBars } of batchResults) {
         if (dayBars.length === 0) {
-          // Holiday or no data for this day — skip entirely
           console.log(`[daily-scanner] No data for ${date} (holiday or weekend edge case), skipping`)
           continue
         }
@@ -733,6 +754,12 @@ Deno.serve(async (req: Request) => {
           if (!bar.T || bar.c == null || bar.v == null) continue
 
           const ticker = bar.T as string
+
+          // ── Early filtering: skip tickers we'd discard anyway ──
+          if (ticker.length > 5) continue                // warrants, units, etc.
+          if (ticker.includes('.') || ticker.includes('-')) continue  // preferred, rights
+          if (KNOWN_ETFS.has(ticker)) continue           // ETFs
+
           if (!tickerBars.has(ticker)) tickerBars.set(ticker, [])
 
           tickerBars.get(ticker)!.push({
@@ -789,14 +816,7 @@ Deno.serve(async (req: Request) => {
       // Volume filter: >= 500K shares
       if (latestVol < 500_000) continue
 
-      // Ticker length filter: <= 5 chars (common stocks)
-      if (ticker.length > 5) continue
-
-      // No dots or dashes (warrants, preferred, rights, etc.)
-      if (/[.\\-]/.test(ticker)) continue
-
-      // ETF exclusion
-      if (KNOWN_ETFS.has(ticker)) continue
+      // Ticker/ETF filters already applied during map building (Step 2)
 
       candidates.push({ ticker, bars, latestClose, latestVol })
     }
