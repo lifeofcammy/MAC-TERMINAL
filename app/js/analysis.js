@@ -58,9 +58,6 @@ async function fetchMarketSnapshot(dateStr) {
     return;
   }
 
-  var polygonKey = ''; try { polygonKey = localStorage.getItem('mtp_polygon_key') || ''; } catch(e) {}
-  if (!polygonKey) polygonKey = 'cITeodtOFuLRZuppvB3hc6U4XMBQUT0u';
-
   var indices = ['SPY', 'QQQ', 'IWM'];
   var sectorETFs = ['XLK', 'XLF', 'XLE', 'XLV', 'XLY', 'XLI', 'XLRE', 'XLU', 'XLB', 'XLC', 'XLP', 'SMH'];
   var sectorNames = { 'XLK':'Technology','XLF':'Financials','XLE':'Energy','XLV':'Healthcare','XLY':'Consumer Disc.','XLI':'Industrials','XLRE':'Real Estate','XLU':'Utilities','XLB':'Materials','XLC':'Comm. Services','XLP':'Consumer Staples','SMH':'Semiconductors' };
@@ -83,12 +80,8 @@ async function fetchMarketSnapshot(dateStr) {
 
   for (var i = 0; i < allTickers.length; i++) {
     try {
-      var url = 'https://api.polygon.io/v2/aggs/ticker/' + allTickers[i] + '/range/1/day/' + fromStr + '/' + toStr + '?adjusted=true&sort=asc&apiKey=' + polygonKey;
-      var resp = await fetch(url);
-      if (resp.ok) {
-        var json = await resp.json();
-        if (json.results && json.results.length > 0) barData[allTickers[i]] = json.results;
-      }
+      var json = await polyGet('/v2/aggs/ticker/' + allTickers[i] + '/range/1/day/' + fromStr + '/' + toStr + '?adjusted=true&sort=asc');
+      if (json.results && json.results.length > 0) barData[allTickers[i]] = json.results;
     } catch(e) {}
     if (i > 0 && i % batchSize === 0) await new Promise(function(r) { setTimeout(r, 250); });
   }
@@ -648,21 +641,14 @@ async function autoGenerateAnalysis(dateStr) {
     toDate.setDate(toDate.getDate()+1);
     var toStr=toDate.toISOString().split('T')[0];
 
-    var polygonKey='';try{polygonKey=localStorage.getItem('mtp_polygon_key')||'';}catch(e){}
-    if(!polygonKey)polygonKey='cITeodtOFuLRZuppvB3hc6U4XMBQUT0u';
-
     // Fetch in batches
     var barData={};
     setStatus('Fetching price data (this may take a moment)...');
     for(var i=0;i<allTickers.length;i++){
       var ticker=allTickers[i];
       try{
-        var url='https://api.polygon.io/v2/aggs/ticker/'+ticker+'/range/1/day/'+fromStr+'/'+toStr+'?adjusted=true&sort=asc&apiKey='+polygonKey;
-        var resp=await fetch(url);
-        if(resp.ok){
-          var json=await resp.json();
-          if(json.results&&json.results.length>0)barData[ticker]=json.results;
-        }
+        var json=await polyGet('/v2/aggs/ticker/'+ticker+'/range/1/day/'+fromStr+'/'+toStr+'?adjusted=true&sort=asc');
+        if(json.results&&json.results.length>0)barData[ticker]=json.results;
       }catch(e){}
       // Rate limit: small delay every 5 tickers (free tier = 5/min)
       if(i>0&&i%5===0){
@@ -728,8 +714,8 @@ async function autoGenerateAnalysis(dateStr) {
     var moverNews={};
     for(var ni=0;ni<Math.min(topMovers.length,10);ni++){
       try{
-        var newsUrl='https://api.polygon.io/v2/reference/news?ticker='+topMovers[ni].ticker+'&published_utc.gte='+dateStr+'T00:00:00Z&published_utc.lte='+dateStr+'T23:59:59Z&limit=5&apiKey='+polygonKey;
-        var nResp=await fetch(newsUrl);if(nResp.ok){var nJson=await nResp.json();moverNews[topMovers[ni].ticker]=(nJson.results||[]).map(function(a){return a.title||'';}).filter(function(t){return t.length>0;});}
+        var nJson=await polyGet('/v2/reference/news?ticker='+topMovers[ni].ticker+'&published_utc.gte='+dateStr+'T00:00:00Z&published_utc.lte='+dateStr+'T23:59:59Z&limit=5');
+        moverNews[topMovers[ni].ticker]=(nJson.results||[]).map(function(a){return a.title||'';}).filter(function(t){return t.length>0;});
       }catch(e){}
       if(ni>0&&ni%5===0) await new Promise(function(r){setTimeout(r,1200);});
     }
@@ -776,16 +762,12 @@ async function autoGenerateAnalysisSilent(dateStr) {
   toDate.setDate(toDate.getDate()+1);
   var toStr=toDate.toISOString().split('T')[0];
 
-  var polygonKey='';try{polygonKey=localStorage.getItem('mtp_polygon_key')||'';}catch(e){}
-  if(!polygonKey)polygonKey='cITeodtOFuLRZuppvB3hc6U4XMBQUT0u';
-
   var barData={};
   for(var i=0;i<allTickers.length;i++){
     var ticker=allTickers[i];
     try{
-      var url='https://api.polygon.io/v2/aggs/ticker/'+ticker+'/range/1/day/'+fromStr+'/'+toStr+'?adjusted=true&sort=asc&apiKey='+polygonKey;
-      var resp=await fetch(url);
-      if(resp.ok){var json=await resp.json();if(json.results&&json.results.length>0)barData[ticker]=json.results;}
+      var json=await polyGet('/v2/aggs/ticker/'+ticker+'/range/1/day/'+fromStr+'/'+toStr+'?adjusted=true&sort=asc');
+      if(json.results&&json.results.length>0)barData[ticker]=json.results;
     }catch(e){}
     if(i>0&&i%5===0) await new Promise(function(r){setTimeout(r,1200);});
   }
@@ -828,8 +810,8 @@ async function autoGenerateAnalysisSilent(dateStr) {
   var moverNews={};
   for(var ni=0;ni<Math.min(topMovers.length,10);ni++){
     try{
-      var newsUrl='https://api.polygon.io/v2/reference/news?ticker='+topMovers[ni].ticker+'&published_utc.gte='+dateStr+'T00:00:00Z&published_utc.lte='+dateStr+'T23:59:59Z&limit=5&apiKey='+polygonKey;
-      var nResp=await fetch(newsUrl);if(nResp.ok){var nJson=await nResp.json();moverNews[topMovers[ni].ticker]=(nJson.results||[]).map(function(a){return a.title||'';}).filter(function(t){return t.length>0;});}
+      var nJson=await polyGet('/v2/reference/news?ticker='+topMovers[ni].ticker+'&published_utc.gte='+dateStr+'T00:00:00Z&published_utc.lte='+dateStr+'T23:59:59Z&limit=5');
+      moverNews[topMovers[ni].ticker]=(nJson.results||[]).map(function(a){return a.title||'';}).filter(function(t){return t.length>0;});
     }catch(e){}
     if(ni>0&&ni%5===0) await new Promise(function(r){setTimeout(r,1200);});
   }
@@ -943,7 +925,7 @@ async function sendAnalysisChat() {
 
   var apiKey = true; // AI calls go through server proxy now
   if (!window._currentSession || !window._currentSession.access_token) {
-    addChatMessage('assistant', '→ Please log in to use the AI chat feature.');
+    addChatMessage('assistant', '\u2192 Please log in to use the AI chat feature.');
     return;
   }
 
@@ -960,7 +942,7 @@ async function sendAnalysisChat() {
     if (analysis.movers) {
       contextStr += 'BIGGEST MOVERS:\n';
       analysis.movers.forEach(function(m) {
-        contextStr += '• ' + m.ticker + ' ' + (m.changePct >= 0 ? '+' : '') + m.changePct.toFixed(1) + '% (' + m.sector + ') - ' + m.why;
+        contextStr += '\u2022 ' + m.ticker + ' ' + (m.changePct >= 0 ? '+' : '') + m.changePct.toFixed(1) + '% (' + m.sector + ') - ' + m.why;
         if (m.lesson) contextStr += ' LESSON: ' + m.lesson;
         contextStr += ' [Catchable: ' + m.catchable + ']\n';
       });
