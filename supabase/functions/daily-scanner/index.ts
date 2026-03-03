@@ -1,55 +1,174 @@
-// ==================== daily-scanner ====================
-// Auto-deployed via GitHub Actions
-// Supabase Edge Function that runs the full momentum scan server-side.
-// Uses the Polygon paid API key (stored as a secret) to scan ~3000 stocks,
-// score them, find breakout setups, and store results in the scan_results table.
-// Can be triggered manually via HTTP or on a cron schedule.
+// ==================== daily-scanner/index.ts ====================
+// ARCHITECTURE CHANGE (v2): Grouped-daily approach
+//
+// OLD approach: Fetched individual 60-day bar series for each of ~3000 filtered stocks.
+//   → 3000+ API calls per run → Supabase Edge Function CPU/timeout limits exceeded.
+//
+// NEW approach: Fetch 60 days of GROUPED daily data (~45 API calls total for trading days),
+//   then assemble per-ticker bar arrays entirely in memory.
+//   → ~45 API calls per run → completes well within Edge Function limits.
+//
+// Algorithm:
+//   1. Calculate last 60 trading days (weekdays, skip Sat/Sun)
+//   2. Fetch grouped daily data for each trading day in batches of 5
+//   3. Build ticker → [{o,h,l,c,v,t}, ...] map in memory
+//   4. Filter tickers: price >= $5, vol >= 500K, len <= 5 chars, no dots/dashes, min 20 days
+//   5. Score each ticker with calcUniverseScore (ported from scanner.js)
+//   6. Take top 150 universe candidates
+//   7. Run setup analysis (early breakouts + pullback entries) on top 150
+//   8. Upsert results to scan_results table
+//
+// Output format: matches what the frontend (scanner.js / db.js) expects.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// ── CORS ─────────────────────────────────────────────────
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 }
 
-// ── Helpers ──────────────────────────────────────────────
+// ── Known ETFs to exclude ────────────────────────────────
+const KNOWN_ETFS = new Set([
+  'SPY','QQQ','IWM','DIA','VOO','VTI','VIXY','UUP','GLD','SLV','TLT','HYG','LQD',
+  'XLK','XLF','XLE','XLV','XLY','XLI','XLRE','XLU','XLB','XLC','XLP','SMH',
+  'EWJ','EWZ','EWY','EWG','EWH','EWA','EWT','EWC','EWU','EWS','EWW','EWQ',
+  'FXI','MCHI','KWEB','INDA','VWO','EEM','EFA','IEMG','VEA','VGK',
+  'ARKK','ARKW','ARKF','ARKG','ARKQ','ARKX',
+  'SOXX','IGV','IBB','XBI','XOP','OIH','KRE','KBE','XRT','JETS','PAVE',
+  'ITA','XAR','HACK','SKYY','BOTZ','ICLN','TAN','URNM','LIT','REMX',
+  'SOXL','SOXS','TQQQ','SQQQ','UPRO','SPXU','LABU','LABD','UVXY','SVXY',
+  'SPXL','SPXS','TNA','TZA','FAS','FAZ','NUGT','DUST','JNUG','JDST',
+  'BND','AGG','IEF','SHY','VCSH','VCIT','BNDX','EMB','JNK','MUB',
+  'VNQ','MORT','HOMZ','IYR',
+  'USO','UNG','DBA','DBC','PDBC','GSG','WEAT','CORN','CPER',
+  'RSP','SPLG','SCHD','VIG','DVY','SDY','NOBL','VYM','HDV',
+  'QLD','PSQ','SH','SDS','DOG','DXD','RWM','TWM',
+  'IBIT','BITO','GBTC','ETHE','FBTC',
+  'GDX','GDXJ','SIL','SILJ','PPLT','PALL','GLTR',
+  'COWZ','DIVO','JEPI','JEPQ','XYLD','QYLD','RYLD',
+  'AMLP','MLPA','SRVR','NERD','SOCL','SUBZ','BETZ','PEJ',
+  'PBJ','MJ','YOLO','MSOS','BUZZ','VPN','CLOU','WCLD','BUG',
+  'FTEC','FHLC','FNCL','FENY','FDIS','FIDU','FREL','FUTY','FMAT','FCOM','FSTA',
+  'IVV','IJR','IJH','MDY','IWB','IWF','IWD','IWN','IWO','IWP','IWS',
+  'VBK','VBR','VTV','VUG','VOE','VOT','VTWO','VXUS','VMBS',
+])
 
-function localDateStr(d?: Date): string {
-  const now = d || new Date()
-  // Use ET (Eastern Time) since that's market time
-  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
+// ── Date / Trading Day Helpers ───────────────────────────
+
+/**
+ * Format a Date as YYYY-MM-DD using Eastern Time.
+ */
+function etDateStr(d: Date): string {
+  const et = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }))
   const y = et.getFullYear()
   const m = String(et.getMonth() + 1).padStart(2, '0')
   const day = String(et.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
 }
 
+/**
+ * Return the most recent completed trading day in Eastern Time.
+ * If it's a weekday and before 5 PM ET, use the previous trading day
+ * (market data for today may not be finalized yet).
+ * On weekends, use Friday.
+ */
 function getLastTradingDay(): string {
   const now = new Date()
   const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
-  while (et.getDay() === 0 || et.getDay() === 6) et.setDate(et.getDate() - 1)
+  const dow = et.getDay()   // 0=Sun, 6=Sat
+  const hour = et.getHours()
+
+  // If weekday before 5 PM ET, step back one day so we use the previous completed session
+  if (dow >= 1 && dow <= 5 && hour < 17) {
+    et.setDate(et.getDate() - 1)
+  }
+
+  // Roll back past weekends
+  while (et.getDay() === 0 || et.getDay() === 6) {
+    et.setDate(et.getDate() - 1)
+  }
+
   const y = et.getFullYear()
-  const m = String(et.getMonth() + 1).padStart(2, '0')
-  const day = String(et.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  const mo = String(et.getMonth() + 1).padStart(2, '0')
+  const d = String(et.getDate()).padStart(2, '0')
+  return `${y}-${mo}-${d}`
 }
 
-async function polyGet(path: string, apiKey: string, retries = 3): Promise<any> {
+/**
+ * Return an array of trading day date strings (YYYY-MM-DD) for the last ~60 trading days,
+ * ending on lastTradingDay.  We look back ~85 calendar days to guarantee >= 60 trading days.
+ * Only weekdays are included; holidays will return empty groups and be skipped later.
+ */
+function getLast60TradingDays(lastTradingDay: string): string[] {
+  const end = new Date(lastTradingDay + 'T12:00:00Z')  // noon UTC avoids DST edge cases
+  const days: string[] = []
+
+  // Walk backwards ~85 calendar days and collect weekdays
+  for (let offset = 0; offset < 85; offset++) {
+    const d = new Date(end)
+    d.setUTCDate(d.getUTCDate() - offset)
+    const dow = d.getUTCDay()  // 0=Sun, 6=Sat
+    if (dow === 0 || dow === 6) continue  // skip weekends
+    const y = d.getUTCFullYear()
+    const mo = String(d.getUTCMonth() + 1).padStart(2, '0')
+    const day = String(d.getUTCDate()).padStart(2, '0')
+    days.push(`${y}-${mo}-${day}`)
+    if (days.length === 60) break
+  }
+
+  // days[0] = most recent, days[59] = oldest — reverse so oldest first
+  return days.reverse()
+}
+
+// ── Polygon API Helpers ──────────────────────────────────
+
+interface Bar {
+  o: number
+  h: number
+  l: number
+  c: number
+  v: number
+  vw?: number
+  t: number
+}
+
+/**
+ * Fetch a single URL from Polygon with exponential backoff on 429 / network errors.
+ * Retries up to `maxRetries` times.
+ */
+async function polyGet(path: string, apiKey: string, maxRetries = 4): Promise<any> {
   const sep = path.includes('?') ? '&' : '?'
   const url = `https://api.polygon.io${path}${sep}apiKey=${apiKey}`
-  for (let attempt = 0; attempt < retries; attempt++) {
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const r = await fetch(url)
-      if (r.status === 429 && attempt < retries - 1) {
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt + 1) * 1000))
-        continue
+
+      // 429 rate-limit: wait and retry
+      if (r.status === 429) {
+        if (attempt < maxRetries - 1) {
+          const wait = Math.pow(2, attempt + 1) * 1000  // 2s, 4s, 8s ...
+          await sleep(wait)
+          continue
+        }
+        throw new Error(`Polygon 429: rate limited on ${path}`)
       }
-      if (!r.ok) throw new Error(`Polygon ${r.status}: ${path}`)
+
+      if (!r.ok) {
+        throw new Error(`Polygon ${r.status}: ${path}`)
+      }
+
       return await r.json()
-    } catch (e) {
-      if (attempt < retries - 1) {
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt + 1) * 1000))
+    } catch (e: any) {
+      const isNetwork = e.message && (
+        e.message.includes('Failed to fetch') ||
+        e.message.includes('NetworkError') ||
+        e.message.includes('fetch')
+      )
+      if (isNetwork && attempt < maxRetries - 1) {
+        await sleep(Math.pow(2, attempt + 1) * 1000)
         continue
       }
       throw e
@@ -57,392 +176,768 @@ async function polyGet(path: string, apiKey: string, retries = 3): Promise<any> 
   }
 }
 
-async function getDailyBars(ticker: string, days: number, apiKey: string): Promise<any[]> {
-  const now = new Date()
-  const to = localDateStr(now)
-  const fd = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
-  const from = localDateStr(fd)
-  const d = await polyGet(`/v2/aggs/ticker/${ticker}/range/1/day/${from}/${to}?adjusted=true&sort=asc&limit=${days}`, apiKey)
-  return d.results || []
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-// ── Momentum Scoring ────────────────────────────────────
+// ── SMA helper (shared by all scoring functions) ─────────
 
-function calcMomentumScore(bars: any[], currentPrice: number) {
-  const closes = bars.map((b: any) => b.c)
-  const highs = bars.map((b: any) => b.h)
-  const lows = bars.map((b: any) => b.l)
-  const len = closes.length
-  if (len < 20) return { total: 0 }
-
-  const close20ago = closes[Math.max(0, len - 21)]
-  const pct20d = ((currentPrice - close20ago) / close20ago) * 100
-  let pts20d = 0
-  if (pct20d > 30) pts20d = 30
-  else if (pct20d > 20) pts20d = 27
-  else if (pct20d > 15) pts20d = 24
-  else if (pct20d > 10) pts20d = 20
-  else if (pct20d > 5) pts20d = 15
-  else if (pct20d > 2) pts20d = 8
-  else if (pct20d > 0) pts20d = 3
-
-  let pct50d = 0, pts50d = 0
-  if (len >= 50) {
-    const close50ago = closes[len - 50]
-    pct50d = ((currentPrice - close50ago) / close50ago) * 100
-    if (pct50d > 50) pts50d = 25
-    else if (pct50d > 30) pts50d = 22
-    else if (pct50d > 20) pts50d = 18
-    else if (pct50d > 10) pts50d = 14
-    else if (pct50d > 5) pts50d = 8
-    else if (pct50d > 0) pts50d = 3
-  }
-
-  const highInRange = Math.max(...closes)
-  const distFromHigh = ((highInRange - currentPrice) / highInRange) * 100
-  let ptsHigh = 0
-  if (distFromHigh <= 2) ptsHigh = 25
-  else if (distFromHigh <= 5) ptsHigh = 20
-  else if (distFromHigh <= 10) ptsHigh = 14
-  else if (distFromHigh <= 15) ptsHigh = 8
-  else if (distFromHigh <= 20) ptsHigh = 3
-
-  function sma(period: number): number | null {
-    if (len < period) return null
-    let sum = 0
-    for (let i = len - period; i < len; i++) sum += closes[i]
-    return sum / period
-  }
-  const sma10 = sma(10), sma20 = sma(20), sma50 = sma(50)
-  let aboveSMAs = 0, ptsSMA = 0
-  if (sma10 && currentPrice > sma10) { aboveSMAs++; ptsSMA += 5 }
-  if (sma20 && currentPrice > sma20) { aboveSMAs++; ptsSMA += 5 }
-  if (sma50 && currentPrice > sma50) { aboveSMAs++; ptsSMA += 5 }
-  if (sma10 && sma20 && sma50 && sma10 > sma20 && sma20 > sma50) ptsSMA += 5
-
-  let adrMultiple: number | null = null
-  if (sma50 && currentPrice > sma50) {
-    let adrSum = 0
-    for (let ai = len - 20; ai < len; ai++) adrSum += (highs[ai] - lows[ai])
-    const adr = adrSum / 20
-    if (adr > 0) adrMultiple = Math.round(((currentPrice - sma50) / adr) * 10) / 10
-  }
-
-  return {
-    total: Math.round(pts20d + pts50d + ptsHigh + ptsSMA),
-    pct20d: Math.round(pct20d * 10) / 10,
-    pct50d: Math.round(pct50d * 10) / 10,
-    distFromHigh: Math.round(distFromHigh * 10) / 10,
-    aboveSMAs: aboveSMAs + '/3',
-    adrMultiple,
-  }
+function sma(arr: number[], period: number): number | null {
+  if (arr.length < period) return null
+  let sum = 0
+  for (let i = arr.length - period; i < arr.length; i++) sum += arr[i]
+  return sum / period
 }
 
-// ── Breakout Analysis ───────────────────────────────────
+// ── Universe Scoring (ported exactly from scanner.js) ───
+//
+// Rewards: compression, trend alignment, volume dry-up, proximity to breakout
+// Penalizes: extension from 20 SMA
 
-function analyzeSetup(ticker: string, bars: any[]) {
-  const closes = bars.map((b: any) => b.c)
-  const highs = bars.map((b: any) => b.h)
-  const lows = bars.map((b: any) => b.l)
-  const volumes = bars.map((b: any) => b.v)
+interface UniverseScoreResult {
+  total: number
+  range5: number
+  range10: number
+  extFromSma20: number
+  aboveSMAs: string
+  volDryUp: number
+  distToBreakout: number
+  pullbackDepth: number
+}
+
+function calcUniverseScore(bars: Bar[], currentPrice: number): UniverseScoreResult {
+  const closes  = bars.map(b => b.c)
+  const highs   = bars.map(b => b.h)
+  const lows    = bars.map(b => b.l)
+  const volumes = bars.map(b => b.v)
   const len = closes.length
-  if (len < 20) return null
 
-  const price = closes[len - 1]
+  if (len < 20) return { total: 0, range5: 0, range10: 0, extFromSma20: 0, aboveSMAs: '0/3', volDryUp: 100, distToBreakout: 99, pullbackDepth: 0 }
 
-  function sma(arr: number[], period: number): number | null {
-    if (arr.length < period) return null
-    let sum = 0
-    for (let i = arr.length - period; i < arr.length; i++) sum += arr[i]
-    return sum / period
+  const sma10 = sma(closes, 10)
+  const sma20 = sma(closes, 20)
+  const sma50 = sma(closes, 50)
+
+  // Must be above 20 SMA * 0.97 to be considered (uptrend filter)
+  if (!sma20 || currentPrice < sma20 * 0.97) {
+    return { total: 0, range5: 0, range10: 0, extFromSma20: 0, aboveSMAs: '0/3', volDryUp: 100, distToBreakout: 99, pullbackDepth: 0 }
   }
 
-  const sma10 = sma(closes, 10), sma20 = sma(closes, 20), sma50 = sma(closes, 50)
-  if (!sma10 || !sma20) return null
-  if (price < sma20) return null
+  // ── 1. COMPRESSION / TIGHTNESS (0-30 pts) ──
+  const recent5H  = Math.max(...highs.slice(-5))
+  const recent5L  = Math.min(...lows.slice(-5))
+  const range5    = ((recent5H - recent5L) / currentPrice) * 100
 
-  // Buyout filter - Check 1: flatlined stocks
-  const recent5H_pre = Math.max(...highs.slice(-5))
-  const recent5L_pre = Math.min(...lows.slice(-5))
-  const range5_pre = ((recent5H_pre - recent5L_pre) / price) * 100
-  if (range5_pre < 0.8) return null
+  const recent10H = Math.max(...highs.slice(-10))
+  const recent10L = Math.min(...lows.slice(-10))
+  const range10   = ((recent10H - recent10L) / currentPrice) * 100
 
-  // Buyout filter - Check 2: gap-up + compression pattern
+  let ptsTight = 0
+  if      (range5  <= 3)  ptsTight = 30
+  else if (range5  <= 5)  ptsTight = 25
+  else if (range5  <= 7)  ptsTight = 20
+  else if (range5  <= 10) ptsTight = 14
+  else if (range10 <= 10) ptsTight = 10
+  else if (range10 <= 15) ptsTight = 5
+
+  // ── 2. EXTENSION PENALTY (−20 to +10 pts) ──
+  const extFromSma20 = sma20 > 0 ? ((currentPrice - sma20) / sma20) * 100 : 0
+  let ptsExt = 0
+  if      (extFromSma20 <= 2)  ptsExt = 10
+  else if (extFromSma20 <= 4)  ptsExt = 5
+  else if (extFromSma20 <= 6)  ptsExt = 0
+  else if (extFromSma20 <= 10) ptsExt = -5
+  else if (extFromSma20 <= 15) ptsExt = -10
+  else                          ptsExt = -20
+
+  // ── 3. VOLUME DRY-UP IN BASE (0-20 pts) ──
+  const avgVol20  = sma(volumes, 20) ?? 1
+  const avgVol5   = sma(volumes.slice(-5), 5) ?? 0
+  const volRatio  = avgVol20 > 0 ? avgVol5 / avgVol20 : 1
+
+  let ptsVolDry = 0
+  if      (volRatio <= 0.40) ptsVolDry = 20
+  else if (volRatio <= 0.55) ptsVolDry = 16
+  else if (volRatio <= 0.70) ptsVolDry = 12
+  else if (volRatio <= 0.85) ptsVolDry = 6
+
+  // ── 4. BREAKOUT PROXIMITY (0-20 pts) ──
+  const distToBreakout = recent10H > 0 ? ((recent10H - currentPrice) / currentPrice) * 100 : 99
+  let ptsBreakout = 0
+  if      (distToBreakout <= 0.5) ptsBreakout = 20
+  else if (distToBreakout <= 1)   ptsBreakout = 17
+  else if (distToBreakout <= 2)   ptsBreakout = 13
+  else if (distToBreakout <= 3)   ptsBreakout = 8
+  else if (distToBreakout <= 5)   ptsBreakout = 4
+
+  // ── 5. TREND QUALITY (0-15 pts) ──
+  let ptsTrend = 0
+  let aboveSMAsCount = 0
+  if (sma10 && currentPrice > sma10)        { aboveSMAsCount++; ptsTrend += 3 }
+  if (currentPrice > sma20)                  { aboveSMAsCount++; ptsTrend += 3 }
+  if (sma50 && currentPrice > sma50)         { aboveSMAsCount++; ptsTrend += 3 }
+  if (sma10 && sma10 > sma20)                ptsTrend += 3
+  if (sma50 && sma20 > sma50)                ptsTrend += 3
+
+  // ── 6. PULLBACK BONUS (0-15 pts) ──
+  let pullbackDepth = 0
+  if (len >= 10) {
+    const recentHigh = Math.max(...highs.slice(-15))
+    pullbackDepth = recentHigh > 0 ? ((recentHigh - currentPrice) / recentHigh) * 100 : 0
+  }
+  let ptsPullback = 0
+  if (pullbackDepth >= 3 && pullbackDepth <= 10) {
+    const nearSma10 = sma10 !== null && Math.abs(currentPrice - sma10) / currentPrice * 100 <= 1.5
+    const nearSma20 = Math.abs(currentPrice - sma20) / currentPrice * 100 <= 1.5
+    if (nearSma10 || nearSma20) ptsPullback = 15
+    else if (pullbackDepth <= 7) ptsPullback = 8
+    else ptsPullback = 4
+  }
+
+  // ── BUYOUT FILTER ──
+  // Flatlined stocks (range5 < 0.8) are likely acquisition targets — skip
+  if (range5 < 0.8) {
+    return { total: 0, range5: Math.round(range5 * 10) / 10, range10: Math.round(range10 * 10) / 10, extFromSma20: 0, aboveSMAs: aboveSMAsCount + '/3', volDryUp: Math.round(volRatio * 100), distToBreakout: Math.round(distToBreakout * 10) / 10, pullbackDepth: Math.round(pullbackDepth * 10) / 10 }
+  }
+  // Gap-up + compression pattern — likely buyout pending
   if (len >= 15) {
     for (let gi = Math.max(0, len - 30); gi < len - 5; gi++) {
       const prevC = gi > 0 ? closes[gi - 1] : closes[gi]
       const gapPct = prevC > 0 ? ((closes[gi] - prevC) / prevC) * 100 : 0
       if (gapPct > 15) {
         const postGapHighs = highs.slice(gi + 2)
-        const postGapLows = lows.slice(gi + 2)
+        const postGapLows  = lows.slice(gi + 2)
         if (postGapHighs.length >= 3) {
-          const postH = Math.max(...postGapHighs)
-          const postL = Math.min(...postGapLows)
-          const postRange = ((postH - postL) / price) * 100
-          if (postRange < 3.5) return null
+          const postH     = Math.max(...postGapHighs)
+          const postL     = Math.min(...postGapLows)
+          const postRange = ((postH - postL) / currentPrice) * 100
+          if (postRange < 3.5) {
+            return { total: 0, range5: Math.round(range5 * 10) / 10, range10: Math.round(range10 * 10) / 10, extFromSma20: 0, aboveSMAs: aboveSMAsCount + '/3', volDryUp: Math.round(volRatio * 100), distToBreakout: Math.round(distToBreakout * 10) / 10, pullbackDepth: Math.round(pullbackDepth * 10) / 10 }
+          }
         }
       }
     }
   }
 
-  // Tightness (0-30 pts)
-  const recent10H = Math.max(...highs.slice(-10))
-  const recent10L = Math.min(...lows.slice(-10))
-  const range10 = ((recent10H - recent10L) / price) * 100
-  const recent5H = Math.max(...highs.slice(-5))
-  const recent5L = Math.min(...lows.slice(-5))
-  const range5 = ((recent5H - recent5L) / price) * 100
-
-  let ptsTight = 0
-  if (range5 <= 3) ptsTight = 30
-  else if (range5 <= 5) ptsTight = 25
-  else if (range5 <= 7) ptsTight = 18
-  else if (range5 <= 10) ptsTight = 12
-  else if (range10 <= 8) ptsTight = 10
-  else if (range10 <= 12) ptsTight = 5
-
-  // Volume dry-up (0-25 pts)
-  const avgVol20 = sma(volumes, 20)
-  const recentAvgVol = sma(volumes.slice(-5), 5)
-  const volRatio = avgVol20 && avgVol20 > 0 ? (recentAvgVol || 0) / avgVol20 : 1
-  let ptsVolDry = 0
-  if (volRatio <= 0.4) ptsVolDry = 25
-  else if (volRatio <= 0.55) ptsVolDry = 20
-  else if (volRatio <= 0.7) ptsVolDry = 15
-  else if (volRatio <= 0.85) ptsVolDry = 8
-
-  // Breakout proximity (0-25 pts)
-  const distToBreakout = ((recent10H - price) / price) * 100
-  let ptsBreakout = 0
-  if (distToBreakout <= 0.5) ptsBreakout = 25
-  else if (distToBreakout <= 1) ptsBreakout = 22
-  else if (distToBreakout <= 2) ptsBreakout = 18
-  else if (distToBreakout <= 3) ptsBreakout = 12
-  else if (distToBreakout <= 5) ptsBreakout = 6
-
-  // Trend quality (0-20 pts)
-  let ptsTrend = 0
-  if (price > sma10) ptsTrend += 4
-  if (price > sma20) ptsTrend += 4
-  if (sma50 && price > sma50) ptsTrend += 4
-  if (sma10 > sma20) ptsTrend += 4
-  if (sma50 && sma20 > sma50) ptsTrend += 4
-
-  let adrMultiple: number | null = null
-  if (sma50 && price > sma50) {
-    let adrSum2 = 0
-    for (let ai2 = len - 20; ai2 < len; ai2++) adrSum2 += (highs[ai2] - lows[ai2])
-    const adr2 = adrSum2 / 20
-    if (adr2 > 0) adrMultiple = Math.round(((price - sma50) / adr2) * 10) / 10
-  }
-
-  const totalScore = Math.round(ptsTight + ptsVolDry + ptsBreakout + ptsTrend)
-  if (totalScore < 40) return null
-
-  // Description
-  const desc: string[] = []
-  if (range5 <= 5) desc.push(`Tight 5-day range (${range5.toFixed(1)}%)`)
-  else if (range10 <= 8) desc.push(`Compressing 10-day (${range10.toFixed(1)}%)`)
-  if (volRatio <= 0.7) desc.push(`Volume drying up (${(volRatio * 100).toFixed(0)}% of avg)`)
-  if (distToBreakout <= 2) desc.push(`Near breakout ($${recent10H.toFixed(2)})`)
-  if (sma10 > sma20 && sma50 && sma20 > sma50) desc.push('SMAs stacked bullish')
-
-  const entryPrice = recent10H
-  const stopPrice = Math.max(recent10L, sma20 ? sma20 * 0.99 : recent10L)
-  const riskPct = ((entryPrice - stopPrice) / entryPrice) * 100
-  const targetPrice = entryPrice + (entryPrice - stopPrice) * 2
+  const total = Math.round(Math.max(0, ptsTight + ptsExt + ptsVolDry + ptsBreakout + ptsTrend + ptsPullback))
 
   return {
-    ticker,
-    price,
-    score: totalScore,
-    range5: Math.round(range5 * 10) / 10,
-    range10: Math.round(range10 * 10) / 10,
-    volRatio: Math.round(volRatio * 100),
-    breakoutLevel: recent10H,
-    distToBreakout: Math.round(distToBreakout * 10) / 10,
-    description: desc.join(' · '),
-    entryPrice,
-    stopPrice,
-    targetPrice,
-    riskPct: Math.round(riskPct * 10) / 10,
-    sma10val: sma10 ? sma10.toFixed(2) : null,
-    sma20val: sma20 ? sma20.toFixed(2) : null,
-    sma50val: sma50 ? sma50.toFixed(2) : null,
-    adrMultiple,
-    components: {
-      tightness: ptsTight,
-      volumeDryUp: ptsVolDry,
-      breakoutProximity: ptsBreakout,
-      trendQuality: ptsTrend,
-    },
+    total,
+    range5:        Math.round(range5        * 10) / 10,
+    range10:       Math.round(range10       * 10) / 10,
+    extFromSma20:  Math.round(extFromSma20  * 10) / 10,
+    aboveSMAs:     aboveSMAsCount + '/3',
+    volDryUp:      Math.round(volRatio      * 100),
+    distToBreakout:Math.round(distToBreakout* 10) / 10,
+    pullbackDepth: Math.round(pullbackDepth * 10) / 10,
   }
 }
 
-// ── Main Handler ────────────────────────────────────────
+// ── Setup Analysis (ported from scanner.js runSetupScan) ─
+//
+// Server-side runs after hours: relativeVol = 0, volumeSurge = 0, bounce = 0.
+// Price = last close (most recent bar).
+// prevClose = second-to-last bar close.
 
-Deno.serve(async (req) => {
+interface EarlyBreakout {
+  ticker: string
+  category: 'EARLY BREAKOUT'
+  price: number
+  prevClose: number
+  changePct: number
+  score: number
+  signals: string[]
+  description: string
+  range5: number
+  range10: number
+  extFromSma20: number
+  breakoutLevel: number
+  breakingOut: boolean
+  distToBreakout: number
+  baseVolRatio: number
+  relativeVol: number
+  volume: number
+  avgVol20: number
+  vwap: number
+  entryPrice: number
+  stopPrice: number
+  targetPrice: number
+  riskPct: number
+  components: {
+    tightness: number
+    volumeDryUp: number
+    breakoutProximity: number
+    extensionAdj: number
+    volumeSurge: number
+  }
+}
+
+interface PullbackEntry {
+  ticker: string
+  category: 'PULLBACK'
+  price: number
+  prevClose: number
+  changePct: number
+  score: number
+  signals: string[]
+  description: string
+  pullbackDepth: number
+  supportLevel: string
+  range5: number
+  baseVolRatio: number
+  relativeVol: number
+  volume: number
+  avgVol20: number
+  vwap: number
+  aboveSMAs: string
+  smaStacked: boolean
+  entryPrice: number
+  stopPrice: number
+  targetPrice: number
+  riskPct: number
+  components: {
+    pullbackQuality: number
+    supportLevel: number
+    volumeDecline: number
+    trendIntact: number
+    bounceSignal: number
+  }
+}
+
+function analyzeSetups(
+  ticker: string,
+  bars: Bar[],
+): { eb: EarlyBreakout | null; pb: PullbackEntry | null } {
+
+  const closes  = bars.map(b => b.c)
+  const highs   = bars.map(b => b.h)
+  const lows    = bars.map(b => b.l)
+  const volumes = bars.map(b => b.v)
+  const len = closes.length
+
+  if (len < 20) return { eb: null, pb: null }
+
+  // Server-side uses last close as price, previous close as prevClose
+  const curPrice  = closes[len - 1]
+  const prevClose = closes[len - 2] ?? curPrice
+  const curVol    = volumes[len - 1]
+  const changePct = ((curPrice - prevClose) / prevClose) * 100
+
+  // Crash filter
+  if (changePct < -8) return { eb: null, pb: null }
+
+  const sma10 = sma(closes, 10)
+  const sma20 = sma(closes, 20)
+  const sma50 = sma(closes, 50)
+
+  if (!sma20) return { eb: null, pb: null }
+
+  // ── Compression metrics ──
+  const recent5H  = Math.max(...highs.slice(-5))
+  const recent5L  = Math.min(...lows.slice(-5))
+  const range5    = ((recent5H - recent5L) / prevClose) * 100
+
+  const recent10H = Math.max(...highs.slice(-10))
+  const recent10L = Math.min(...lows.slice(-10))
+  const range10   = ((recent10H - recent10L) / prevClose) * 100
+
+  // Buyout filter
+  if (range5 < 0.8) return { eb: null, pb: null }
+
+  const extFromSma20 = ((curPrice - sma20) / sma20) * 100
+
+  const avgVol20_val = sma(volumes, 20) ?? 1
+  const avgVol5_val  = sma(volumes.slice(-5), 5) ?? 0
+  const baseVolRatio = avgVol20_val > 0 ? avgVol5_val / avgVol20_val : 1
+
+  const breakoutLevel  = recent10H
+  const distToBreakout = breakoutLevel > 0 ? ((breakoutLevel - curPrice) / curPrice) * 100 : 0
+  const breakingOut    = curPrice > breakoutLevel
+
+  const recentHigh15 = len >= 15 ? Math.max(...highs.slice(-15)) : Math.max(...highs)
+  const pullbackDepth = recentHigh15 > 0 ? ((recentHigh15 - curPrice) / recentHigh15) * 100 : 0
+
+  const nearSma10 = sma10 !== null && Math.abs(curPrice - sma10) / curPrice * 100 <= 2
+  const nearSma20 = Math.abs(curPrice - sma20) / curPrice * 100 <= 2
+
+  let aboveSMAsCount = 0
+  if (sma10 && curPrice > sma10) aboveSMAsCount++
+  if (curPrice > sma20)           aboveSMAsCount++
+  if (sma50 && curPrice > sma50) aboveSMAsCount++
+  const smaStacked = !!(sma10 && sma50 && sma10 > sma20 && sma20 > sma50)
+
+  // After-hours: no live volume surge, no live bounce signal
+  const relativeVol = 0
+  const curVwap     = 0
+
+  // ════════════════════════════════════════════
+  // CATEGORY 1: EARLY BREAKOUT
+  // ════════════════════════════════════════════
+  let eb: EarlyBreakout | null = null
+
+  if (range5 <= 10 || range10 <= 12) {
+    // Tightness (0-35 pts)
+    let ebTight = 0
+    const ebSignals: string[] = []
+
+    if      (range5 <= 3)  { ebTight = 35; ebSignals.push(`Very tight 5d range (${range5.toFixed(1)}%)`) }
+    else if (range5 <= 5)  { ebTight = 30; ebSignals.push(`Tight 5d range (${range5.toFixed(1)}%)`) }
+    else if (range5 <= 7)  { ebTight = 22; ebSignals.push(`Compressing (${range5.toFixed(1)}% 5d)`) }
+    else if (range5 <= 10) { ebTight = 14; ebSignals.push(`Building base (${range5.toFixed(1)}% 5d)`) }
+    else if (range10 <= 12){ ebTight = 8 }
+
+    // Volume dry-up (0-20 pts)
+    let ebVolDry = 0
+    if      (baseVolRatio <= 0.4)  { ebVolDry = 20; ebSignals.push(`Vol dried up (${Math.round(baseVolRatio * 100)}% of avg)`) }
+    else if (baseVolRatio <= 0.6)  { ebVolDry = 15; ebSignals.push(`Vol declining (${Math.round(baseVolRatio * 100)}% of avg)`) }
+    else if (baseVolRatio <= 0.75) { ebVolDry = 8 }
+
+    // Breakout proximity (0-25 pts)
+    let ebBreakout = 0
+    if (breakingOut) {
+      const breakPct = ((curPrice - breakoutLevel) / breakoutLevel) * 100
+      if      (breakPct <= 2) { ebBreakout = 25; ebSignals.push(`Breaking out above $${breakoutLevel.toFixed(2)}`) }
+      else if (breakPct <= 4) { ebBreakout = 15; ebSignals.push(`Above range by ${breakPct.toFixed(1)}%`) }
+      else                    { ebBreakout = 5 }
+    } else if (distToBreakout <= 1) { ebBreakout = 22; ebSignals.push(`At resistance ($${breakoutLevel.toFixed(2)})`) }
+    else if   (distToBreakout <= 2) { ebBreakout = 18; ebSignals.push(`Near breakout ($${breakoutLevel.toFixed(2)}, ${distToBreakout.toFixed(1)}% away)`) }
+    else if   (distToBreakout <= 4) { ebBreakout = 10 }
+
+    // Extension penalty (-20 to +5 pts)
+    let ebExt = 0
+    if      (extFromSma20 <= 2)  ebExt = 5
+    else if (extFromSma20 <= 5)  ebExt = 0
+    else if (extFromSma20 <= 8)  ebExt = -5
+    else if (extFromSma20 <= 12) ebExt = -10
+    else                          ebExt = -20
+
+    // No live volume surge server-side (after hours)
+    const ebVolSurge = 0
+
+    const ebScore = Math.round(Math.max(0, ebTight + ebVolDry + ebBreakout + ebExt + ebVolSurge))
+
+    if (ebScore >= 35 && ebTight >= 14) {
+      const entryPrice = breakingOut ? curPrice : breakoutLevel
+      const stopPrice  = Math.max(recent5L, sma20 ? sma20 * 0.98 : recent10L)
+      const riskPct    = entryPrice > 0 ? ((entryPrice - stopPrice) / entryPrice) * 100 : 0
+      const targetPrice = entryPrice + (entryPrice - stopPrice) * 2
+
+      eb = {
+        ticker,
+        category: 'EARLY BREAKOUT',
+        price: curPrice,
+        prevClose,
+        changePct: Math.round(changePct * 100) / 100,
+        score: ebScore,
+        signals: ebSignals,
+        description: ebSignals.join(' \u00b7 '),
+        range5: Math.round(range5 * 10) / 10,
+        range10: Math.round(range10 * 10) / 10,
+        extFromSma20: Math.round(extFromSma20 * 10) / 10,
+        breakoutLevel,
+        breakingOut,
+        distToBreakout: Math.round(distToBreakout * 10) / 10,
+        baseVolRatio: Math.round(baseVolRatio * 100),
+        relativeVol: 0,
+        volume: curVol,
+        avgVol20: avgVol20_val,
+        vwap: 0,
+        entryPrice,
+        stopPrice,
+        targetPrice,
+        riskPct: Math.round(riskPct * 10) / 10,
+        components: {
+          tightness: ebTight,
+          volumeDryUp: ebVolDry,
+          breakoutProximity: ebBreakout,
+          extensionAdj: ebExt,
+          volumeSurge: 0,
+        },
+      }
+    }
+  }
+
+  // ════════════════════════════════════════════
+  // CATEGORY 2: PULLBACK ENTRY
+  // ════════════════════════════════════════════
+  let pb: PullbackEntry | null = null
+
+  if (pullbackDepth >= 3 && pullbackDepth <= 18 && sma50 && curPrice > sma50) {
+    const pbSignals: string[] = []
+
+    // Pullback quality (0-30 pts)
+    let pbDepthPts = 0
+    if      (pullbackDepth >= 4 && pullbackDepth <= 8)  { pbDepthPts = 30; pbSignals.push(`Healthy pullback (${pullbackDepth.toFixed(1)}% from high)`) }
+    else if (pullbackDepth >= 3 && pullbackDepth <= 12) { pbDepthPts = 22; pbSignals.push(`Pulling back (${pullbackDepth.toFixed(1)}% from high)`) }
+    else                                                  { pbDepthPts = 10; pbSignals.push(`Deep pullback (${pullbackDepth.toFixed(1)}%)`) }
+
+    // Support level (0-25 pts)
+    let pbSupport = 0
+    let supportLabel = ''
+    if (nearSma10 && nearSma20) {
+      pbSupport = 25; pbSignals.push('Holding 10 & 20 SMA'); supportLabel = '20 SMA'
+    } else if (nearSma20) {
+      pbSupport = 22; pbSignals.push(`Holding 20 SMA ($${sma20.toFixed(2)})`); supportLabel = '20 SMA'
+    } else if (nearSma10 && sma10) {
+      pbSupport = 18; pbSignals.push(`At 10 SMA ($${sma10.toFixed(2)})`); supportLabel = '10 SMA'
+    } else if (sma50 && Math.abs(curPrice - sma50) / curPrice * 100 <= 2) {
+      pbSupport = 12; pbSignals.push(`At 50 SMA ($${sma50.toFixed(2)})`); supportLabel = '50 SMA'
+    }
+
+    // Volume declining on pullback (0-20 pts)
+    let pbVolDry = 0
+    if      (baseVolRatio <= 0.5)  { pbVolDry = 20; pbSignals.push(`Vol fading on pullback (${Math.round(baseVolRatio * 100)}% avg)`) }
+    else if (baseVolRatio <= 0.7)  { pbVolDry = 14; pbSignals.push('Light volume pullback') }
+    else if (baseVolRatio <= 0.85) { pbVolDry = 6 }
+
+    // Trend intact (0-15 pts)
+    let pbTrend = 0
+    if      (smaStacked)          { pbTrend = 15; pbSignals.push('SMAs stacked bullish') }
+    else if (aboveSMAsCount >= 2) { pbTrend = 10 }
+    else if (curPrice > sma50)    { pbTrend = 5 }
+
+    // No bounce signal server-side (after hours, no intraday data)
+    const pbBounce = 0
+
+    const pbScore = Math.round(Math.max(0, pbDepthPts + pbSupport + pbVolDry + pbTrend + pbBounce))
+
+    if (pbScore >= 40 && pbSupport >= 12) {
+      const pbStop   = sma50 ? sma50 * 0.98 : sma20 * 0.95
+      const pbRisk   = curPrice > 0 ? ((curPrice - pbStop) / curPrice) * 100 : 0
+      const pbTarget = curPrice + (curPrice - pbStop) * 2
+
+      pb = {
+        ticker,
+        category: 'PULLBACK',
+        price: curPrice,
+        prevClose,
+        changePct: Math.round(changePct * 100) / 100,
+        score: pbScore,
+        signals: pbSignals,
+        description: pbSignals.join(' \u00b7 '),
+        pullbackDepth: Math.round(pullbackDepth * 10) / 10,
+        supportLevel: supportLabel || 'VWAP',
+        range5: Math.round(range5 * 10) / 10,
+        baseVolRatio: Math.round(baseVolRatio * 100),
+        relativeVol: 0,
+        volume: curVol,
+        avgVol20: avgVol20_val,
+        vwap: 0,
+        aboveSMAs: aboveSMAsCount + '/3',
+        smaStacked,
+        entryPrice: curPrice,
+        stopPrice: pbStop,
+        targetPrice: pbTarget,
+        riskPct: Math.round(pbRisk * 10) / 10,
+        components: {
+          pullbackQuality: pbDepthPts,
+          supportLevel: pbSupport,
+          volumeDecline: pbVolDry,
+          trendIntact: pbTrend,
+          bounceSignal: 0,
+        },
+      }
+    }
+  }
+
+  return { eb, pb }
+}
+
+// ── Main Handler ─────────────────────────────────────────
+
+Deno.serve(async (req: Request) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    // ── Environment setup ──────────────────────────────
     const polygonKey = Deno.env.get('POLYGON_API_KEY')
     if (!polygonKey) {
-      return new Response(JSON.stringify({ error: 'Polygon key not configured' }), {
+      return new Response(JSON.stringify({ error: 'POLYGON_API_KEY not configured' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabaseUrl      = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey      = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase         = createClient(supabaseUrl, supabaseKey)
 
     const scanDate = getLastTradingDay()
 
-    // Check if we already have today's scan
-    const { data: existing } = await supabase
-      .from('scan_results')
-      .select('id')
-      .eq('scan_date', scanDate)
-      .maybeSingle()
-
-    // Allow force refresh via query param
-    const url = new URL(req.url)
+    // ── Cache check (bypass with ?force=true) ──────────
+    const url   = new URL(req.url)
     const force = url.searchParams.get('force') === 'true'
 
-    if (existing && !force) {
-      return new Response(JSON.stringify({ message: 'Scan already exists for ' + scanDate, cached: true }), {
-        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+    if (!force) {
+      const { data: existing } = await supabase
+        .from('scan_results')
+        .select('id')
+        .eq('scan_date', scanDate)
+        .maybeSingle()
+
+      if (existing) {
+        return new Response(JSON.stringify({ message: `Scan already exists for ${scanDate}`, cached: true, scan_date: scanDate }), {
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
     }
 
-    // Step 1: Get grouped daily bars
-    const groupedData = await polyGet(`/v2/aggs/grouped/locale/us/market/stocks/${scanDate}?adjusted=true`, polygonKey)
-    const allStocks = groupedData.results || []
-    if (allStocks.length === 0) {
-      return new Response(JSON.stringify({ error: 'No market data for ' + scanDate }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+    // ══════════════════════════════════════════════════
+    // STEP 1: Calculate the list of ~60 trading days to fetch
+    // ══════════════════════════════════════════════════
+    const tradingDays = getLast60TradingDays(scanDate)
+    console.log(`[daily-scanner] Fetching grouped data for ${tradingDays.length} trading days ending ${scanDate}`)
 
-    // Step 2: Filter
-    const filtered = allStocks.filter((s: any) => {
-      if (!s.T || !s.c || !s.v) return false
-      if (s.c < 5) return false
-      if (s.v < 500000) return false
-      if (s.T.length > 5) return false
-      if (/[.-]/.test(s.T)) return false
-      return true
-    })
+    // ══════════════════════════════════════════════════
+    // STEP 2: Fetch grouped daily data in batches of 5
+    // Each batch call returns ALL US stocks for that single date.
+    // ══════════════════════════════════════════════════
+    //
+    // Result structure: Map<ticker, Bar[]> sorted oldest → newest
+    const tickerBars: Map<string, Bar[]> = new Map()
+    let   successfulDays = 0
 
-    filtered.sort((a: any, b: any) => (b.v * b.c) - (a.v * a.c))
+    const BATCH_SIZE = 5
+    const BATCH_DELAY_MS = 200  // gentle on Polygon API between batches
 
-    // Step 3: Score in batches
-    const scored: any[] = []
-    const batchSize = 25
-    let failCount = 0
+    for (let i = 0; i < tradingDays.length; i += BATCH_SIZE) {
+      const batch = tradingDays.slice(i, i + BATCH_SIZE)
 
-    for (let i = 0; i < filtered.length; i += batchSize) {
-      const batch = filtered.slice(i, i + batchSize)
-      const promises = batch.map(async (stock: any) => {
-        try {
-          const bars = await getDailyBars(stock.T, 60, polygonKey)
-          return { ticker: stock.T, bars, latestClose: stock.c, latestVol: stock.v }
-        } catch {
-          failCount++
-          return null
+      const results = await Promise.all(
+        batch.map(async (date) => {
+          try {
+            const data = await polyGet(
+              `/v2/aggs/grouped/locale/us/market/stocks/${date}?adjusted=true`,
+              polygonKey,
+            )
+            return { date, results: data.results ?? [] }
+          } catch (e: any) {
+            console.warn(`[daily-scanner] Failed to fetch grouped data for ${date}: ${e.message}`)
+            return { date, results: [] }
+          }
+        })
+      )
+
+      // Merge each day's results into the ticker map
+      for (const { date, results } of results) {
+        if (results.length === 0) {
+          // Holiday or no data for this day — skip entirely
+          console.log(`[daily-scanner] No data for ${date} (holiday or weekend edge case), skipping`)
+          continue
         }
-      })
-      const results = await Promise.all(promises)
-      for (const r of results) {
-        if (!r || !r.bars || r.bars.length < 20) continue
-        const score = calcMomentumScore(r.bars, r.latestClose)
-        if (score.total > 0) {
-          scored.push({
-            ticker: r.ticker,
-            price: r.latestClose,
-            volume: r.latestVol,
-            score: score.total,
-            pct20d: score.pct20d,
-            pct50d: score.pct50d,
-            distFromHigh: score.distFromHigh,
-            aboveSMAs: score.aboveSMAs,
-            adrMultiple: score.adrMultiple,
+        successfulDays++
+
+        for (const bar of results) {
+          if (!bar.T || bar.c == null || bar.v == null) continue
+
+          const ticker = bar.T as string
+          if (!tickerBars.has(ticker)) tickerBars.set(ticker, [])
+
+          tickerBars.get(ticker)!.push({
+            o:  bar.o,
+            h:  bar.h,
+            l:  bar.l,
+            c:  bar.c,
+            v:  bar.v,
+            vw: bar.vw,
+            t:  bar.t,
           })
         }
       }
 
-      if (i + batchSize < filtered.length) {
-        await new Promise(resolve => setTimeout(resolve, 50))
+      // Delay between batches to be gentle on Polygon
+      if (i + BATCH_SIZE < tradingDays.length) {
+        await sleep(BATCH_DELAY_MS)
       }
     }
 
-    scored.sort((a, b) => b.score - a.score)
-    const top100 = scored.slice(0, 100)
+    console.log(`[daily-scanner] Fetched ${successfulDays} trading days of data. ${tickerBars.size} unique tickers seen.`)
 
-    // Step 4: Breakout scan on top 100
-    const setups: any[] = []
-    for (let i = 0; i < top100.length; i += 15) {
-      const batch = top100.slice(i, i + 15)
-      const promises = batch.map(async (stock) => {
-        try {
-          const bars = await getDailyBars(stock.ticker, 60, polygonKey)
-          return { ticker: stock.ticker, bars }
-        } catch {
-          return null
-        }
+    if (successfulDays === 0) {
+      return new Response(JSON.stringify({ error: `No grouped data returned for any day near ${scanDate}. Market may be closed.` }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
-      const results = await Promise.all(promises)
-      for (const r of results) {
-        if (!r || !r.bars || r.bars.length < 20) continue
-        const setup = analyzeSetup(r.ticker, r.bars)
-        if (setup) setups.push(setup)
-      }
-      if (i + 15 < top100.length) {
-        await new Promise(resolve => setTimeout(resolve, 50))
+    }
+
+    // ══════════════════════════════════════════════════
+    // STEP 3: Filter tickers
+    // Each ticker's bars array is already in time order (we fetched oldest→newest).
+    // Apply standard universe filters using the MOST RECENT day's data.
+    // ══════════════════════════════════════════════════
+    interface TickerCandidate {
+      ticker: string
+      bars: Bar[]
+      latestClose: number
+      latestVol: number
+    }
+
+    const candidates: TickerCandidate[] = []
+
+    for (const [ticker, bars] of tickerBars.entries()) {
+      // Require at least 20 days of data (handles IPOs / thin tickers)
+      if (bars.length < 20) continue
+
+      const latestBar = bars[bars.length - 1]
+      const latestClose = latestBar.c
+      const latestVol   = latestBar.v
+
+      // Price filter: >= $5
+      if (latestClose < 5) continue
+
+      // Volume filter: >= 500K shares
+      if (latestVol < 500_000) continue
+
+      // Ticker length filter: <= 5 chars (common stocks)
+      if (ticker.length > 5) continue
+
+      // No dots or dashes (warrants, preferred, rights, etc.)
+      if (/[.\-]/.test(ticker)) continue
+
+      // ETF exclusion
+      if (KNOWN_ETFS.has(ticker)) continue
+
+      candidates.push({ ticker, bars, latestClose, latestVol })
+    }
+
+    console.log(`[daily-scanner] ${candidates.length} candidates after filtering`)
+
+    // Sort by dollar volume (highest liquidity first) — same as scanner.js
+    candidates.sort((a, b) => (b.latestVol * b.latestClose) - (a.latestVol * a.latestClose))
+
+    // ══════════════════════════════════════════════════
+    // STEP 4: Score universe candidates with calcUniverseScore
+    // ══════════════════════════════════════════════════
+    const scored: Array<{
+      ticker: string
+      price: number
+      volume: number
+      score: number
+      range5: number
+      range10: number
+      extFromSma20: number
+      aboveSMAs: string
+      volDryUp: number
+      distToBreakout: number
+      pullbackDepth: number
+    }> = []
+
+    for (const candidate of candidates) {
+      const result = calcUniverseScore(candidate.bars, candidate.latestClose)
+      if (result.total > 0) {
+        scored.push({
+          ticker:        candidate.ticker,
+          price:         candidate.latestClose,
+          volume:        candidate.latestVol,
+          score:         result.total,
+          range5:        result.range5,
+          range10:       result.range10,
+          extFromSma20:  result.extFromSma20,
+          aboveSMAs:     result.aboveSMAs,
+          volDryUp:      result.volDryUp,
+          distToBreakout:result.distToBreakout,
+          pullbackDepth: result.pullbackDepth,
+        })
       }
     }
 
-    setups.sort((a, b) => b.score - a.score)
+    // Sort by score and take top 150
+    scored.sort((a, b) => b.score - a.score)
+    const top150 = scored.slice(0, 150)
 
-    // Step 5: Store in Supabase
-    const momentumData = {
+    console.log(`[daily-scanner] Universe: ${scored.length} scored, top ${top150.length} candidates`)
+
+    // ══════════════════════════════════════════════════
+    // STEP 5: Run setup analysis on top 150 universe candidates
+    // No additional API calls needed — bars already in memory.
+    // ══════════════════════════════════════════════════
+    const earlyBreakouts: EarlyBreakout[] = []
+    const pullbackEntries: PullbackEntry[] = []
+
+    for (const stock of top150) {
+      // Look up the bars we already have for this ticker
+      const bars = tickerBars.get(stock.ticker)
+      if (!bars || bars.length < 20) continue
+
+      const { eb, pb } = analyzeSetups(stock.ticker, bars)
+      if (eb) earlyBreakouts.push(eb)
+      if (pb) pullbackEntries.push(pb)
+    }
+
+    // Sort each category by score descending; cap at 15 each
+    earlyBreakouts.sort((a, b) => b.score - a.score)
+    pullbackEntries.sort((a, b) => b.score - a.score)
+    const topEarlyBreakouts  = earlyBreakouts.slice(0, 15)
+    const topPullbackEntries = pullbackEntries.slice(0, 15)
+
+    console.log(`[daily-scanner] Setups: ${topEarlyBreakouts.length} early breakouts, ${topPullbackEntries.length} pullback entries`)
+
+    // ══════════════════════════════════════════════════
+    // STEP 6: Build output payload — must match frontend expectations exactly
+    // ══════════════════════════════════════════════════
+    const momentumUniverse = {
+      version: 2,
       date: scanDate,
       ts: Date.now(),
-      count: top100.length,
-      tickers: top100,
+      count: top150.length,
+      tickers: top150,
     }
 
-    const setupData = {
+    const breakoutSetups = {
       date: scanDate,
       ts: Date.now(),
-      setups,
+      mode: 'eod',                // server always runs after hours
+      etTime: '4:00 PM',
+      earlyBreakouts: topEarlyBreakouts,
+      pullbackEntries: topPullbackEntries,
+      // Legacy compatibility: combined array
+      setups: [...topEarlyBreakouts, ...topPullbackEntries],
     }
 
-    await supabase
+    // ══════════════════════════════════════════════════
+    // STEP 7: Upsert to scan_results table
+    // ══════════════════════════════════════════════════
+    const { error: upsertError } = await supabase
       .from('scan_results')
-      .upsert({
-        scan_date: scanDate,
-        momentum_universe: momentumData,
-        breakout_setups: setupData,
-      }, { onConflict: 'scan_date' })
+      .upsert(
+        {
+          scan_date:        scanDate,
+          momentum_universe: momentumUniverse,
+          breakout_setups:   breakoutSetups,
+        },
+        { onConflict: 'scan_date' }
+      )
 
-    return new Response(JSON.stringify({
-      message: `Scan complete for ${scanDate}`,
-      stocks_scanned: filtered.length,
-      top100: top100.length,
-      setups: setups.length,
-      failed: failCount,
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    if (upsertError) {
+      throw new Error(`Supabase upsert failed: ${upsertError.message}`)
+    }
 
-  } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({
+        message:            `Scan complete for ${scanDate}`,
+        scan_date:          scanDate,
+        trading_days_used:  successfulDays,
+        tickers_seen:       tickerBars.size,
+        candidates_filtered:candidates.length,
+        universe_count:     top150.length,
+        early_breakouts:    topEarlyBreakouts.length,
+        pullback_entries:   topPullbackEntries.length,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+
+  } catch (e: any) {
+    console.error('[daily-scanner] Fatal error:', e)
+    return new Response(
+      JSON.stringify({ error: e?.message ?? 'Unknown error' }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   }
 })
