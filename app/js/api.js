@@ -3,26 +3,12 @@
 // getOptionsSnapshot is also here (uses polyGet).
 
 // ==================== POLYGON API ====================
-// Routes through the Edge Function proxy by default (key stays server-side).
-// Falls back to direct Polygon call if user has set their own key in Settings.
+// All Polygon calls route through the server-side proxy.
+// The Polygon key is stored as a Supabase secret — never exposed to the client.
 async function polyGet(path) {
-  // Check if user has their own Polygon key in localStorage
-  var userKey = '';
-  try { userKey = localStorage.getItem('mac_polygon_key') || ''; } catch(e) {}
-
-  if (userKey) {
-    // User brought their own key — call Polygon directly
-    var sep = path.includes('?') ? '&' : '?';
-    var url = POLY + path + sep + 'apiKey=' + userKey;
-    var r = await fetch(url);
-    if (!r.ok) throw new Error('Polygon ' + r.status + ': ' + path);
-    return r.json();
-  }
-
-  // No user key — route through server-side proxy
   var session = window._currentSession;
   if (!session || !session.access_token) {
-    throw new Error('Please log in to use market data, or add your own Polygon key in Settings.');
+    throw new Error('Please log in to use market data.');
   }
   var resp = await fetch(EDGE_FN_BASE + '/polygon-proxy', {
     method: 'POST',

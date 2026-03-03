@@ -2,20 +2,18 @@
 // API endpoint constants and key getters.
 
 // ==================== API CONFIG ====================
-// Polygon key is now server-side only (Edge Function secret).
-// Users can optionally set their own key in Settings (stored in localStorage).
 const POLY = 'https://api.polygon.io';
 const ALPHA = 'https://www.alphavantage.co/query';
 
 // Supabase Edge Function base URL for server-side proxies (AI + Polygon)
 const EDGE_FN_BASE = 'https://urpblscayyeadecozgvo.supabase.co/functions/v1';
 
-function getPolygonKey() { try { return localStorage.getItem('mac_polygon_key') || ''; } catch(e) { return ''; } }
+// Alpha Vantage — user provides their own key (optional)
 function getAlphaKey() { try { return localStorage.getItem('mac_alpha_key') || ''; } catch(e) { return ''; } }
-
-// Legacy compat — some functions reference POLYGON_KEY / ALPHA_KEY directly
-Object.defineProperty(window, 'POLYGON_KEY', { get: getPolygonKey });
 Object.defineProperty(window, 'ALPHA_KEY', { get: getAlphaKey });
+
+// Legacy compat — POLYGON_KEY returns empty string (key is server-side now)
+Object.defineProperty(window, 'POLYGON_KEY', { get: function() { return ''; } });
 
 // ==================== AI PROXY ====================
 // All AI calls go through the Edge Function — key is server-side only.
