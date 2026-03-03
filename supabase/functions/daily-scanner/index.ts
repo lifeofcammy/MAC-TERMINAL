@@ -287,7 +287,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const polygonKey = Deno.env.get('POLYGON_KEY')
+    const polygonKey = Deno.env.get('POLYGON_API_KEY')
     if (!polygonKey) {
       return new Response(JSON.stringify({ error: 'Polygon key not configured' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
