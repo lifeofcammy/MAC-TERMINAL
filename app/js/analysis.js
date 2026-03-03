@@ -523,35 +523,25 @@ function renderAnalysis() {
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
     // Violations
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--red);">';
-    html += '<div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Rule Violations</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Violations</div>';
     if (ms.violations && ms.violations.length > 0) {
       ms.violations.forEach(function(v) {
-        html += '<div style="font-size:14px;color:var(--text-secondary);padding:4px 0;border-bottom:1px solid var(--border);line-height:1.5;">\u2715 ' + v + '</div>';
+        html += '<div style="font-size:14px;color:var(--text-secondary);padding:6px 0;border-bottom:1px solid var(--border);line-height:1.5;"><strong style="color:var(--red);">' + v.rule + '</strong><br>' + v.detail + '</div>';
       });
     } else {
-      html += '<div style="font-size:14px;color:var(--green);">\u2713 No violations</div>';
+      html += '<div style="font-size:14px;color:var(--green);padding:8px 0;">' + '\u2713' + ' Clean session</div>';
     }
     html += '</div>';
-    // Strengths
+    // Wins
     html += '<div class="card" style="padding:16px;border-left:3px solid var(--green);">';
-    html += '<div style="font-size:12px;font-weight:800;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Strengths</div>';
-    if (ms.strengths && ms.strengths.length > 0) {
-      ms.strengths.forEach(function(s) {
-        html += '<div style="font-size:14px;color:var(--text-secondary);padding:4px 0;border-bottom:1px solid var(--border);line-height:1.5;">\u2713 ' + s + '</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">What Worked</div>';
+    if (ms.wins && ms.wins.length > 0) {
+      ms.wins.forEach(function(w) {
+        html += '<div style="font-size:14px;color:var(--text-secondary);padding:6px 0;border-bottom:1px solid var(--border);line-height:1.5;">' + w + '</div>';
       });
-    } else {
-      html += '<div style="font-size:14px;color:var(--text-muted);">None noted</div>';
     }
     html += '</div>';
-    html += '</div>'; // end grid
-
-    // Focus for tomorrow
-    if (ms.focusTomorrow) {
-      html += '<div class="card" style="padding:16px;border-left:3px solid var(--blue);margin-bottom:14px;">';
-      html += '<div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">Focus for Tomorrow</div>';
-      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">' + ms.focusTomorrow + '</div>';
-      html += '</div>';
-    }
+    html += '</div>';
   }
 
   // Missed Moves
