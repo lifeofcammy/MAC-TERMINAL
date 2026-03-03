@@ -782,7 +782,7 @@ function renderScanner() {
   var listCollapsed = localStorage.getItem('mac_top100_collapsed') === 'true';
   html += '<div onclick="toggleTop100()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;margin-bottom:8px;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div class="card-header-bar" style="flex:none;">Universe (' + (cache ? cache.count : 0) + ' Candidates)</div>';
+  html += '<div class="card-header-bar" style="flex:none;">Universe</div>';
   html += '<div style="flex:1;display:flex;justify-content:flex-end;"><span id="top100-arrow" style="font-size:12px;color:var(--text-muted);">' + (listCollapsed ? '▶' : '▼') + '</span></div>';
   html += '</div>';
   html += '<div id="top100-body" style="' + (listCollapsed ? 'display:none;' : '') + '">';
