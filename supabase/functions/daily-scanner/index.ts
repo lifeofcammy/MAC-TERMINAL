@@ -530,7 +530,7 @@ function analyzeSetups(
         changePct: Math.round(changePct * 100) / 100,
         score: ebScore,
         signals: ebSignals,
-        description: ebSignals.join(' \u00b7 '),
+        description: ebSignals.join(' · '),
         range5: Math.round(range5 * 10) / 10,
         range10: Math.round(range10 * 10) / 10,
         extFromSma20: Math.round(extFromSma20 * 10) / 10,
@@ -614,7 +614,7 @@ function analyzeSetups(
         changePct: Math.round(changePct * 100) / 100,
         score: pbScore,
         signals: pbSignals,
-        description: pbSignals.join(' \u00b7 '),
+        description: pbSignals.join(' · '),
         pullbackDepth: Math.round(pullbackDepth * 10) / 10,
         supportLevel: supportLabel || 'VWAP',
         range5: Math.round(range5 * 10) / 10,
@@ -705,31 +705,31 @@ Deno.serve(async (req: Request) => {
     for (let i = 0; i < tradingDays.length; i += BATCH_SIZE) {
       const batch = tradingDays.slice(i, i + BATCH_SIZE)
 
-      const results = await Promise.all(
+      const batchResults = await Promise.all(
         batch.map(async (date) => {
           try {
             const data = await polyGet(
               `/v2/aggs/grouped/locale/us/market/stocks/${date}?adjusted=true`,
               polygonKey,
             )
-            return { date, results: data.results ?? [] }
+            return { date, bars: data.results ?? [] }
           } catch (e: any) {
             console.warn(`[daily-scanner] Failed to fetch grouped data for ${date}: ${e.message}`)
-            return { date, results: [] }
+            return { date, bars: [] }
           }
         })
       )
 
       // Merge each day's results into the ticker map
-      for (const { date, results } of results) {
-        if (results.length === 0) {
+      for (const { date, bars: dayBars } of batchResults) {
+        if (dayBars.length === 0) {
           // Holiday or no data for this day — skip entirely
           console.log(`[daily-scanner] No data for ${date} (holiday or weekend edge case), skipping`)
           continue
         }
         successfulDays++
 
-        for (const bar of results) {
+        for (const bar of dayBars) {
           if (!bar.T || bar.c == null || bar.v == null) continue
 
           const ticker = bar.T as string
@@ -793,7 +793,7 @@ Deno.serve(async (req: Request) => {
       if (ticker.length > 5) continue
 
       // No dots or dashes (warrants, preferred, rights, etc.)
-      if (/[.\-]/.test(ticker)) continue
+      if (/[.\\-]/.test(ticker)) continue
 
       // ETF exclusion
       if (KNOWN_ETFS.has(ticker)) continue
