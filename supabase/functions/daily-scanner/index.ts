@@ -1,12 +1,10 @@
 // ==================== daily-scanner/index.ts ====================
-// ARCHITECTURE CHANGE (v2): Grouped-daily approach
+// ARCHITECTURE (v3): Grouped-daily + Live Snapshot overlay
 //
-// OLD approach: Fetched individual 60-day bar series for each of ~3000 filtered stocks.
-//   → 3000+ API calls per run → Supabase Edge Function CPU/timeout limits exceeded.
-//
-// NEW approach: Fetch 30 days of GROUPED daily data (~10 API batches),
-//   then assemble per-ticker bar arrays entirely in memory.
-//   → ~30 API calls per run → completes well within Edge Function limits.
+// Approach: Fetch 30 days of GROUPED daily data (~10 API batches),
+//   assemble per-ticker bar arrays in memory, build the 150-stock universe,
+//   then overlay LIVE prices from Polygon v3 Snapshot before scoring setups.
+//   → ~31 API calls per run → completes well within Edge Function limits.
 //
 // Algorithm:
 //   1. Calculate last 30 trading days (weekdays, skip Sat/Sun)
@@ -15,8 +13,13 @@
 //   4. Filter tickers: price >= $5, vol >= 500K, len <= 5 chars, no dots/dashes, min 20 days
 //   5. Score each ticker with calcUniverseScore (ported from scanner.js)
 //   6. Take top 150 universe candidates
-//   7. Run setup analysis (early breakouts + pullback entries) on top 150
-//   8. Upsert results to scan_results table
+//   7. Fetch Polygon v3 Snapshot for the 150 tickers (1 API call)
+//   8. Re-score universe with live prices, re-sort, re-slice top 150
+//   9. Run setup analysis (early breakouts + pullback entries) using live prices
+//  10. Upsert results to scan_results table
+//
+// Designed to run at 9:35 AM ET via cron — uses live market prices
+// instead of stale yesterday's closes.
 //
 // Output format: matches what the frontend (scanner.js / db.js) expects.
 
@@ -181,6 +184,64 @@ async function polyGet(path: string, apiKey: string, maxRetries = 4): Promise<an
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// ── Live Snapshot Fetcher ────────────────────────────────
+//
+// Fetches Polygon v3 Snapshot for up to 250 tickers in a single call.
+// Returns a Map of ticker → { price, prevClose, changePercent, volume, open }
+// Uses session data which reflects the current trading session.
+
+interface SnapshotData {
+  price: number
+  prevClose: number
+  changePercent: number
+  volume: number
+  open: number
+}
+
+async function fetchLiveSnapshot(
+  tickers: string[],
+  apiKey: string,
+): Promise<Map<string, SnapshotData>> {
+  const result = new Map<string, SnapshotData>()
+  if (tickers.length === 0) return result
+
+  // v3 snapshot supports ticker.any_of with up to 250 tickers per call
+  const tickerParam = tickers.join(',')
+  const url = `/v3/snapshot?ticker.any_of=${tickerParam}&limit=250`
+
+  try {
+    const data = await polyGet(url, apiKey)
+    const results = data.results ?? []
+
+    for (const item of results) {
+      const ticker = item.ticker
+      const session = item.session ?? {}
+
+      // session.price = last trade price (live during market hours)
+      // session.previous_close = previous session's close
+      // session.change_percent = percent change from prev close
+      // session.volume = current session volume
+      // session.open = today's open price
+      const price        = session.price ?? 0
+      const prevClose    = session.previous_close ?? 0
+      const changePercent = session.change_percent ?? 0
+      const volume       = session.volume ?? 0
+      const open         = session.open ?? 0
+
+      // Only include if we got a valid price
+      if (price > 0) {
+        result.set(ticker, { price, prevClose, changePercent, volume, open })
+      }
+    }
+
+    console.log(`[daily-scanner] Snapshot: got live prices for ${result.size}/${tickers.length} tickers`)
+  } catch (e: any) {
+    console.error(`[daily-scanner] Snapshot fetch failed: ${e.message} — falling back to bar closes`)
+  }
+
+  return result
 }
 
 // ── SMA helper (shared by all scoring functions) ─────────
@@ -428,6 +489,8 @@ interface PullbackEntry {
 function analyzeSetups(
   ticker: string,
   bars: Bar[],
+  livePrice?: number,
+  livePrevClose?: number,
 ): { eb: EarlyBreakout | null; pb: PullbackEntry | null } {
 
   const closes  = bars.map(b => b.c)
@@ -438,9 +501,9 @@ function analyzeSetups(
 
   if (len < 20) return { eb: null, pb: null }
 
-  // Server-side uses last close as price, previous close as prevClose
-  const curPrice  = closes[len - 1]
-  const prevClose = closes[len - 2] ?? curPrice
+  // Use live snapshot prices if available, otherwise fall back to bar closes
+  const curPrice  = livePrice ?? closes[len - 1]
+  const prevClose = livePrevClose ?? closes[len - 2] ?? curPrice
   const curVol    = volumes[len - 1]
   const changePct = ((curPrice - prevClose) / prevClose) * 100
 
@@ -864,13 +927,71 @@ Deno.serve(async (req: Request) => {
 
     // Sort by score and take top 150
     scored.sort((a, b) => b.score - a.score)
-    const top150 = scored.slice(0, 150)
+    const top150Initial = scored.slice(0, 150)
 
-    console.log(`[daily-scanner] Universe: ${scored.length} scored, top ${top150.length} candidates`)
+    console.log(`[daily-scanner] Universe: ${scored.length} scored, top ${top150Initial.length} candidates (pre-snapshot)`)
+
+    // ══════════════════════════════════════════════════
+    // STEP 4b: Fetch live snapshot for the top 150 tickers
+    // Overlay live market prices onto the universe before final scoring.
+    // This ensures scores reflect current market reality (gaps, premarket moves).
+    // ══════════════════════════════════════════════════
+    const snapshotTickers = top150Initial.map(s => s.ticker)
+    const snapshot = await fetchLiveSnapshot(snapshotTickers, polygonKey)
+
+    // Determine if we're running during market hours (snapshot has data)
+    const hasLivePrices = snapshot.size > 0
+    const scanMode = hasLivePrices ? 'live' : 'eod'
+
+    // Get current ET time for metadata
+    const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
+    const etHour = nowET.getHours()
+    const etMin  = nowET.getMinutes()
+    const ampm   = etHour >= 12 ? 'PM' : 'AM'
+    const h12    = etHour > 12 ? etHour - 12 : (etHour === 0 ? 12 : etHour)
+    const etTimeStr = hasLivePrices
+      ? `${h12}:${String(etMin).padStart(2, '0')} ${ampm}`
+      : '4:00 PM'
+
+    console.log(`[daily-scanner] Scan mode: ${scanMode}, ET time: ${etTimeStr}`)
+
+    // Re-score universe with live prices where available
+    const rescoredUniverse: typeof scored = []
+    for (const stock of top150Initial) {
+      const bars = tickerBars.get(stock.ticker)
+      if (!bars || bars.length < 20) continue
+
+      const snap = snapshot.get(stock.ticker)
+      const priceForScoring = snap ? snap.price : stock.price  // live or fallback to bar close
+
+      const result = calcUniverseScore(bars, priceForScoring)
+      if (result.total > 0) {
+        rescoredUniverse.push({
+          ticker:        stock.ticker,
+          price:         priceForScoring,  // live price in output
+          volume:        snap ? snap.volume : stock.volume,
+          score:         result.total,
+          range5:        result.range5,
+          range10:       result.range10,
+          extFromSma20:  result.extFromSma20,
+          aboveSMAs:     result.aboveSMAs,
+          volDryUp:      result.volDryUp,
+          distToBreakout:result.distToBreakout,
+          pullbackDepth: result.pullbackDepth,
+        })
+      }
+    }
+
+    // Re-sort by live-price score and take top 150
+    rescoredUniverse.sort((a, b) => b.score - a.score)
+    const top150 = rescoredUniverse.slice(0, 150)
+
+    console.log(`[daily-scanner] Universe after snapshot re-score: ${rescoredUniverse.length} → top ${top150.length}`)
 
     // ══════════════════════════════════════════════════
     // STEP 5: Run setup analysis on top 150 universe candidates
-    // No additional API calls needed — bars already in memory.
+    // Uses live snapshot prices when available for accurate scoring.
+    // No additional API calls needed — bars + snapshot already in memory.
     // ══════════════════════════════════════════════════
     const earlyBreakouts: EarlyBreakout[] = []
     const pullbackEntries: PullbackEntry[] = []
@@ -880,7 +1001,14 @@ Deno.serve(async (req: Request) => {
       const bars = tickerBars.get(stock.ticker)
       if (!bars || bars.length < 20) continue
 
-      const { eb, pb } = analyzeSetups(stock.ticker, bars)
+      // Pass live prices if snapshot data exists for this ticker
+      const snap = snapshot.get(stock.ticker)
+      const { eb, pb } = analyzeSetups(
+        stock.ticker,
+        bars,
+        snap?.price,       // livePrice
+        snap?.prevClose,   // livePrevClose
+      )
       if (eb) earlyBreakouts.push(eb)
       if (pb) pullbackEntries.push(pb)
     }
@@ -907,8 +1035,8 @@ Deno.serve(async (req: Request) => {
     const breakoutSetups = {
       date: scanDate,
       ts: Date.now(),
-      mode: 'eod',                // server always runs after hours
-      etTime: '4:00 PM',
+      mode: scanMode,              // 'live' during market hours, 'eod' after hours
+      etTime: etTimeStr,           // e.g. '9:35 AM' or '4:00 PM'
       earlyBreakouts: topEarlyBreakouts,
       pullbackEntries: topPullbackEntries,
       // Legacy compatibility: combined array
