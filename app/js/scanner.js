@@ -1151,13 +1151,14 @@ function toggleTop100() {
 }
 
 
-// ==================== AUTO-BUILD ON PAGE LOAD ====================
+// ==================== AUTO-BUILD (triggered when Scanner tab is opened) ====================
 var _autoBuildRunning = false;
 
-(function() {
-  setTimeout(async function() {
-    // Allow auto-build if user is logged in (proxy handles key) or has own key
-    if (!window._currentSession && !POLYGON_KEY) return;
+// Called by tabs.js when user clicks Scanner tab — NOT on page load.
+// This prevents 100+ Polygon API calls on every page load for a tab the user may never visit.
+function scannerAutoBuild() {
+  (async function() {
+    if (!window._currentSession) return;
 
     // Try server cache
     try {
@@ -1204,5 +1205,5 @@ var _autoBuildRunning = false;
       if (idleStatus) idleStatus.textContent = 'Auto-build failed: ' + e.message;
     }
     _autoBuildRunning = false;
-  }, 2000);
-})();
+  })();
+}
