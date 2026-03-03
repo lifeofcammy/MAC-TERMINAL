@@ -10,7 +10,8 @@
 // ETF filtering, and two distinct setup types.
 
 // ==================== CONSTANTS ====================
-var SCANNER_CACHE_KEY = 'mac_momentum_top100';
+var SCANNER_CACHE_KEY = 'mac_scanner_universe';
+var SCANNER_CACHE_VERSION = 2;
 var SCANNER_RESULTS_KEY = 'mac_scan_results';
 
 // Known ETF tickers to exclude (common ones that sneak through)
@@ -50,6 +51,9 @@ function localDateStr(d) {
 
 // ==================== CACHE HELPERS ====================
 
+// Clean up legacy cache key from older versions
+try { localStorage.removeItem('mac_momentum_top100'); } catch(e) {}
+
 function getMomentumCache() {
   try {
     var raw = localStorage.getItem(SCANNER_CACHE_KEY);
@@ -64,8 +68,7 @@ function saveMomentumCache(data) {
 
 function isMomentumCacheFresh() {
   var cache = getMomentumCache();
-  if (!cache || !cache.date) return false;
-  if (!cache.tickers || cache.tickers.length < 150) return false;
+  if (!cache || !cache.date || cache.version !== SCANNER_CACHE_VERSION) return false;
   var today = localDateStr();
   return cache.date === today || cache.date === getLastTradingDay();
 }
@@ -209,6 +212,7 @@ async function buildMomentumUniverse(statusFn) {
   var topN = scored.slice(0, 150);
 
   var cacheData = {
+    version: SCANNER_CACHE_VERSION,
     date: localDateStr(),
     ts: Date.now(),
     count: topN.length,
@@ -779,13 +783,13 @@ function renderScanner() {
 
   // Universe list (collapsible)
   html += '<div style="margin-top:16px;">';
-  var listCollapsed = localStorage.getItem('mac_top100_collapsed') === 'true';
-  html += '<div onclick="toggleTop100()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;margin-bottom:8px;">';
+  var listCollapsed = localStorage.getItem('mac_universe_collapsed') === 'true';
+  html += '<div onclick="toggleUniverse()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;margin-bottom:8px;">';
   html += '<div style="flex:1;"></div>';
   html += '<div class="card-header-bar" style="flex:none;">Universe</div>';
-  html += '<div style="flex:1;display:flex;justify-content:flex-end;"><span id="top100-arrow" style="font-size:12px;color:var(--text-muted);">' + (listCollapsed ? '▶' : '▼') + '</span></div>';
+  html += '<div style="flex:1;display:flex;justify-content:flex-end;"><span id="universe-arrow" style="font-size:12px;color:var(--text-muted);">' + (listCollapsed ? '▶' : '▼') + '</span></div>';
   html += '</div>';
-  html += '<div id="top100-body" style="' + (listCollapsed ? 'display:none;' : '') + '">';
+  html += '<div id="universe-body" style="' + (listCollapsed ? 'display:none;' : '') + '">';
   if (cache && cache.tickers && cache.tickers.length > 0) {
     html += renderUniverseList(cache.tickers);
   } else {
@@ -1074,9 +1078,9 @@ async function runFullScanUI() {
     }
 
     // Update universe list
-    var top100Body = document.getElementById('top100-body');
-    if (top100Body && cache && cache.tickers) {
-      top100Body.innerHTML = renderUniverseList(cache.tickers);
+    var universeBody = document.getElementById('universe-body');
+    if (universeBody && cache && cache.tickers) {
+      universeBody.innerHTML = renderUniverseList(cache.tickers);
     }
 
     // Step 2: Run setup scan
@@ -1142,13 +1146,13 @@ async function triggerServerScan() {
 
 // ==================== TOGGLES ====================
 
-function toggleTop100() {
-  var body = document.getElementById('top100-body'), arrow = document.getElementById('top100-arrow');
+function toggleUniverse() {
+  var body = document.getElementById('universe-body'), arrow = document.getElementById('universe-arrow');
   if (!body) return;
   var hidden = body.style.display === 'none';
   body.style.display = hidden ? '' : 'none';
   if (arrow) arrow.textContent = hidden ? '▼' : '▶';
-  try { localStorage.setItem('mac_top100_collapsed', hidden ? 'false' : 'true'); } catch(e) {}
+  try { localStorage.setItem('mac_universe_collapsed', hidden ? 'false' : 'true'); } catch(e) {}
 }
 
 
@@ -1197,9 +1201,9 @@ function scannerAutoBuild() {
         idleStatus.textContent = 'Universe ready · ' + (cache ? cache.count : 0) + ' candidates · Click Scan for setups';
       }
       var cache = getMomentumCache();
-      var top100Body = document.getElementById('top100-body');
-      if (top100Body && cache && cache.tickers) {
-        top100Body.innerHTML = renderUniverseList(cache.tickers);
+      var universeBody = document.getElementById('universe-body');
+      if (universeBody && cache && cache.tickers) {
+        universeBody.innerHTML = renderUniverseList(cache.tickers);
       }
     } catch(e) {
       console.warn('[scanner] Auto-build failed:', e);
