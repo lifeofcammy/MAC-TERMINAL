@@ -427,19 +427,36 @@ function renderRRGCanvas(canvasId) {
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.restore();
+    // Clickable circle at arrow tip
+    var tipX = lx + Math.cos(angle) * arrowLen;
+    var tipY = ly + Math.sin(angle) * arrowLen;
+    d._tipXY = { x: tipX, y: tipY };
+    ctx.beginPath();
+    ctx.arc(tipX, tipY, 8, 0, Math.PI * 2);
+    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.95)';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    // Plus icon inside circle
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(tipX - 3.5, tipY); ctx.lineTo(tipX + 3.5, tipY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tipX, tipY - 3.5); ctx.lineTo(tipX, tipY + 3.5); ctx.stroke();
   });
-  // Draw short ETF labels right next to each dot (simple, no collision avoidance needed)
-  ctx.font = '700 9px Inter, sans-serif';
+  // Draw ETF labels next to each dot
+  ctx.font = '700 12px Inter, sans-serif';
   ctx.textAlign = 'left';
   data.forEach(function(d) {
     if (!d._canvasXY) return;
     var lx = d._canvasXY.x, ly = d._canvasXY.y;
     var color = d.isAssetClass ? assetColor : sectorColor;
+    var textW = ctx.measureText(d.etf).width;
     ctx.fillStyle = labelBg;
-    ctx.fillRect(lx + 10, ly - 8, ctx.measureText(d.etf).width + 4, 11);
+    ctx.fillRect(lx + 16, ly - 9, textW + 6, 15);
     ctx.fillStyle = color;
-    ctx.globalAlpha = 0.85;
-    ctx.fillText(d.etf, lx + 11, ly + 1);
+    ctx.globalAlpha = 0.9;
+    ctx.fillText(d.etf, lx + 19, ly + 3);
     ctx.globalAlpha = 1;
   });
 }
@@ -1303,16 +1320,53 @@ async function renderOverview() {
   if(window._rrgData && window._rrgData.length > 0) {
     setTimeout(function(){
       renderRRGCanvas('rrg-canvas');
-      // Click handler: find nearest dot → open TradingView chart
       var rrgEl = document.getElementById('rrg-canvas');
       if(rrgEl) {
-        rrgEl.style.cursor = 'pointer';
-        rrgEl.title = 'Click a sector for details';
+        rrgEl.style.cursor = 'default';
+        // Hover tooltip: show full ETF name
+        rrgEl.addEventListener('mousemove', function(e){
+          var rect = rrgEl.getBoundingClientRect();
+          var mx = e.clientX - rect.left, my = e.clientY - rect.top;
+          var hovered = null, minDist = 25;
+          (window._rrgData||[]).forEach(function(d){
+            // Check circle at tip first
+            if(d._tipXY) {
+              var dx = mx - d._tipXY.x, dy = my - d._tipXY.y;
+              var dist = Math.sqrt(dx*dx + dy*dy);
+              if(dist < 12){ hovered = d; minDist = dist; }
+            }
+            // Then check dot
+            if(!hovered && d._canvasXY) {
+              var dx = mx - d._canvasXY.x, dy = my - d._canvasXY.y;
+              var dist = Math.sqrt(dx*dx + dy*dy);
+              if(dist < minDist){ hovered = d; minDist = dist; }
+            }
+          });
+          if(hovered) {
+            rrgEl.style.cursor = 'pointer';
+            rrgEl.title = hovered.etf + ' ' + (hovered.short || hovered.name);
+          } else {
+            rrgEl.style.cursor = 'default';
+            rrgEl.title = '';
+          }
+        });
+        // Click handler: circle opens sector detail popup, dot opens chart
         rrgEl.addEventListener('click', function(e){
           var rect = rrgEl.getBoundingClientRect();
           var mx = e.clientX - rect.left, my = e.clientY - rect.top;
-          // Find closest dot
-          var closest = null, minDist = 20; // 20px threshold
+          // First check if click is on a circle (tip)
+          var circleHit = null;
+          (window._rrgData||[]).forEach(function(d){
+            if(!d._tipXY) return;
+            var dx = mx - d._tipXY.x, dy = my - d._tipXY.y;
+            if(Math.sqrt(dx*dx + dy*dy) < 12) circleHit = d;
+          });
+          if(circleHit) {
+            showRRGSectorPopup(circleHit);
+            return;
+          }
+          // Then check dots
+          var closest = null, minDist = 20;
           (window._rrgData||[]).forEach(function(d){
             if(!d._canvasXY) return;
             var dx = mx - d._canvasXY.x, dy = my - d._canvasXY.y;
@@ -1320,11 +1374,7 @@ async function renderOverview() {
             if(dist < minDist){ minDist = dist; closest = d; }
           });
           if(closest) {
-            if(closest.isAssetClass) {
-              if(typeof openTVChart === 'function') openTVChart(closest.etf);
-            } else {
-              showRRGSectorDetail(closest.etf);
-            }
+            if(typeof openTVChart === 'function') openTVChart(closest.etf);
           }
         });
       }
@@ -1532,6 +1582,125 @@ function closeRRGQuadrantPopup() {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeRRGQuadrantPopup();
 });
+
+// ==================== RRG SECTOR POPUP (circle click → modal with subsectors + leaders) ====================
+async function showRRGSectorPopup(d) {
+  // Remove existing popup
+  var existing = document.getElementById('rrg-sector-popup');
+  if(existing) existing.remove();
+
+  var sectorEtf = d.etf;
+  var secInfo = null;
+  (window._sectorData || []).forEach(function(s) { if(s.etf === sectorEtf) secInfo = s; });
+  var subs = (window._subsectorMap || {})[sectorEtf] || [];
+  var stocks = (window._sectorStocks || {})[sectorEtf] || [];
+  var sectorName = d.short || d.name || (secInfo ? secInfo.name : sectorEtf);
+
+  // RRG info
+  var last = d.trail.length ? d.trail[d.trail.length-1] : null;
+  var rs = last ? last.ratio : 0, mom = last ? last.momentum : 0;
+  var q = (rs>=100&&mom>=100)?'Leading':(rs>=100&&mom<100)?'Weakening':(rs<100&&mom>=100)?'Improving':'Lagging';
+  var qc = q==='Leading'?'#10B981':q==='Improving'?'#2563EB':q==='Weakening'?'#F59E0B':'#EF4444';
+
+  var wrap = document.createElement('div');
+  wrap.id = 'rrg-sector-popup';
+  // Backdrop
+  var bd = '<div onclick="document.getElementById(\'rrg-sector-popup\').remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;"></div>';
+  // Modal
+  var m = '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:24px;min-width:420px;max-width:600px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">';
+  // Header
+  m += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">';
+  m += '<div style="display:flex;align-items:center;gap:10px;">';
+  m += '<span class="ticker-link" style="font-size:16px;" title="Click for chart" onclick="openTVChart(\''+sectorEtf+'\')">'+sectorEtf+'</span>';
+  m += '<span style="font-size:16px;font-weight:700;color:var(--text-primary);">'+sectorName+'</span>';
+  m += '</div>';
+  m += '<button onclick="document.getElementById(\'rrg-sector-popup\').remove()" style="background:none;border:none;font-size:20px;color:var(--text-muted);cursor:pointer;">\u2715</button>';
+  m += '</div>';
+  // Quadrant + RS/Mom
+  m += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">';
+  m += '<span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:'+qc+'15;color:'+qc+';border:1px solid '+qc+'30;">'+q+'</span>';
+  m += '<span style="font-size:13px;font-family:var(--font-mono);color:var(--text-secondary);">RS '+rs.toFixed(1)+' / Mom '+mom.toFixed(1)+'</span>';
+  if(secInfo) {
+    var dc = secInfo.dayChg>=0?'var(--green)':'var(--red)';
+    m += '<span style="font-size:13px;font-weight:800;font-family:var(--font-mono);color:'+dc+';">'+(secInfo.dayChg>=0?'+':'')+secInfo.dayChg.toFixed(1)+'%</span>';
+  }
+  m += '</div>';
+  // Loading
+  m += '<div id="rrg-popup-body" style="font-size:13px;color:var(--text-muted);text-align:center;padding:16px;">Loading sector data...</div>';
+  m += '</div>';
+  wrap.innerHTML = bd + m;
+  document.body.appendChild(wrap);
+  // Escape to close
+  function _escClose(e){ if(e.key==='Escape'){ var p=document.getElementById('rrg-sector-popup'); if(p) p.remove(); document.removeEventListener('keydown',_escClose); }}
+  document.addEventListener('keydown', _escClose);
+
+  // Load data
+  try {
+    var bodyHtml = '';
+    // Subsectors
+    if(subs.length > 0) {
+      var subTickers = subs.map(function(s){return s.etf;});
+      var subSnap = await getSnapshots(subTickers);
+      var subResults = [];
+      for(var i=0;i<subs.length;i++){
+        var sub=subs[i], s=subSnap[sub.etf];
+        var p=0,prev=0,pctVal=0;
+        if(s){ p=s.day&&s.day.c&&s.day.c>0?s.day.c:(s.prevDay&&s.prevDay.c?s.prevDay.c:(s.lastTrade?s.lastTrade.p:0)); prev=s.prevDay?s.prevDay.c:p; if(prev>0) pctVal=((p-prev)/prev)*100; }
+        subResults.push({etf:sub.etf,name:sub.name,pct:pctVal});
+      }
+      subResults.sort(function(a,b){return b.pct-a.pct;});
+      bodyHtml += '<div style="margin-bottom:12px;">';
+      bodyHtml += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Subsectors</div>';
+      subResults.forEach(function(r){
+        var color=r.pct>=0?'var(--green)':'var(--red)';
+        var bg=r.pct>=0?'var(--green-bg)':'var(--red-bg)';
+        bodyHtml += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:5px;background:'+bg+';margin-bottom:2px;">';
+        bodyHtml += '<div><span class="ticker-link" style="font-size:13px;" title="Click for chart" onclick="openTVChart(\''+r.etf+'\')">'+r.etf+'</span> <span style="font-size:12px;color:var(--text-muted);">'+r.name+'</span></div>';
+        bodyHtml += '<span style="font-size:13px;font-weight:800;font-family:var(--font-mono);color:'+color+';">'+(r.pct>=0?'+':'')+r.pct.toFixed(1)+'%</span>';
+        bodyHtml += '</div>';
+      });
+      bodyHtml += '</div>';
+    }
+    // Top stocks
+    if(stocks.length > 0) {
+      var stockSnap = {};
+      for(var bi=0;bi<stocks.length;bi+=15){ try{Object.assign(stockSnap,await getSnapshots(stocks.slice(bi,bi+15)));}catch(e){} }
+      var leaders = [];
+      for(var si=0;si<stocks.length;si++){
+        var t=stocks[si],ss=stockSnap[t]; if(!ss)continue;
+        var pr=ss.day&&ss.day.c&&ss.day.c>0?ss.day.c:(ss.prevDay&&ss.prevDay.c?ss.prevDay.c:(ss.lastTrade?ss.lastTrade.p:0));
+        var pv=ss.prevDay?ss.prevDay.c:pr;
+        var dayPct=pv>0?((pr-pv)/pv)*100:0;
+        var vol=ss.day?ss.day.v:0; var prevVol=ss.prevDay?ss.prevDay.v:0; var volVsAvg=prevVol>0?(vol/prevVol):0;
+        leaders.push({ticker:t,price:pr,dayPct:dayPct,vol:vol,volVsAvg:volVsAvg});
+      }
+      leaders.sort(function(a,b){return b.dayPct-a.dayPct;});
+      var topLeaders = leaders.slice(0,8);
+      if(topLeaders.length > 0) {
+        bodyHtml += '<div>';
+        bodyHtml += '<div style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Top Stocks</div>';
+        bodyHtml += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:2px 10px;font-size:11px;font-weight:700;color:var(--text-muted);padding:0 10px 4px;text-transform:uppercase;">';
+        bodyHtml += '<span>Ticker</span><span style="text-align:right;">Price</span><span style="text-align:right;">Day %</span><span style="text-align:right;">Vol</span></div>';
+        topLeaders.forEach(function(l){
+          var c=l.dayPct>=0?'var(--green)':'var(--red)'; var bg=l.dayPct>=0?'var(--green-bg)':'var(--red-bg)';
+          var volStr=l.vol>=1e6?(l.vol/1e6).toFixed(1)+'M':l.vol>=1e3?(l.vol/1e3).toFixed(0)+'K':l.vol.toString();
+          bodyHtml += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:2px 10px;padding:5px 10px;border-radius:5px;background:'+bg+';align-items:center;margin-bottom:2px;">';
+          bodyHtml += '<span class="ticker-link" style="font-size:13px;" title="Click for chart" onclick="openTVChart(\''+l.ticker+'\')">'+l.ticker+'</span>';
+          bodyHtml += '<span style="font-size:13px;font-family:var(--font-mono);color:var(--text-secondary);text-align:right;">$'+l.price.toFixed(2)+'</span>';
+          bodyHtml += '<span style="font-size:13px;font-weight:800;font-family:var(--font-mono);color:'+c+';text-align:right;">'+(l.dayPct>=0?'+':'')+l.dayPct.toFixed(1)+'%</span>';
+          bodyHtml += '<span style="font-size:13px;font-family:var(--font-mono);color:var(--text-muted);text-align:right;">'+volStr+'</span>';
+          bodyHtml += '</div>';
+        });
+        bodyHtml += '</div>';
+      }
+    }
+    var bodyEl = document.getElementById('rrg-popup-body');
+    if(bodyEl) bodyEl.innerHTML = bodyHtml || '<div style="padding:10px;color:var(--text-muted);">No data available for this sector</div>';
+  } catch(e) {
+    var bodyEl = document.getElementById('rrg-popup-body');
+    if(bodyEl) bodyEl.innerHTML = '<div style="color:var(--red);">Failed to load sector data</div>';
+  }
+}
 
 // ==================== RRG SECTOR DETAIL (click dot → show subsectors + leaders) ====================
 var _rrgDetailEtf = null;
