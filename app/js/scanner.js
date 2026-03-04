@@ -572,14 +572,20 @@ async function runSetupScan(statusFn) {
   });
 
   setups.sort(function(a, b) { return b.score - a.score; });
-  setups = setups.slice(0, 20);
+
+  // Save ALL scores as a map so the universe list can use consistent scoring
+  var allScores = {};
+  setups.forEach(function(s) { allScores[s.ticker] = s.score; });
+
+  var topSetups = setups.slice(0, 20);
 
   var resultData = {
     date: localDateStr(),
     ts: Date.now(),
     mode: marketOpen ? 'live' : 'eod',
     etTime: etTimeStr,
-    setups: setups
+    setups: topSetups,
+    allScores: allScores
   };
 
   try { localStorage.setItem(SCANNER_RESULTS_KEY, JSON.stringify(resultData)); } catch(e) {}
@@ -635,14 +641,16 @@ function renderScanner() {
   // Screening funnel (idle status)
   html += '<div id="scanner-status-idle" style="margin-bottom:14px;min-height:16px;">';
   if (cache) {
-    var totalStr = cache.totalScanned ? cache.totalScanned.toLocaleString() : '?';
-    var filteredStr = cache.filteredCount ? cache.filteredCount.toLocaleString() : '?';
     var setupCount = (scanResults && scanResults.setups) ? scanResults.setups.length : 0;
     html += '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);flex-wrap:wrap;">';
-    html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + totalStr + '</span> stocks scanned';
-    html += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
-    html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + filteredStr + '</span> passed filters';
-    html += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+    if (cache.totalScanned) {
+      html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.totalScanned.toLocaleString() + '</span> stocks scanned';
+      html += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+    }
+    if (cache.filteredCount) {
+      html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.filteredCount.toLocaleString() + '</span> passed filters';
+      html += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+    }
     html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.count + '</span> candidates';
     if (setupCount > 0) {
       html += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
@@ -788,6 +796,20 @@ function renderComponentBar(label, value, max, color) {
 // ==================== UNIVERSE LIST ====================
 
 function renderUniverseList(tickers) {
+  // Use setup scan scores if available (consistent with setup cards)
+  var setupScores = null;
+  try {
+    var sr = localStorage.getItem(SCANNER_RESULTS_KEY);
+    if (sr) { var parsed = JSON.parse(sr); setupScores = parsed.allScores || null; }
+  } catch(e) {}
+
+  // Build list with best available score, then re-sort
+  var list = tickers.map(function(t) {
+    var s = (setupScores && setupScores[t.ticker] != null) ? setupScores[t.ticker] : (t.score || 0);
+    return { ticker: t.ticker, price: t.price, range5: t.range5, extFromSma20: t.extFromSma20, volDryUp: t.volDryUp, aboveSMAs: t.aboveSMAs, distToBreakout: t.distToBreakout, score: s };
+  });
+  list.sort(function(a, b) { return b.score - a.score; });
+
   var html = '<div class="sc-table-wrap" style=""><div class="card" style="padding:0;overflow:hidden;">';
 
   // Header
@@ -796,7 +818,7 @@ function renderUniverseList(tickers) {
   html += '<span>#</span><span>Score</span><span>Ticker</span><span>Price</span><span>5d %</span><span>Ext</span><span>Vol</span><span>SMAs</span><span>Brkout</span>';
   html += '</div>';
 
-  tickers.forEach(function(t, idx) {
+  list.forEach(function(t, idx) {
     var bg = idx % 2 === 0 ? '' : 'background:var(--bg-secondary);';
     var extColor = (t.extFromSma20 || 0) <= 3 ? 'var(--green)' : (t.extFromSma20 || 0) >= 8 ? 'var(--red)' : 'var(--text-muted)';
     var sc = t.score || 0;
