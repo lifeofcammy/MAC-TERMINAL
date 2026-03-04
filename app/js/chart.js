@@ -356,33 +356,56 @@ function openTVChart(ticker) {
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
 
-  // Load TradingView widget
-  var script = document.createElement('script');
-  script.src = 'https://s3.tradingview.com/tv.js';
-  script.onload = function() {
-    if (typeof TradingView === 'undefined') return;
-    new TradingView.widget({
-      container_id: 'tv-chart-container',
-      autosize: true,
-      symbol: ticker,
-      interval: 'D',
-      timezone: 'America/New_York',
-      theme: tvTheme,
-      style: '1',
-      locale: 'en',
-      toolbar_bg: 'transparent',
-      enable_publishing: false,
-      hide_top_toolbar: false,
-      hide_legend: false,
-      save_image: false,
-      studies: ['MASimple@tv-basicstudies'],
-      hide_side_toolbar: true,
-      allow_symbol_change: true,
-      withdateranges: true,
-      details: false
-    });
+  // Map Polygon MIC codes to TradingView exchange prefixes
+  var _micToTV = {
+    'XNAS': 'NASDAQ', 'XNGS': 'NASDAQ', 'XNMS': 'NASDAQ',
+    'XNYS': 'NYSE', 'ARCX': 'NYSE_ARCA', 'XASE': 'AMEX',
+    'BATS': 'CBOE_BZX', 'IEXG': 'IEX'
   };
-  document.head.appendChild(script);
+
+  function _loadTVWidget(tvSymbol) {
+    var script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/tv.js';
+    script.onload = function() {
+      if (typeof TradingView === 'undefined') return;
+      new TradingView.widget({
+        container_id: 'tv-chart-container',
+        autosize: true,
+        symbol: tvSymbol,
+        interval: 'D',
+        timezone: 'America/New_York',
+        theme: tvTheme,
+        style: '1',
+        locale: 'en',
+        toolbar_bg: 'transparent',
+        enable_publishing: false,
+        hide_top_toolbar: false,
+        hide_legend: false,
+        save_image: false,
+        studies: ['MASimple@tv-basicstudies'],
+        hide_side_toolbar: true,
+        allow_symbol_change: true,
+        withdateranges: true,
+        details: false
+      });
+    };
+    document.head.appendChild(script);
+  }
+
+  // Look up US exchange from Polygon, then load chart with correct prefix
+  if (typeof polyGet === 'function') {
+    polyGet('/v3/reference/tickers/' + encodeURIComponent(ticker)).then(function(res) {
+      var info = res.results || res || {};
+      var mic = info.primary_exchange || '';
+      var tvExchange = _micToTV[mic] || '';
+      var tvSymbol = tvExchange ? (tvExchange + ':' + ticker) : ticker;
+      _loadTVWidget(tvSymbol);
+    }).catch(function() {
+      _loadTVWidget(ticker); // fallback: bare ticker
+    });
+  } else {
+    _loadTVWidget(ticker);
+  }
 
   // Load trade data panel (async — doesn't block chart)
   loadTradePanel(ticker, dataPanel);

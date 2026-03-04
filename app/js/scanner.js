@@ -270,6 +270,10 @@ function calcUniverseScore(bars, currentPrice) {
     _atr14 = _trS / 14;
   }
 
+  // Minimum ATR% filter — only keep stocks with ATR ≥ 2.5% of price
+  var atrPct = currentPrice > 0 && _atr14 > 0 ? (_atr14 / currentPrice) * 100 : 0;
+  if (atrPct < 2.5) return { total: 0 };
+
   // ATR-relative range: how many ATRs does the 5d/10d range span?
   var atrRatio5 = (_atr14 > 0) ? (recent5H - recent5L) / _atr14 : range5;
   var atrRatio10 = (_atr14 > 0) ? (recent10H - recent10L) / _atr14 : range10;
