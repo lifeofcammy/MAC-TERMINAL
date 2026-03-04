@@ -427,9 +427,69 @@ async function runSetupScan(statusFn) {
   var etTimeStr = etNow.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
   var setups = [];
+  var allScores = {}; // Track scores for ALL universe tickers (same formula)
 
   statusFn('Scoring setups...');
 
+  // Helper: compute setup score for any ticker (same formula for cards + universe list)
+  function calcSetupScore(ticker) {
+    var snap = allSnapshots[ticker];
+    var bars = allBars[ticker];
+    if (!snap || !snap.prevDay || !snap.prevDay.c) return null;
+    if (!bars || bars.length < 20) return null;
+
+    var prevClose = snap.prevDay.c;
+    var curPrice = 0, curVol = 0;
+    if (snap.day && snap.day.c && snap.day.c > 0) {
+      curPrice = snap.day.c;
+      curVol = snap.day.v || 0;
+    } else {
+      curPrice = snap.lastTrade ? snap.lastTrade.p : prevClose;
+    }
+    if (curPrice <= 0) return null;
+
+    var closes = bars.map(function(b) { return b.c; });
+    var highs = bars.map(function(b) { return b.h; });
+    var lows = bars.map(function(b) { return b.l; });
+    var volumes = bars.map(function(b) { return b.v; });
+
+    function sma(arr, period) {
+      if (arr.length < period) return null;
+      var s = 0; for (var i = arr.length - period; i < arr.length; i++) s += arr[i]; return s / period;
+    }
+
+    var sma10 = sma(closes, 10), sma20 = sma(closes, 20), sma50 = sma(closes, 50);
+    if (!sma20 || !sma10) return null;
+
+    var spread = Math.abs(sma10 - sma20) / curPrice * 100;
+    var ext = ((curPrice - sma20) / sma20) * 100;
+    var rvol = null;
+    var avgVol20 = sma(volumes, 20);
+    if (avgVol20 > 0 && curVol > 0) rvol = curVol / avgVol20;
+
+    // Score (same formula for everyone)
+    var ptsCompress = spread <= 1 ? 30 : spread <= 2 ? 22 : spread <= 3 ? 15 : spread <= 5 ? 8 : 0;
+    var ptsAlign = 0;
+    if (curPrice > sma10 && curPrice > sma20) ptsAlign += 15;
+    if (sma50 && curPrice > sma50) ptsAlign += 10;
+    var ptsExt = ext <= 4 ? 25 : ext <= 6 ? 18 : ext <= 8 ? 10 : ext <= 10 ? 4 : -5;
+    var ptsVol = (rvol && rvol >= 2) ? 10 : (rvol && rvol >= 1.5) ? 7 : (rvol && rvol >= 1) ? 4 : 0;
+    var changePct = ((curPrice - prevClose) / prevClose) * 100;
+    var ptsMom = changePct > 1 ? 5 : changePct > 0 ? 2 : 0;
+    var recent10H = Math.max.apply(null, highs.slice(-10));
+    var distToBreakout = recent10H > 0 ? ((recent10H - curPrice) / curPrice) * 100 : 99;
+    var ptsBrkout = distToBreakout <= 1 ? 5 : 0;
+
+    return Math.round(Math.min(100, Math.max(0, ptsCompress + ptsAlign + ptsExt + ptsVol + ptsMom + ptsBrkout)));
+  }
+
+  // Score ALL universe tickers first (for consistent universe list)
+  tickers.forEach(function(ticker) {
+    var sc = calcSetupScore(ticker);
+    if (sc != null) allScores[ticker] = sc;
+  });
+
+  // Now build setup cards (with additional filters + full data)
   tickers.forEach(function(ticker) {
     var snap = allSnapshots[ticker];
     var bars = allBars[ticker];
@@ -452,7 +512,6 @@ async function runSetupScan(statusFn) {
     var highs = bars.map(function(b) { return b.h; });
     var lows = bars.map(function(b) { return b.l; });
     var volumes = bars.map(function(b) { return b.v; });
-    var len = closes.length;
 
     function sma(arr, period) {
       if (arr.length < period) return null;
@@ -462,70 +521,39 @@ async function runSetupScan(statusFn) {
     var sma10 = sma(closes, 10), sma20 = sma(closes, 20), sma50 = sma(closes, 50);
     if (!sma20 || !sma10) return;
 
-    // ── SMA COMPRESSION (spread between 10 & 20 SMA) ──
     var spread = Math.abs(sma10 - sma20) / curPrice * 100;
-    if (spread > 5) return;  // Too wide — skip
+    if (spread > 5) return;
 
-    // Extension from 20 SMA
     var ext = ((curPrice - sma20) / sma20) * 100;
 
-    // Relative volume (simple: today vs 20d avg)
     var rvol = null;
     var avgVol20 = sma(volumes, 20);
     if (avgVol20 > 0 && curVol > 0) rvol = curVol / avgVol20;
 
-    // Breakout proximity
     var recent10H = Math.max.apply(null, highs.slice(-10));
     var distToBreakout = recent10H > 0 ? ((recent10H - curPrice) / curPrice) * 100 : 99;
 
-    // Buyout filter
     var recent5H = Math.max.apply(null, highs.slice(-5));
     var recent5L = Math.min.apply(null, lows.slice(-5));
     var range5 = ((recent5H - recent5L) / curPrice) * 100;
     if (range5 < 0.8) return;
     if (changePct < -8) return;
 
-    // ── SCORING (Top Ideas style, max ~100) ──
-    var score = 0;
+    var score = allScores[ticker] || 0;
+    if (score < 30) return;
 
-    // 1. SMA Compression (0-30 pts)
-    var ptsCompress = 0;
-    if (spread <= 1) ptsCompress = 30;
-    else if (spread <= 2) ptsCompress = 22;
-    else if (spread <= 3) ptsCompress = 15;
-    else if (spread <= 5) ptsCompress = 8;
-
-    // 2. SMA Alignment (0-25 pts)
-    var ptsAlign = 0;
+    // SMA Alignment (for thesis + card data)
     var aboveBoth = curPrice > sma10 && curPrice > sma20;
+
+    // Component scores (for card display)
+    var ptsCompress = spread <= 1 ? 30 : spread <= 2 ? 22 : spread <= 3 ? 15 : spread <= 5 ? 8 : 0;
+    var ptsAlign = 0;
     if (aboveBoth) ptsAlign += 15;
     if (sma50 && curPrice > sma50) ptsAlign += 10;
-
-    // 3. Extension from 20 SMA (−5 to +25 pts) — 4% threshold
-    var ptsExt = 0;
-    if (ext <= 4) ptsExt = 25;
-    else if (ext <= 6) ptsExt = 18;
-    else if (ext <= 8) ptsExt = 10;
-    else if (ext <= 10) ptsExt = 4;
-    else ptsExt = -5;
-
-    // 4. Relative Volume (0-10 pts)
-    var ptsVol = 0;
-    if (rvol && rvol >= 2) ptsVol = 10;
-    else if (rvol && rvol >= 1.5) ptsVol = 7;
-    else if (rvol && rvol >= 1) ptsVol = 4;
-
-    // 5. Day Change Momentum (0-5 pts)
-    var ptsMom = 0;
-    if (changePct > 1) ptsMom = 5;
-    else if (changePct > 0) ptsMom = 2;
-
-    // 6. Near Breakout bonus (0-5 pts)
-    var ptsBrkout = 0;
-    if (distToBreakout <= 1) ptsBrkout = 5;
-
-    score = Math.round(Math.min(100, Math.max(0, ptsCompress + ptsAlign + ptsExt + ptsVol + ptsMom + ptsBrkout)));
-    if (score < 30) return;
+    var ptsExt = ext <= 4 ? 25 : ext <= 6 ? 18 : ext <= 8 ? 10 : ext <= 10 ? 4 : -5;
+    var ptsVol = (rvol && rvol >= 2) ? 10 : (rvol && rvol >= 1.5) ? 7 : (rvol && rvol >= 1) ? 4 : 0;
+    var ptsMom = changePct > 1 ? 5 : changePct > 0 ? 2 : 0;
+    var ptsBrkout = distToBreakout <= 1 ? 5 : 0;
 
     // ── THESIS ──
     var thesis = '';
@@ -572,10 +600,6 @@ async function runSetupScan(statusFn) {
   });
 
   setups.sort(function(a, b) { return b.score - a.score; });
-
-  // Save ALL scores as a map so the universe list can use consistent scoring
-  var allScores = {};
-  setups.forEach(function(s) { allScores[s.ticker] = s.score; });
 
   var topSetups = setups.slice(0, 20);
 
@@ -795,29 +819,48 @@ function renderComponentBar(label, value, max, color) {
 
 // ==================== UNIVERSE LIST ====================
 
-function renderUniverseList(tickers) {
-  // Use setup scan scores if available (consistent with setup cards)
-  var setupScores = null;
-  try {
-    var sr = localStorage.getItem(SCANNER_RESULTS_KEY);
-    if (sr) { var parsed = JSON.parse(sr); setupScores = parsed.allScores || null; }
-  } catch(e) {}
+var _universeListData = [];
+var _universeSortCol = 'score';
+var _universeSortAsc = false;
 
-  // Build list with best available score, then re-sort
-  var list = tickers.map(function(t) {
-    var s = (setupScores && setupScores[t.ticker] != null) ? setupScores[t.ticker] : (t.score || 0);
-    return { ticker: t.ticker, price: t.price, range5: t.range5, extFromSma20: t.extFromSma20, volDryUp: t.volDryUp, aboveSMAs: t.aboveSMAs, distToBreakout: t.distToBreakout, score: s };
+function _universeGetVal(t, col) {
+  switch(col) {
+    case 'score': return t.score || 0;
+    case 'ticker': return (t.ticker || '').toUpperCase();
+    case 'price': return t.price || 0;
+    case 'range5': return t.range5 != null ? t.range5 : -999;
+    case 'ext': return t.extFromSma20 != null ? t.extFromSma20 : -999;
+    case 'vol': return t.volDryUp != null ? t.volDryUp : -999;
+    case 'smas': return t.aboveSMAs === '3/3' ? 3 : t.aboveSMAs === '2/3' ? 2 : t.aboveSMAs === '1/3' ? 1 : 0;
+    case 'brkout': return t.distToBreakout != null ? t.distToBreakout : -999;
+    default: return 0;
+  }
+}
+
+function sortUniverseBy(col) {
+  if (_universeSortCol === col) {
+    _universeSortAsc = !_universeSortAsc;
+  } else {
+    _universeSortCol = col;
+    _universeSortAsc = (col === 'ticker'); // alpha defaults asc, numbers default desc
+  }
+  _rerenderUniverseRows();
+}
+
+function _rerenderUniverseRows() {
+  var tbody = document.getElementById('universe-tbody');
+  if (!tbody) return;
+  var list = _universeListData.slice();
+  var col = _universeSortCol;
+  var asc = _universeSortAsc;
+  list.sort(function(a, b) {
+    var va = _universeGetVal(a, col), vb = _universeGetVal(b, col);
+    if (typeof va === 'string') return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+    return asc ? va - vb : vb - va;
   });
-  list.sort(function(a, b) { return b.score - a.score; });
 
-  var html = '<div class="sc-table-wrap" style=""><div class="card" style="padding:0;overflow:hidden;">';
-
-  // Header
   var cols = '36px 60px 50px 75px 55px 55px 55px 50px 50px';
-  html += '<div style="display:grid;grid-template-columns:' + cols + ';gap:4px;padding:8px 14px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">';
-  html += '<span>#</span><span>Score</span><span>Ticker</span><span>Price</span><span>5d %</span><span>Ext</span><span>Vol</span><span>SMAs</span><span>Brkout</span>';
-  html += '</div>';
-
+  var html = '';
   list.forEach(function(t, idx) {
     var bg = idx % 2 === 0 ? '' : 'background:var(--bg-secondary);';
     var extColor = (t.extFromSma20 || 0) <= 3 ? 'var(--green)' : (t.extFromSma20 || 0) >= 8 ? 'var(--red)' : 'var(--text-muted)';
@@ -836,6 +879,74 @@ function renderUniverseList(tickers) {
     html += '<span style="font-size:12px;color:var(--text-muted);">' + (t.distToBreakout != null ? t.distToBreakout + '%' : '\u2014') + '</span>';
     html += '</div>';
   });
+  tbody.innerHTML = html;
+
+  // Update header arrows
+  var headers = document.querySelectorAll('[data-univsort]');
+  headers.forEach(function(h) {
+    var c = h.getAttribute('data-univsort');
+    var arrow = h.querySelector('.sort-arrow');
+    if (arrow) arrow.textContent = c === _universeSortCol ? (_universeSortAsc ? ' \u25B2' : ' \u25BC') : '';
+  });
+}
+
+function renderUniverseList(tickers) {
+  // Use setup scan scores if available (consistent with setup cards)
+  var setupScores = null;
+  try {
+    var sr = localStorage.getItem(SCANNER_RESULTS_KEY);
+    if (sr) { var parsed = JSON.parse(sr); setupScores = parsed.allScores || null; }
+  } catch(e) {}
+
+  // Build list with best available score
+  _universeListData = tickers.map(function(t) {
+    var s = (setupScores && setupScores[t.ticker] != null) ? setupScores[t.ticker] : (t.score || 0);
+    return { ticker: t.ticker, price: t.price, range5: t.range5, extFromSma20: t.extFromSma20, volDryUp: t.volDryUp, aboveSMAs: t.aboveSMAs, distToBreakout: t.distToBreakout, score: s };
+  });
+
+  // Initial sort
+  _universeSortCol = 'score';
+  _universeSortAsc = false;
+  _universeListData.sort(function(a, b) { return b.score - a.score; });
+
+  var html = '<div class="sc-table-wrap" style=""><div class="card" style="padding:0;overflow:hidden;">';
+
+  // Header with clickable sort columns
+  var cols = '36px 60px 50px 75px 55px 55px 55px 50px 50px';
+  var headerStyle = 'cursor:pointer;user-select:none;';
+  html += '<div style="display:grid;grid-template-columns:' + cols + ';gap:4px;padding:8px 14px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">';
+  html += '<span>#</span>';
+  html += '<span data-univsort="score" onclick="sortUniverseBy(\'score\')" style="' + headerStyle + '">Score<span class="sort-arrow"> \u25BC</span></span>';
+  html += '<span data-univsort="ticker" onclick="sortUniverseBy(\'ticker\')" style="' + headerStyle + '">Ticker<span class="sort-arrow"></span></span>';
+  html += '<span data-univsort="price" onclick="sortUniverseBy(\'price\')" style="' + headerStyle + '">Price<span class="sort-arrow"></span></span>';
+  html += '<span data-univsort="range5" onclick="sortUniverseBy(\'range5\')" style="' + headerStyle + '">5d %<span class="sort-arrow"></span></span>';
+  html += '<span data-univsort="ext" onclick="sortUniverseBy(\'ext\')" style="' + headerStyle + '">Ext<span class="sort-arrow"></span></span>';
+  html += '<span data-univsort="vol" onclick="sortUniverseBy(\'vol\')" style="' + headerStyle + '">Vol<span class="sort-arrow"></span></span>';
+  html += '<span data-univsort="smas" onclick="sortUniverseBy(\'smas\')" style="' + headerStyle + '">SMAs<span class="sort-arrow"></span></span>';
+  html += '<span data-univsort="brkout" onclick="sortUniverseBy(\'brkout\')" style="' + headerStyle + '">Brkout<span class="sort-arrow"></span></span>';
+  html += '</div>';
+
+  // Body container for re-rendering
+  html += '<div id="universe-tbody">';
+  _universeListData.forEach(function(t, idx) {
+    var bg = idx % 2 === 0 ? '' : 'background:var(--bg-secondary);';
+    var extColor = (t.extFromSma20 || 0) <= 3 ? 'var(--green)' : (t.extFromSma20 || 0) >= 8 ? 'var(--red)' : 'var(--text-muted)';
+    var sc = t.score || 0;
+    var scoreColor = sc >= 60 ? 'var(--green)' : sc >= 40 ? 'var(--blue)' : sc >= 20 ? 'var(--amber)' : 'var(--text-muted)';
+
+    html += '<div style="display:grid;grid-template-columns:' + cols + ';gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:13px;' + bg + 'align-items:center;">';
+    html += '<span style="color:var(--text-muted);">' + (idx + 1) + '</span>';
+    html += '<span style="font-weight:900;font-family:var(--font-mono);color:' + scoreColor + ';">' + sc + '</span>';
+    html += '<span onclick="event.stopPropagation();openTVChart(\'' + t.ticker + '\')" title="Click for chart" style="font-weight:800;font-family:var(--font-mono);color:var(--blue);cursor:pointer;">' + t.ticker + '</span>';
+    html += '<span style="font-family:var(--font-mono);color:var(--text-secondary);">$' + t.price.toFixed(2) + '</span>';
+    html += '<span style="color:var(--text-muted);">' + (t.range5 || '\u2014') + '%</span>';
+    html += '<span style="color:' + extColor + ';">' + (t.extFromSma20 != null ? (t.extFromSma20 >= 0 ? '+' : '') + t.extFromSma20 + '%' : '\u2014') + '</span>';
+    html += '<span style="color:var(--text-muted);">' + (t.volDryUp != null ? t.volDryUp + '%' : '\u2014') + '</span>';
+    html += '<span style="color:' + (t.aboveSMAs === '3/3' ? 'var(--green)' : 'var(--text-muted)') + ';">' + (t.aboveSMAs || '\u2014') + '</span>';
+    html += '<span style="font-size:12px;color:var(--text-muted);">' + (t.distToBreakout != null ? t.distToBreakout + '%' : '\u2014') + '</span>';
+    html += '</div>';
+  });
+  html += '</div>';
 
   html += '</div></div>';
   return html;

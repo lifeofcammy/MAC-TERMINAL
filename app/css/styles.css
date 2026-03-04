@@ -367,6 +367,7 @@ input:focus, textarea:focus, select:focus {
   #watchlist-sidebar { width: 100%; position: static; max-height: none; overflow-y: visible; }
   #account-box { display: none !important; }
   .main { padding: 20px 16px; }
+  .step-header-box { left: 0; }
 
   /* Overview: Market Snapshot 6-col → 3-col */
   .ov-snap-grid { grid-template-columns: repeat(3, 1fr) !important; }
@@ -497,4 +498,6 @@ input:focus, textarea:focus, select:focus {
   border-radius: 10px;
   padding: 10px 20px;
   display: inline-block;
+  position: relative;
+  left: 148px; /* offset half of sidebar(280)+gap(16) to center under tagline */
 }
