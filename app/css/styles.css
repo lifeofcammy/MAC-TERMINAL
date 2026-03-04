@@ -168,7 +168,7 @@ body {
 
 
 /* Main */
-.main { padding: 32px; max-width: 1600px; margin: 0 auto; }
+.main { padding: 32px; }
 
 .tab-content { display: none; }
 .tab-content.active { display: block; }
