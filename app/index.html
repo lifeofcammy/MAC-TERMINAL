@@ -35,13 +35,7 @@
       <div class="header-sub">Market Action Center</div>
     </div>
   </div>
-  <div id="account-box" title="Your account size — used for position sizing when you click any ticker" style="position:absolute;left:27%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:var(--bg-secondary);border:1.5px solid var(--blue);border-radius:8px;padding:6px 14px;">
-    <label style="font-size:14px;color:var(--blue);white-space:nowrap;font-weight:700;">Acct $</label>
-    <input id="header-account-input" type="number" placeholder="Enter account size" min="0" step="1000"
-      style="width:130px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:15px;text-align:right;-moz-appearance:textfield;"
-      onchange="saveHeaderAccount()" />
-  </div>
-  <div class="header-tagline" style="position:absolute;left:50%;transform:translateX(-50%);font-family:var(--font-display);font-size:20px;font-weight:400;letter-spacing:0.02em;color:var(--blue);">
+  <div class="header-tagline" style="position:absolute;left:50%;transform:translateX(-50%);font-family:var(--font-display);font-size:28px;font-weight:700;letter-spacing:0.02em;color:var(--blue);">
     Simplify Your Trading
   </div>
   <div class="header-right">
@@ -79,6 +73,12 @@
   <!-- ===================== OVERVIEW TAB ===================== -->
   <div class="tab-content active" id="tab-overview">
     <div id="overview-main"></div>
+    <div id="account-box" title="Your account size — used for position sizing when you click any ticker" style="display:flex;align-items:center;gap:8px;background:var(--bg-secondary);border:1.5px solid var(--blue);border-radius:8px;padding:6px 14px;margin-bottom:10px;width:fit-content;">
+      <label style="font-size:14px;color:var(--blue);white-space:nowrap;font-weight:700;">Acct $</label>
+      <input id="header-account-input" type="number" placeholder="Enter account size" min="0" step="1000"
+        style="width:130px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:15px;text-align:right;-moz-appearance:textfield;"
+        onchange="saveHeaderAccount()" />
+    </div>
     <div id="watchlist-sidebar"></div>
   </div>
 
