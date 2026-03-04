@@ -1806,7 +1806,7 @@ function renderThemesHTML(data, cacheTs) {
       html += '</div>';
       if(ind.tickers && ind.tickers.length>0){
         html += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:3px;">';
-        ind.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:1px 4px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);font-family:var(--font-mono);cursor:pointer;" title="Click for chart" onclick="openTVChart(\''+escapeHtml(t)+'\');">'+escapeHtml(t)+'</span>';});
+        ind.tickers.forEach(function(t){html += '<span class="ticker-link" style="font-size:12px;" title="Click for chart" onclick="openTVChart(\''+escapeHtml(t)+'\');">'+escapeHtml(t)+'</span>';});
         html += '</div>';
       }
       if(ind.note) html += '<div style="font-size:14px;color:var(--text-muted);line-height:1.3;">'+escapeHtml(ind.note||'')+'</div>';
@@ -1901,7 +1901,7 @@ function renderLegacyThemesHTML(themes, cacheTs) {
     html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:5px;">'+escapeHtml(theme.description||'')+'</div>';
     if(theme.tickers&&theme.tickers.length>0){
       html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
-      theme.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+c+'15;color:'+c+';font-family:var(--font-mono);cursor:pointer;" title="Click for chart" onclick="openTVChart(\''+escapeHtml(t)+'\');">'+escapeHtml(t)+'</span>';});
+      theme.tickers.forEach(function(t){html += '<span class="ticker-link" style="font-size:12px;" title="Click for chart" onclick="openTVChart(\''+escapeHtml(t)+'\');">'+escapeHtml(t)+'</span>';});
       html += '</div>';
     }
     html += '</div>';
