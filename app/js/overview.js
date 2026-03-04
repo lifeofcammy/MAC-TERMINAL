@@ -1415,8 +1415,6 @@ function renderWatchlistSidebar() {
   html += '<div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px;">';
   html += '<div style="display:flex;gap:6px;">';
   html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
-  html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:13px;font-weight:600;color:var(--text-primary);">';
-  html += '<option value="long">\u25b2 Long</option><option value="short">\u25bc Short</option><option value="watch">\u25cf Watch</option></select>';
   html += '<button onclick="addToWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:6px 10px;font-size:12px;">+</button>';
   html += '</div>';
   html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:13px;color:var(--text-primary);box-sizing:border-box;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
@@ -1441,13 +1439,10 @@ function _renderWatchlistItems(wList) {
   }
   var html = '<div style="display:flex;flex-direction:column;gap:6px;">';
   wList.forEach(function(item){
-    var biasColor = item.bias==='long'?'var(--green)':item.bias==='short'?'var(--red)':'var(--amber)';
-    var biasIcon = item.bias==='long'?'\u25b2':item.bias==='short'?'\u25bc':'\u25cf';
-    html += '<div class="wl-card-'+item.ticker+'" style="background:var(--bg-secondary);border-radius:8px;padding:10px 12px;border-left:3px solid '+biasColor+';position:relative;">';
+    html += '<div class="wl-card-'+item.ticker+'" style="background:var(--bg-secondary);border-radius:8px;padding:10px 12px;border-left:3px solid var(--blue);position:relative;">';
     html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');refreshWatchlistUI();" style="position:absolute;top:4px;right:6px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;">\u00d7</button>';
     html += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;flex-wrap:wrap;">';
     html += '<span class="ticker-link" style="font-size:13px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+item.ticker+'\');">'+item.ticker+'</span>';
-    html += '<span style="font-size:11px;font-weight:700;padding:1px 4px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+'</span>';
     html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-muted);">...</span>';
     html += '</div>';
     if(item.note) html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.3;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+item.note.replace(/</g,'&lt;')+'</div>';

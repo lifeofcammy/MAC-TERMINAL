@@ -22,13 +22,12 @@ function saveWatchlistSync(list) {
 function addToWatchlist() {
   var input = document.getElementById('wl-ticker-input');
   var noteInput = document.getElementById('wl-note-input');
-  var biasSelect = document.getElementById('wl-bias-select');
   if (!input) return;
   var ticker = input.value.trim().toUpperCase().replace(/[^A-Z]/g, '');
   if (!ticker) return;
   var list = getWatchlist();
   if (list.find(function(x) { return x.ticker === ticker; })) { input.value = ''; return; }
-  list.push({ ticker: ticker, note: (noteInput ? noteInput.value.trim() : ''), bias: (biasSelect ? biasSelect.value : 'long'), addedAt: new Date().toISOString() });
+  list.push({ ticker: ticker, note: (noteInput ? noteInput.value.trim() : ''), addedAt: new Date().toISOString() });
   saveWatchlistSync(list);
   input.value = '';
   if (noteInput) noteInput.value = '';
