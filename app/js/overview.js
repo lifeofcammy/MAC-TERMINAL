@@ -1188,7 +1188,7 @@ async function renderOverview() {
   html += '</div>';
 
   // ════ 5. SECTOR ROTATION (RRG + click-to-expand detail) ════
-  var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')!=='false';
+  var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')==='true';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
