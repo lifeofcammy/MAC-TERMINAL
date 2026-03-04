@@ -423,38 +423,36 @@ function renderRRGCanvas(canvasId) {
     ctx.stroke();
     ctx.restore();
   });
-  // Draw labels in a second pass with collision avoidance
+  // Draw labels in a second pass with leader lines for dense areas
   ctx.font = '600 10px Inter, sans-serif';
-  var labelPad = 4; // Extra padding between labels
+  var labelPad = 6;
+  // Generate candidates at increasing distances (rings)
+  function makeCandidates(lx, ly, tw) {
+    var c = [];
+    var dists = [14, 28, 44, 60];
+    var angles = [0, Math.PI, -Math.PI/2, Math.PI/2, -Math.PI/4, Math.PI/4, -3*Math.PI/4, 3*Math.PI/4];
+    for (var di = 0; di < dists.length; di++) {
+      for (var ai = 0; ai < angles.length; ai++) {
+        var r = dists[di];
+        c.push({ x: lx + Math.cos(angles[ai]) * r - tw/2, y: ly + Math.sin(angles[ai]) * r });
+      }
+    }
+    return c;
+  }
   data.forEach(function(d) {
     if (!d._canvasXY) return;
     var lx = d._canvasXY.x, ly = d._canvasXY.y;
     var color = d.isAssetClass ? assetColor : sectorColor;
     var label = d.short || d.name || d.etf;
-    var infoIcon = d.isAssetClass ? '' : ' \u24d8'; // ⓘ for sectors (clickable)
+    var infoIcon = d.isAssetClass ? '' : ' \u24d8';
     var fullLabel = label + infoIcon;
     var tw = ctx.measureText(fullLabel).width + 8;
     var lh = 14;
-    // Try 12 positions: close right/left/above/below, then further out, then diagonals
-    var candidates = [
-      { x: lx + 13, y: ly - 6 },
-      { x: lx - tw - 10, y: ly - 6 },
-      { x: lx - tw / 2, y: ly - 16 },
-      { x: lx - tw / 2, y: ly + 18 },
-      { x: lx + 13, y: ly - 18 },
-      { x: lx + 13, y: ly + 14 },
-      { x: lx - tw - 10, y: ly - 18 },
-      { x: lx - tw - 10, y: ly + 14 },
-      { x: lx + 20, y: ly - 2 },
-      { x: lx - tw - 18, y: ly - 2 },
-      { x: lx - tw / 2, y: ly - 28 },
-      { x: lx - tw / 2, y: ly + 28 }
-    ];
+    var candidates = makeCandidates(lx, ly, tw);
     var best = candidates[0];
     var found = false;
     for (var c = 0; c < candidates.length; c++) {
       var cand = candidates[c];
-      // Clamp to canvas bounds
       if (cand.x < pad.left) cand.x = pad.left;
       if (cand.x + tw > w - pad.right) cand.x = w - pad.right - tw;
       if (cand.y - lh < pad.top) cand.y = pad.top + lh;
@@ -469,13 +467,25 @@ function renderRRGCanvas(canvasId) {
       if (!overlap) { best = cand; found = true; break; }
     }
     placedLabels.push({ x: best.x, y: best.y, w: tw, h: lh });
+    // Leader line if label is far from dot
+    var labelCx = best.x + tw / 2, labelCy = best.y - lh / 2;
+    var dist = Math.sqrt((labelCx - lx) * (labelCx - lx) + (labelCy - ly) * (labelCy - ly));
+    if (dist > 22) {
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.25;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(lx, ly);
+      ctx.lineTo(labelCx, labelCy);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
     // Draw label background + text
     ctx.fillStyle = labelBg;
     ctx.fillRect(best.x - 3, best.y - lh, tw + 2, lh + 2);
     ctx.fillStyle = color;
     ctx.textAlign = 'left';
     ctx.fillText(label, best.x, best.y - 1);
-    // Draw info icon in lighter shade for sectors
     if (!d.isAssetClass) {
       ctx.fillStyle = isDark ? 'rgba(96,165,250,0.5)' : 'rgba(37,99,235,0.45)';
       ctx.fillText(' \u24d8', best.x + ctx.measureText(label).width, best.y - 1);
