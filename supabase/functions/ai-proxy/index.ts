@@ -12,6 +12,7 @@
 //   - generate_themes: Generate today's market themes from biggest movers
 //
 // Rate limiting: max 20 AI calls per user per hour (tracked in-memory per instance)
+// Last deployed: 2026-03-04
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
