@@ -970,7 +970,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;border-left:3px solid var(--amber);border-radius:14px;">';
   html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;user-select:none;">';
   html += '<span style="width:20px;"></span>';
-  html += '<div style="text-align:center;"><span class="card-header-bar">Morning Mindset</span><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Set your mental game before the market opens</div></div>';
+  html += '<div style="text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 1</div><span class="card-header-bar">Morning Mindset</span><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Set your mental game before the market opens</div></div>';
   html += '<span id="mindset-arrow" style="width:20px;text-align:right;font-size:12px;color:var(--text-muted);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
   html += '</div>';
   // Today's Focus — ALWAYS visible
@@ -1078,7 +1078,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'regime\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 1</div><div class="card-header-bar">Market Outlook</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 2</div><div class="card-header-bar">Market Outlook</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;"><span id="regime-arrow" style="font-size:12px;color:var(--text-muted);">'+(regimeCollapsed?'▶':'▼')+'</span></div>';
   html += '</div>';
   html += '<div id="regime-body" style="'+(regimeCollapsed?'display:none;':'')+'padding:14px 20px;">';
@@ -1121,7 +1121,7 @@ async function renderOverview() {
     var breadthColor = adBreadthPct >= 60 ? 'var(--green)' : adBreadthPct <= 40 ? 'var(--red)' : 'var(--amber)';
     html += '<div class="card" style="padding:0;margin-bottom:14px;overflow:hidden;">';
     html += '<div style="padding:12px 20px;">';
-    html += '<div style="text-align:center;margin-bottom:4px;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 2</div><div class="card-header-bar">Stock Breadth</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Is the move broad or narrow? Confirms if the regime call is real.</div></div>';
+    html += '<div style="text-align:center;margin-bottom:4px;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 3</div><div class="card-header-bar">Stock Breadth</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Is the move broad or narrow? Confirms if the regime call is real.</div></div>';
     // Gauge bar
     html += '<div style="margin-top:10px;">';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
@@ -1142,7 +1142,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'snapshot\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 3</div><div class="card-header-bar">Market Analysis</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">How are the major indexes reacting? Now you know what to do.</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 4</div><div class="card-header-bar">Market Analysis</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">How are the major indexes reacting? Now you know what to do.</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:var(--font-body);">'+dataFreshness+'</span><span id="snapshot-arrow" style="font-size:12px;color:var(--text-muted);">'+(snapshotCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="snapshot-body" style="'+(snapshotCollapsed?'display:none;':'')+'padding:12px 16px;">';
@@ -1175,7 +1175,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 4</div><div class="card-header-bar">Sector Rotation</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Where is money flowing? Click a sector for details.</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 5</div><div class="card-header-bar">Sector Rotation</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Where is money flowing? Click a sector for details.</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:var(--font-body);">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
@@ -1213,7 +1213,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'catalysts\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 5</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">What events and narratives are driving today\'s price action?</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 6</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">What events and narratives are driving today\'s price action?</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);">'+tsLabel(ts)+'</span><span id="catalysts-arrow" style="font-size:12px;color:var(--text-muted);">'+(catalystsCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="catalysts-body" style="'+(catalystsCollapsed?'display:none;':'')+'">';
@@ -1243,7 +1243,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'ideas\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 6</div><div class="card-header-bar">Top Ideas</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 7</div><div class="card-header-bar">Top Ideas</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><button onclick="event.stopPropagation();runQuickScan()" id="quick-scan-btn" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Scan</button><span id="ideas-arrow" style="font-size:12px;color:var(--text-muted);">'+(ideasCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="ideas-body" style="'+(ideasCollapsed?'display:none;':'')+'">';
