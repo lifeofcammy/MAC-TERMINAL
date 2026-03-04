@@ -1,13 +1,10 @@
 // ==================== scanner.js ====================
-// Two-category setup scanner:
-//   Category 1: EARLY BREAKOUTS — stocks compressing in a base, haven't broken out yet
-//   Category 2: PULLBACK ENTRIES — stocks that ran, pulled back to support in an uptrend
+// Unified setup scanner (Top Ideas style):
+//   Scans entire US market, filters to ~150 candidates, scores on
+//   SMA compression + alignment + extension + volume + momentum.
 //
 // Layer 1: Universe builder — filters all US stocks to ~top 150 candidates
-// Layer 2: Setup analysis — scores and categorizes into Early Breakouts vs Pullbacks
-//
-// Key change from old scanner: compression-first scoring, extension penalty,
-// ETF filtering, and two distinct setup types.
+// Layer 2: Unified scoring — Top Ideas style (compression, alignment, extension, RVol, day change)
 
 // ==================== CONSTANTS ====================
 var SCANNER_CACHE_KEY = 'mac_scanner_universe';
@@ -268,9 +265,9 @@ function calcUniverseScore(bars, currentPrice) {
   // ── 2. EXTENSION PENALTY (0 to -20 pts) — how far above 20 SMA ──
   var extFromSma20 = sma20 > 0 ? ((currentPrice - sma20) / sma20) * 100 : 0;
   var ptsExt = 0;
-  if (extFromSma20 <= 2) ptsExt = 10;       // Sitting right on base — ideal
-  else if (extFromSma20 <= 4) ptsExt = 5;
-  else if (extFromSma20 <= 6) ptsExt = 0;
+  if (extFromSma20 <= 4) ptsExt = 10;       // Near base — ideal
+  else if (extFromSma20 <= 6) ptsExt = 5;
+  else if (extFromSma20 <= 8) ptsExt = 0;
   else if (extFromSma20 <= 10) ptsExt = -5;
   else if (extFromSma20 <= 15) ptsExt = -10;
   else ptsExt = -20;                         // Very extended — bad
@@ -386,8 +383,6 @@ async function runSetupScan(statusFn) {
   }
 
   var tickers = cache.tickers.map(function(t) { return t.ticker; });
-  var tickerMap = {};
-  cache.tickers.forEach(function(t) { tickerMap[t.ticker] = t; });
 
   // Fetch live snapshots
   statusFn('Fetching live data for ' + tickers.length + ' stocks...');
@@ -428,14 +423,10 @@ async function runSetupScan(statusFn) {
   var marketOpen = isMarketOpenNow();
   var etNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
   var etTimeStr = etNow.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  var etHours = etNow.getHours() + etNow.getMinutes() / 60;
-  var mktMinutesElapsed = marketOpen ? Math.max((etHours - 9.5) * 60, 1) : 1;
-  var expectedVolFraction = mktMinutesElapsed / 390;
 
-  var earlyBreakouts = [];
-  var pullbackEntries = [];
+  var setups = [];
 
-  statusFn('Categorizing setups...');
+  statusFn('Scoring setups...');
 
   tickers.forEach(function(ticker) {
     var snap = allSnapshots[ticker];
@@ -444,16 +435,12 @@ async function runSetupScan(statusFn) {
     if (!bars || bars.length < 20) return;
 
     var prevClose = snap.prevDay.c;
-    var curPrice = 0, curVol = 0, curHigh = 0, curLow = 0, curVwap = 0;
+    var curPrice = 0, curVol = 0;
     if (snap.day && snap.day.c && snap.day.c > 0) {
       curPrice = snap.day.c;
-      curHigh = snap.day.h || curPrice;
-      curLow = snap.day.l || curPrice;
       curVol = snap.day.v || 0;
-      curVwap = snap.day.vw || 0;
     } else {
       curPrice = snap.lastTrade ? snap.lastTrade.p : prevClose;
-      curHigh = curPrice; curLow = curPrice;
     }
     if (curPrice <= 0) return;
 
@@ -471,251 +458,131 @@ async function runSetupScan(statusFn) {
     }
 
     var sma10 = sma(closes, 10), sma20 = sma(closes, 20), sma50 = sma(closes, 50);
-    if (!sma20) return;
+    if (!sma20 || !sma10) return;
 
-    // ── COMPRESSION METRICS ──
-    var recent5H = Math.max.apply(null, highs.slice(-5));
-    var recent5L = Math.min.apply(null, lows.slice(-5));
-    var range5 = ((recent5H - recent5L) / prevClose) * 100;
-
-    var recent10H = Math.max.apply(null, highs.slice(-10));
-    var recent10L = Math.min.apply(null, lows.slice(-10));
-    var range10 = ((recent10H - recent10L) / prevClose) * 100;
+    // ── SMA COMPRESSION (spread between 10 & 20 SMA) ──
+    var spread = Math.abs(sma10 - sma20) / curPrice * 100;
+    if (spread > 5) return;  // Too wide — skip
 
     // Extension from 20 SMA
-    var extFromSma20 = ((curPrice - sma20) / sma20) * 100;
+    var ext = ((curPrice - sma20) / sma20) * 100;
 
-    // Volume
-    var avgVol20 = sma(volumes, 20) || 0;
-    var avgVol5 = sma(volumes.slice(-5), 5) || 0;
-    var baseVolRatio = avgVol20 > 0 ? avgVol5 / avgVol20 : 1;
+    // Relative volume (simple: today vs 20d avg)
+    var rvol = null;
+    var avgVol20 = sma(volumes, 20);
+    if (avgVol20 > 0 && curVol > 0) rvol = curVol / avgVol20;
 
-    // Relative volume today (pace-adjusted)
-    var relativeVol = 0;
-    if (marketOpen && avgVol20 > 0 && curVol > 0) {
-      relativeVol = (curVol / avgVol20) / expectedVolFraction;
-    }
-
-    // Breakout level and proximity
-    var breakoutLevel = recent10H;
-    var distToBreakout = breakoutLevel > 0 ? ((breakoutLevel - curPrice) / curPrice) * 100 : 0;
-    var breakingOut = curPrice > breakoutLevel;
-
-    // Pullback metrics
-    var recentHigh15 = len >= 15 ? Math.max.apply(null, highs.slice(-15)) : Math.max.apply(null, highs);
-    var pullbackDepth = recentHigh15 > 0 ? ((recentHigh15 - curPrice) / recentHigh15) * 100 : 0;
-    var nearSma10 = sma10 && Math.abs(curPrice - sma10) / curPrice * 100 <= 2;
-    var nearSma20 = Math.abs(curPrice - sma20) / curPrice * 100 <= 2;
-
-    // SMA alignment
-    var aboveSMAs = 0;
-    if (sma10 && curPrice > sma10) aboveSMAs++;
-    if (curPrice > sma20) aboveSMAs++;
-    if (sma50 && curPrice > sma50) aboveSMAs++;
-    var smaStacked = sma10 && sma50 && sma10 > sma20 && sma20 > sma50;
+    // Breakout proximity
+    var recent10H = Math.max.apply(null, highs.slice(-10));
+    var distToBreakout = recent10H > 0 ? ((recent10H - curPrice) / curPrice) * 100 : 99;
 
     // Buyout filter
+    var recent5H = Math.max.apply(null, highs.slice(-5));
+    var recent5L = Math.min.apply(null, lows.slice(-5));
+    var range5 = ((recent5H - recent5L) / curPrice) * 100;
     if (range5 < 0.8) return;
-    if (changePct < -8) return;  // Crashing, not a setup
+    if (changePct < -8) return;
 
-    // ════════════════════════════════════════════
-    // CATEGORY 1: EARLY BREAKOUT
-    // Tight base, hasn't broken out yet, volume drying up
-    // ════════════════════════════════════════════
-    var ebScore = 0;
-    var ebSignals = [];
+    // ── SCORING (Top Ideas style, max ~100) ──
+    var score = 0;
 
-    // Must have some compression
-    if (range5 <= 10 || range10 <= 12) {
-      // Tightness (0-35 pts)
-      var ebTight = 0;
-      if (range5 <= 3) { ebTight = 35; ebSignals.push('Very tight 5d range (' + range5.toFixed(1) + '%)'); }
-      else if (range5 <= 5) { ebTight = 30; ebSignals.push('Tight 5d range (' + range5.toFixed(1) + '%)'); }
-      else if (range5 <= 7) { ebTight = 22; ebSignals.push('Compressing (' + range5.toFixed(1) + '% 5d)'); }
-      else if (range5 <= 10) { ebTight = 14; ebSignals.push('Building base (' + range5.toFixed(1) + '% 5d)'); }
-      else if (range10 <= 12) { ebTight = 8; }
+    // 1. SMA Compression (0-30 pts)
+    var ptsCompress = 0;
+    if (spread <= 1) ptsCompress = 30;
+    else if (spread <= 2) ptsCompress = 22;
+    else if (spread <= 3) ptsCompress = 15;
+    else if (spread <= 5) ptsCompress = 8;
 
-      // Volume dry-up (0-20 pts)
-      var ebVolDry = 0;
-      if (baseVolRatio <= 0.4) { ebVolDry = 20; ebSignals.push('Vol dried up (' + Math.round(baseVolRatio * 100) + '% of avg)'); }
-      else if (baseVolRatio <= 0.6) { ebVolDry = 15; ebSignals.push('Vol declining (' + Math.round(baseVolRatio * 100) + '% of avg)'); }
-      else if (baseVolRatio <= 0.75) { ebVolDry = 8; }
+    // 2. SMA Alignment (0-25 pts)
+    var ptsAlign = 0;
+    var aboveBoth = curPrice > sma10 && curPrice > sma20;
+    if (aboveBoth) ptsAlign += 15;
+    if (sma50 && curPrice > sma50) ptsAlign += 10;
 
-      // Breakout proximity (0-25 pts) — closer to resistance = more imminent
-      var ebBreakout = 0;
-      if (breakingOut) {
-        var breakPct = ((curPrice - breakoutLevel) / breakoutLevel) * 100;
-        if (breakPct <= 2) { ebBreakout = 25; ebSignals.push('Breaking out above $' + breakoutLevel.toFixed(2)); }
-        else if (breakPct <= 4) { ebBreakout = 15; ebSignals.push('Above range by ' + breakPct.toFixed(1) + '%'); }
-        else { ebBreakout = 5; }  // Extended past breakout
-      } else if (distToBreakout <= 1) { ebBreakout = 22; ebSignals.push('At resistance ($' + breakoutLevel.toFixed(2) + ')'); }
-      else if (distToBreakout <= 2) { ebBreakout = 18; ebSignals.push('Near breakout ($' + breakoutLevel.toFixed(2) + ', ' + distToBreakout.toFixed(1) + '% away)'); }
-      else if (distToBreakout <= 4) { ebBreakout = 10; }
+    // 3. Extension from 20 SMA (−5 to +25 pts) — 4% threshold
+    var ptsExt = 0;
+    if (ext <= 4) ptsExt = 25;
+    else if (ext <= 6) ptsExt = 18;
+    else if (ext <= 8) ptsExt = 10;
+    else if (ext <= 10) ptsExt = 4;
+    else ptsExt = -5;
 
-      // Extension penalty (-20 to +5 pts)
-      var ebExt = 0;
-      if (extFromSma20 <= 2) ebExt = 5;
-      else if (extFromSma20 <= 5) ebExt = 0;
-      else if (extFromSma20 <= 8) ebExt = -5;
-      else if (extFromSma20 <= 12) ebExt = -10;
-      else ebExt = -20;
+    // 4. Relative Volume (0-10 pts)
+    var ptsVol = 0;
+    if (rvol && rvol >= 2) ptsVol = 10;
+    else if (rvol && rvol >= 1.5) ptsVol = 7;
+    else if (rvol && rvol >= 1) ptsVol = 4;
 
-      // Live volume surge today (0-15 pts bonus)
-      var ebVolSurge = 0;
-      if (marketOpen && relativeVol >= 2.5) { ebVolSurge = 15; ebSignals.push('Volume surge ' + relativeVol.toFixed(1) + 'x pace'); }
-      else if (marketOpen && relativeVol >= 1.5) { ebVolSurge = 10; ebSignals.push('Above-avg volume ' + relativeVol.toFixed(1) + 'x'); }
-      else if (marketOpen && relativeVol >= 1.2) { ebVolSurge = 4; }
+    // 5. Day Change Momentum (0-5 pts)
+    var ptsMom = 0;
+    if (changePct > 1) ptsMom = 5;
+    else if (changePct > 0) ptsMom = 2;
 
-      ebScore = Math.round(Math.max(0, ebTight + ebVolDry + ebBreakout + ebExt + ebVolSurge));
+    // 6. Near Breakout bonus (0-5 pts)
+    var ptsBrkout = 0;
+    if (distToBreakout <= 1) ptsBrkout = 5;
 
-      // Must score at least 35 and have real compression
-      if (ebScore >= 35 && ebTight >= 14) {
-        var entryPrice = breakingOut ? curPrice : breakoutLevel;
-        var stopPrice = Math.max(recent5L, sma20 ? sma20 * 0.98 : recent10L);
-        var riskPct = entryPrice > 0 ? ((entryPrice - stopPrice) / entryPrice) * 100 : 0;
-        var targetPrice = entryPrice + (entryPrice - stopPrice) * 2;
+    score = Math.round(Math.min(100, Math.max(0, ptsCompress + ptsAlign + ptsExt + ptsVol + ptsMom + ptsBrkout)));
+    if (score < 30) return;
 
-        earlyBreakouts.push({
-          ticker: ticker,
-          category: 'EARLY BREAKOUT',
-          price: curPrice,
-          prevClose: prevClose,
-          changePct: Math.round(changePct * 100) / 100,
-          score: ebScore,
-          signals: ebSignals,
-          description: ebSignals.join(' · '),
-          range5: Math.round(range5 * 10) / 10,
-          range10: Math.round(range10 * 10) / 10,
-          extFromSma20: Math.round(extFromSma20 * 10) / 10,
-          breakoutLevel: breakoutLevel,
-          breakingOut: breakingOut,
-          distToBreakout: Math.round(distToBreakout * 10) / 10,
-          baseVolRatio: Math.round(baseVolRatio * 100),
-          relativeVol: Math.round(relativeVol * 10) / 10,
-          volume: curVol,
-          avgVol20: avgVol20,
-          vwap: curVwap,
-          entryPrice: entryPrice,
-          stopPrice: stopPrice,
-          targetPrice: targetPrice,
-          riskPct: Math.round(riskPct * 10) / 10,
-          components: {
-            tightness: ebTight,
-            volumeDryUp: ebVolDry,
-            breakoutProximity: ebBreakout,
-            extensionAdj: ebExt,
-            volumeSurge: ebVolSurge
-          }
-        });
+    // ── THESIS ──
+    var thesis = '';
+    if (spread <= 2) thesis += 'Tight compression (' + spread.toFixed(1) + '%). ';
+    if (aboveBoth) thesis += 'Above 10/20 SMA. ';
+    if (ext <= 4) thesis += 'Near base (' + ext.toFixed(1) + '%). ';
+    else if (ext > 8) thesis += 'Extended (' + ext.toFixed(1) + '%). ';
+    if (rvol && rvol >= 1.5) thesis += rvol.toFixed(1) + 'x volume. ';
+    if (changePct > 1) thesis += 'Up ' + changePct.toFixed(1) + '% today. ';
+    if (distToBreakout <= 1) thesis += 'Near breakout. ';
+
+    // ── TRADE LEVELS ──
+    var stopPrice = sma20 * 0.98;
+    var targetPrice = curPrice + (curPrice - stopPrice) * 2;
+    var riskPct = curPrice > 0 ? ((curPrice - stopPrice) / curPrice) * 100 : 0;
+
+    setups.push({
+      ticker: ticker,
+      price: curPrice,
+      prevClose: prevClose,
+      changePct: Math.round(changePct * 100) / 100,
+      score: score,
+      thesis: thesis.trim(),
+      spread: Math.round(spread * 10) / 10,
+      ext: Math.round(ext * 10) / 10,
+      rvol: rvol ? Math.round(rvol * 10) / 10 : null,
+      range5: Math.round(range5 * 10) / 10,
+      aboveBoth: aboveBoth,
+      aboveSma50: !!(sma50 && curPrice > sma50),
+      distToBreakout: Math.round(distToBreakout * 10) / 10,
+      entryPrice: curPrice,
+      stopPrice: stopPrice,
+      targetPrice: targetPrice,
+      riskPct: Math.round(riskPct * 10) / 10,
+      components: {
+        compression: ptsCompress,
+        alignment: ptsAlign,
+        extension: ptsExt,
+        volume: ptsVol,
+        momentum: ptsMom,
+        breakout: ptsBrkout
       }
-    }
-
-    // ════════════════════════════════════════════
-    // CATEGORY 2: PULLBACK ENTRY
-    // Strong stock that pulled back to support level
-    // ════════════════════════════════════════════
-    var pbScore = 0;
-    var pbSignals = [];
-
-    // Requirements: stock was higher recently, now pulled back 3-15%, and near a support level
-    if (pullbackDepth >= 3 && pullbackDepth <= 18 && sma50 && curPrice > sma50) {
-      // Pullback quality (0-30 pts) — sweet spot is 4-10% pullback
-      var pbDepthPts = 0;
-      if (pullbackDepth >= 4 && pullbackDepth <= 8) { pbDepthPts = 30; pbSignals.push('Healthy pullback (' + pullbackDepth.toFixed(1) + '% from high)'); }
-      else if (pullbackDepth >= 3 && pullbackDepth <= 12) { pbDepthPts = 22; pbSignals.push('Pulling back (' + pullbackDepth.toFixed(1) + '% from high)'); }
-      else { pbDepthPts = 10; pbSignals.push('Deep pullback (' + pullbackDepth.toFixed(1) + '%)'); }
-
-      // Support level (0-25 pts) — at 10 SMA, 20 SMA, or VWAP
-      var pbSupport = 0;
-      if (nearSma10 && nearSma20) { pbSupport = 25; pbSignals.push('Holding 10 & 20 SMA'); }
-      else if (nearSma20) { pbSupport = 22; pbSignals.push('Holding 20 SMA ($' + sma20.toFixed(2) + ')'); }
-      else if (nearSma10) { pbSupport = 18; pbSignals.push('At 10 SMA ($' + sma10.toFixed(2) + ')'); }
-      else if (curVwap > 0 && Math.abs(curPrice - curVwap) / curPrice * 100 <= 1) { pbSupport = 15; pbSignals.push('At VWAP ($' + curVwap.toFixed(2) + ')'); }
-      else if (sma50 && Math.abs(curPrice - sma50) / curPrice * 100 <= 2) { pbSupport = 12; pbSignals.push('At 50 SMA ($' + sma50.toFixed(2) + ')'); }
-      else { pbSupport = 0; }
-
-      // Volume declining on pullback (0-20 pts) — healthy pullback has low volume
-      var pbVolDry = 0;
-      if (baseVolRatio <= 0.5) { pbVolDry = 20; pbSignals.push('Vol fading on pullback (' + Math.round(baseVolRatio * 100) + '% avg)'); }
-      else if (baseVolRatio <= 0.7) { pbVolDry = 14; pbSignals.push('Light volume pullback'); }
-      else if (baseVolRatio <= 0.85) { pbVolDry = 6; }
-
-      // Trend intact (0-15 pts)
-      var pbTrend = 0;
-      if (smaStacked) { pbTrend = 15; pbSignals.push('SMAs stacked bullish'); }
-      else if (aboveSMAs >= 2) { pbTrend = 10; }
-      else if (curPrice > sma50) { pbTrend = 5; }
-
-      // Bounce signal today (0-10 pts bonus)
-      var pbBounce = 0;
-      if (changePct > 1) { pbBounce = 10; pbSignals.push('Bouncing today +' + changePct.toFixed(1) + '%'); }
-      else if (changePct > 0) { pbBounce = 5; }
-
-      pbScore = Math.round(Math.max(0, pbDepthPts + pbSupport + pbVolDry + pbTrend + pbBounce));
-
-      // Must score at least 40 and be near real support
-      if (pbScore >= 40 && pbSupport >= 12) {
-        var pbStop = sma50 ? sma50 * 0.98 : (sma20 * 0.95);
-        var pbRisk = curPrice > 0 ? ((curPrice - pbStop) / curPrice) * 100 : 0;
-        var pbTarget = curPrice + (curPrice - pbStop) * 2;
-
-        pullbackEntries.push({
-          ticker: ticker,
-          category: 'PULLBACK',
-          price: curPrice,
-          prevClose: prevClose,
-          changePct: Math.round(changePct * 100) / 100,
-          score: pbScore,
-          signals: pbSignals,
-          description: pbSignals.join(' · '),
-          pullbackDepth: Math.round(pullbackDepth * 10) / 10,
-          supportLevel: nearSma20 ? '20 SMA' : nearSma10 ? '10 SMA' : sma50 && Math.abs(curPrice - sma50) / curPrice * 100 <= 2 ? '50 SMA' : 'VWAP',
-          range5: Math.round(range5 * 10) / 10,
-          baseVolRatio: Math.round(baseVolRatio * 100),
-          relativeVol: Math.round(relativeVol * 10) / 10,
-          volume: curVol,
-          avgVol20: avgVol20,
-          vwap: curVwap,
-          aboveSMAs: aboveSMAs + '/3',
-          smaStacked: smaStacked,
-          entryPrice: curPrice,
-          stopPrice: pbStop,
-          targetPrice: pbTarget,
-          riskPct: Math.round(pbRisk * 10) / 10,
-          components: {
-            pullbackQuality: pbDepthPts,
-            supportLevel: pbSupport,
-            volumeDecline: pbVolDry,
-            trendIntact: pbTrend,
-            bounceSignal: pbBounce
-          }
-        });
-      }
-    }
+    });
   });
 
-  // Sort each category by score
-  earlyBreakouts.sort(function(a, b) { return b.score - a.score; });
-  pullbackEntries.sort(function(a, b) { return b.score - a.score; });
-
-  // Cap results to avoid overwhelming
-  earlyBreakouts = earlyBreakouts.slice(0, 15);
-  pullbackEntries = pullbackEntries.slice(0, 15);
+  setups.sort(function(a, b) { return b.score - a.score; });
+  setups = setups.slice(0, 20);
 
   var resultData = {
     date: localDateStr(),
     ts: Date.now(),
     mode: marketOpen ? 'live' : 'eod',
     etTime: etTimeStr,
-    earlyBreakouts: earlyBreakouts,
-    pullbackEntries: pullbackEntries,
-    // Legacy compatibility
-    setups: earlyBreakouts.concat(pullbackEntries)
+    setups: setups
   };
 
   try { localStorage.setItem(SCANNER_RESULTS_KEY, JSON.stringify(resultData)); } catch(e) {}
 
-  statusFn('Found ' + earlyBreakouts.length + ' early breakouts + ' + pullbackEntries.length + ' pullback entries.');
+  statusFn('Found ' + setups.length + ' setups.');
   return resultData;
 }
 
@@ -737,7 +604,7 @@ function renderScanner() {
 
   // Header
   html += '<div style="display:flex;align-items:center;justify-content:center;margin-bottom:8px;">';
-  html += '<div style="text-align:center;"><div class="card-header-bar">Setup Scanner</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Find early breakouts and pullback entries before the move</div></div>';
+  html += '<div style="text-align:center;"><div class="card-header-bar">Setup Scanner</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Find compression setups with momentum across the market</div></div>';
   html += '</div>';
 
   // Mode indicator
@@ -769,15 +636,8 @@ function renderScanner() {
 
   // Results
   html += '<div id="scan-results">';
-  if (scanResults && (scanResults.earlyBreakouts || scanResults.pullbackEntries)) {
+  if (scanResults && scanResults.setups && scanResults.setups.length > 0) {
     html += renderSetupResults(scanResults);
-  } else if (scanResults && scanResults.setups && scanResults.setups.length > 0) {
-    // Legacy format — still render
-    if (scanResults.mode === 'live') {
-      html += renderLiveScanResults(scanResults);
-    } else {
-      html += renderScanResults(scanResults);
-    }
   }
   html += '</div>';
 
@@ -801,11 +661,10 @@ function renderScanner() {
 }
 
 
-// ==================== RENDER: NEW TWO-CATEGORY RESULTS ====================
+// ==================== RENDER: SETUP RESULTS ====================
 
 function renderSetupResults(data) {
-  var earlyBreakouts = data.earlyBreakouts || [];
-  var pullbackEntries = data.pullbackEntries || [];
+  var setups = data.setups || [];
   var etTime = data.etTime || '';
   var isLive = data.mode === 'live';
   var html = '';
@@ -813,43 +672,18 @@ function renderSetupResults(data) {
   // Summary bar
   html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">';
   if (isLive) html += '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;"></span> Live</span>';
-  html += '<span style="font-size:12px;color:var(--text-muted);">' + etTime + ' ET · ' + earlyBreakouts.length + ' breakouts · ' + pullbackEntries.length + ' pullbacks</span>';
+  html += '<span style="font-size:12px;color:var(--text-muted);">' + etTime + ' ET · ' + setups.length + ' setups</span>';
   html += '</div>';
 
-  // ── EARLY BREAKOUTS SECTION ──
-  html += '<div style="margin-bottom:20px;">';
-  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--blue);">';
-  html += '<span style="font-size:14px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;">Early Breakouts</span>';
-  html += '<span style="font-size:12px;color:var(--text-muted);">Compression + base building · hasn\'t moved yet</span>';
-  html += '</div>';
-
-  if (earlyBreakouts.length === 0) {
-    html += '<div class="card" style="padding:20px;text-align:center;color:var(--text-muted);font-size:14px;">No compression setups found right now. Check back as bases form.</div>';
-  } else {
-    html += '<div class="sc-results-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start;">';
-    earlyBreakouts.forEach(function(s, idx) {
-      html += renderSetupCard(s, 'eb-' + idx);
-    });
-    html += '</div>';
+  if (setups.length === 0) {
+    html += '<div class="card" style="padding:20px;text-align:center;color:var(--text-muted);font-size:14px;">No compression setups found right now. Check back later.</div>';
+    return html;
   }
-  html += '</div>';
 
-  // ── PULLBACK ENTRIES SECTION ──
-  html += '<div style="margin-bottom:16px;">';
-  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--purple);">';
-  html += '<span style="font-size:14px;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.06em;">Pullback Entries</span>';
-  html += '<span style="font-size:12px;color:var(--text-muted);">Strong stocks dipping to support · buy the dip in an uptrend</span>';
-  html += '</div>';
-
-  if (pullbackEntries.length === 0) {
-    html += '<div class="card" style="padding:20px;text-align:center;color:var(--text-muted);font-size:14px;">No pullback setups found right now. Check back when strong stocks pull in.</div>';
-  } else {
-    html += '<div class="sc-results-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start;">';
-    pullbackEntries.forEach(function(s, idx) {
-      html += renderSetupCard(s, 'pb-' + idx);
-    });
-    html += '</div>';
-  }
+  html += '<div class="sc-results-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start;">';
+  setups.forEach(function(s, idx) {
+    html += renderSetupCard(s, idx);
+  });
   html += '</div>';
 
   return html;
@@ -857,92 +691,66 @@ function renderSetupResults(data) {
 
 
 // ==================== RENDER: INDIVIDUAL SETUP CARD ====================
-// Works for both Early Breakouts and Pullback Entries
+// Clean card: ticker, price, change, thesis, trade levels
+// Click score circle to expand component breakdown + stats
 
-function renderSetupCard(s, detailIdPrefix) {
-  var detailId = 'detail-' + detailIdPrefix;
-  var isBreakout = s.category === 'EARLY BREAKOUT';
-  var accentColor = isBreakout ? 'var(--blue)' : 'var(--purple)';
-  var scoreColor = s.score >= 70 ? 'var(--green)' : s.score >= 50 ? accentColor : 'var(--text-muted)';
+function renderSetupCard(s, idx) {
+  var detailId = 'score-detail-' + idx;
+  var scoreColor = s.score >= 80 ? 'var(--green)' : s.score >= 60 ? 'var(--blue)' : s.score >= 40 ? 'var(--amber)' : 'var(--text-muted)';
   var changePctColor = s.changePct >= 0 ? 'var(--green)' : 'var(--red)';
 
   var html = '';
-  html += '<div style="background:var(--bg-card);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:14px;padding:16px 18px;border-left:3px solid ' + accentColor + ';cursor:pointer;" onclick="var d=document.getElementById(\'' + detailId + '\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';">';
+  html += '<div style="background:var(--bg-card);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:14px;padding:16px 18px;">';
 
-  // Header
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
+  // Header: ticker, price, change, score
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
   html += '<div style="display:flex;align-items:center;gap:8px;">';
-  html += '<span style="font-size:18px;font-weight:900;font-family:var(--font-mono);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\'' + s.ticker + '\')">' + s.ticker + '</span>';
+  html += '<span style="font-size:18px;font-weight:900;font-family:var(--font-mono);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="openTVChart(\'' + s.ticker + '\')">' + s.ticker + '</span>';
   html += '<span style="font-size:14px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
   html += '<span style="font-size:14px;font-weight:700;font-family:var(--font-mono);color:' + changePctColor + ';">' + (s.changePct >= 0 ? '+' : '') + s.changePct.toFixed(2) + '%</span>';
   html += '</div>';
-  html += '<div style="display:flex;align-items:center;gap:8px;">';
 
-  // Category badge
-  var badgeLabel = isBreakout ? (s.breakingOut ? 'BREAKING OUT' : s.distToBreakout <= 2 ? 'NEAR BREAKOUT' : 'BASE') : s.supportLevel || 'PULLBACK';
-  html += '<span style="font-size:12px;font-weight:700;color:' + accentColor + ';text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border:1px solid ' + accentColor + ';border-radius:4px;">' + badgeLabel + '</span>';
+  // Score circle — clickable to expand details
+  html += '<div onclick="event.stopPropagation();var d=document.getElementById(\'' + detailId + '\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';" style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;border:2.5px solid ' + scoreColor + ';font-size:14px;font-weight:900;color:' + scoreColor + ';font-family:var(--font-mono);cursor:pointer;position:relative;" title="Click for score breakdown">';
+  html += s.score;
+  html += '<span style="position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:' + scoreColor + ';display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:900;">i</span>';
+  html += '</div>';
+  html += '</div>';
 
-  // Score circle
-  html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:2.5px solid ' + scoreColor + ';font-size:14px;font-weight:900;color:' + scoreColor + ';font-family:var(--font-mono);">' + s.score + '</div>';
-  html += '</div></div>';
-
-  // Signal description
-  if (s.description) {
-    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:8px;">' + s.description + '</div>';
+  // Thesis
+  if (s.thesis) {
+    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:10px;">' + s.thesis + '</div>';
   }
+
+  // Trade levels (always visible)
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">';
+  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Entry</div><div style="font-weight:800;font-family:var(--font-mono);color:var(--blue);font-size:14px;">$' + s.entryPrice.toFixed(2) + '</div></div>';
+  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Stop</div><div style="font-weight:800;font-family:var(--font-mono);color:var(--red);font-size:14px;">$' + s.stopPrice.toFixed(2) + '</div></div>';
+  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Target</div><div style="font-weight:800;font-family:var(--font-mono);color:var(--green);font-size:14px;">$' + s.targetPrice.toFixed(2) + '</div></div>';
+  html += '</div>';
+
+  // ── Expandable detail (hidden, shown on score click) ──
+  var comps = s.components || {};
+  html += '<div id="' + detailId + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">';
 
   // Component bars
-  var comps = s.components || {};
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:14px;">';
-  if (isBreakout) {
-    html += renderComponentBar('Tightness', comps.tightness || 0, 35, accentColor);
-    html += renderComponentBar('Vol Dry-Up', comps.volumeDryUp || 0, 20, accentColor);
-    html += renderComponentBar('Breakout', comps.breakoutProximity || 0, 25, accentColor);
-    var extLabel = (comps.extensionAdj || 0) >= 0 ? 'Near Base' : 'Extension';
-    html += renderComponentBar(extLabel, Math.max(0, 20 + (comps.extensionAdj || 0)), 25, accentColor);
-  } else {
-    html += renderComponentBar('Pullback', comps.pullbackQuality || 0, 30, accentColor);
-    html += renderComponentBar('Support', comps.supportLevel || 0, 25, accentColor);
-    html += renderComponentBar('Vol Decline', comps.volumeDecline || 0, 20, accentColor);
-    html += renderComponentBar('Trend', comps.trendIntact || 0, 15, accentColor);
-  }
+  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Score Breakdown</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:14px;margin-bottom:10px;">';
+  html += renderComponentBar('Compression', comps.compression || 0, 30, 'var(--blue)');
+  html += renderComponentBar('Alignment', comps.alignment || 0, 25, 'var(--blue)');
+  var extLabel = (comps.extension || 0) >= 0 ? 'Near Base' : 'Extension';
+  html += renderComponentBar(extLabel, Math.max(0, comps.extension || 0), 25, 'var(--blue)');
+  html += renderComponentBar('Volume', comps.volume || 0, 10, 'var(--blue)');
   html += '</div>';
 
   // Quick stats
-  html += '<div style="display:flex;gap:8px;margin-top:8px;font-size:12px;font-family:var(--font-mono);color:var(--text-muted);flex-wrap:wrap;">';
-  if (isBreakout) {
-    html += '<span>5d: ' + s.range5 + '%</span>';
-    html += '<span>Ext: ' + (s.extFromSma20 >= 0 ? '+' : '') + s.extFromSma20 + '%</span>';
-    if (s.relativeVol > 0) html += '<span>RVol: ' + s.relativeVol + 'x</span>';
-    html += '<span>Brkout: $' + s.breakoutLevel.toFixed(2) + (s.breakingOut ? ' ✔' : '') + '</span>';
-  } else {
-    html += '<span>Dip: ' + s.pullbackDepth + '%</span>';
-    html += '<span>Support: ' + s.supportLevel + '</span>';
-    html += '<span>SMAs: ' + s.aboveSMAs + '</span>';
-    if (s.relativeVol > 0) html += '<span>RVol: ' + s.relativeVol + 'x</span>';
-  }
-  html += '</div>';
-
-  // Expandable detail
-  html += '<div id="' + detailId + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">';
-
-  // Trade levels
-  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Trade Levels</div>';
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px;">';
-  html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Entry</div><div style="font-weight:800;font-family:var(--font-mono);color:var(--blue);font-size:14px;">$' + (s.entryPrice ? s.entryPrice.toFixed(2) : '—') + '</div></div>';
-  html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Stop</div><div style="font-weight:800;font-family:var(--font-mono);color:var(--red);font-size:14px;">$' + (s.stopPrice ? s.stopPrice.toFixed(2) : '—') + '</div></div>';
-  html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Target (2:1)</div><div style="font-weight:800;font-family:var(--font-mono);color:var(--green);font-size:14px;">$' + (s.targetPrice ? s.targetPrice.toFixed(2) : '—') + '</div></div>';
-  html += '</div>';
-
-  // Extra stats
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">';
-  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">5d Range</div><div style="font-weight:700;font-size:14px;">' + s.range5 + '%</div></div>';
-  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Base Vol</div><div style="font-weight:700;font-size:14px;">' + s.baseVolRatio + '% of avg</div></div>';
-  if (s.vwap > 0) {
-    var aboveVwap = s.price > s.vwap;
-    html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">VWAP</div><div style="font-weight:700;font-size:14px;color:' + (aboveVwap ? 'var(--green)' : 'var(--red)') + ';">$' + s.vwap.toFixed(2) + '</div></div>';
-  }
-  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Risk</div><div style="font-weight:700;font-size:14px;">' + (s.riskPct || 0) + '%</div></div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">';
+  html += '<div style="padding:5px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Spread</div><div style="font-weight:700;font-size:14px;font-family:var(--font-mono);">' + s.spread + '%</div></div>';
+  html += '<div style="padding:5px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Extension</div><div style="font-weight:700;font-size:14px;font-family:var(--font-mono);">' + (s.ext >= 0 ? '+' : '') + s.ext + '%</div></div>';
+  html += '<div style="padding:5px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">RVol</div><div style="font-weight:700;font-size:14px;font-family:var(--font-mono);">' + (s.rvol ? s.rvol + 'x' : '—') + '</div></div>';
+  html += '<div style="padding:5px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">5d Range</div><div style="font-weight:700;font-size:14px;font-family:var(--font-mono);">' + s.range5 + '%</div></div>';
+  html += '<div style="padding:5px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Breakout</div><div style="font-weight:700;font-size:14px;font-family:var(--font-mono);">' + s.distToBreakout + '%</div></div>';
+  html += '<div style="padding:5px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Risk</div><div style="font-weight:700;font-size:14px;font-family:var(--font-mono);">' + s.riskPct + '%</div></div>';
   html += '</div>';
 
   html += '</div>'; // close detail
@@ -997,34 +805,6 @@ function renderUniverseList(tickers) {
 }
 
 
-// ==================== LEGACY RENDERERS (for old cached data) ====================
-
-function renderLiveScanResults(data) {
-  var setups = data.setups || [];
-  var etTime = data.etTime || '';
-  var html = '';
-  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">';
-  html += '<span style="font-size:12px;color:var(--text-muted);">(Legacy format) ' + etTime + ' ET · ' + setups.length + ' setups</span>';
-  html += '</div>';
-  if (setups.length === 0) {
-    html += '<div class="card" style="padding:24px;text-align:center;color:var(--text-muted);font-size:14px;">No setups found. Run a new scan.</div>';
-    return html;
-  }
-  html += '<div class="sc-results-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;">';
-  setups.forEach(function(s, idx) {
-    var scoreColor = s.score >= 70 ? 'var(--green)' : 'var(--text-muted)';
-    html += '<div class="card" style="padding:14px;border-left:3px solid ' + scoreColor + ';">';
-    html += '<div style="font-weight:900;font-family:var(--font-mono);font-size:14px;">' + s.ticker + ' <span style="color:var(--text-secondary);font-size:14px;">$' + s.price.toFixed(2) + '</span> <span style="font-size:14px;color:' + scoreColor + ';">' + s.score + '</span></div>';
-    if (s.description) html += '<div style="font-size:14px;color:var(--text-secondary);margin-top:4px;">' + s.description + '</div>';
-    html += '</div>';
-  });
-  html += '</div>';
-  return html;
-}
-
-function renderScanResults(data) {
-  return renderLiveScanResults(data);
-}
 
 
 // ==================== SINGLE SCAN BUTTON ====================
@@ -1101,7 +881,7 @@ async function runFullScanUI() {
     setTimeout(function() {
       if (progressWrap) progressWrap.style.display = 'none';
       if (idleStatus) {
-        var totalSetups = (results.earlyBreakouts || []).length + (results.pullbackEntries || []).length;
+        var totalSetups = (results.setups || []).length;
         idleStatus.textContent = (results.mode === 'live' ? 'Live scan' : 'Scan') + ' · ' + results.etTime + ' ET · ' + totalSetups + ' setups from ' + (cache.count || cache.tickers.length) + ' candidates';
         idleStatus.style.display = 'block';
       }
