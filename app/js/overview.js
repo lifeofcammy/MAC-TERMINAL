@@ -2088,6 +2088,8 @@ function renderTopIdeasHTML(ideas, cacheTs) {
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
     html += '<div style="display:flex;align-items:center;gap:6px;">';
     html += '<span class="ticker-link" style="font-size:14px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+idea.ticker+'\');">'+idea.ticker+'</span>';
+    var _itl=idea.tickerType==='ETF'?'ETF':'Stock';var _itbg=idea.tickerType==='ETF'?'var(--amber-bg)':'var(--blue-bg)';var _itc=idea.tickerType==='ETF'?'var(--amber)':'var(--blue)';
+    html += '<span style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+_itbg+';color:'+_itc+';">'+_itl+'</span>';
     html += '<span style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);">$'+(idea.price?idea.price.toFixed(2):'—')+'</span>';
     html += '</div>';
     html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid '+sc+';font-size:12px;font-weight:900;color:'+sc+';font-family:var(--font-mono);">'+idea.score+'</div>';
@@ -2097,8 +2099,8 @@ function renderTopIdeasHTML(ideas, cacheTs) {
     if(idea.industry||idea.atr||idea.mcap){
       html += '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px;padding:4px 6px;background:var(--bg-secondary);border-radius:3px;">';
       if(idea.industry) html += '<span style="color:var(--text-muted);">'+idea.industry+'</span>';
-      if(idea.atr) html += '<span style="font-family:var(--font-mono);color:var(--text-secondary);">ATR $'+idea.atr.toFixed(2)+'</span>';
-      if(idea.mcap) html += '<span style="font-family:var(--font-mono);color:var(--text-secondary);">'+(idea.mcap>=1e12?'$'+(idea.mcap/1e12).toFixed(1)+'T':idea.mcap>=1e9?'$'+(idea.mcap/1e9).toFixed(1)+'B':idea.mcap>=1e6?'$'+(idea.mcap/1e6).toFixed(0)+'M':'$'+idea.mcap)+'</span>';
+      if(idea.atr) html += '<span style="color:var(--text-muted);">ATR <span style="font-family:var(--font-mono);font-weight:700;color:var(--text-secondary);padding:1px 5px;border:1px solid var(--border);border-radius:3px;">$'+idea.atr.toFixed(2)+'</span></span>';
+      if(idea.mcap) html += '<span style="color:var(--text-muted);">Mkt Cap <span style="font-family:var(--font-mono);font-weight:700;color:var(--text-secondary);padding:1px 5px;border:1px solid var(--border);border-radius:3px;">'+(idea.mcap>=1e12?'$'+(idea.mcap/1e12).toFixed(1)+'T':idea.mcap>=1e9?'$'+(idea.mcap/1e9).toFixed(1)+'B':idea.mcap>=1e6?'$'+(idea.mcap/1e6).toFixed(0)+'M':'$'+idea.mcap)+'</span></span>';
       html += '</div>';
     }
     html += '</div>';
@@ -2209,9 +2211,9 @@ async function runQuickScan() {
     ideas.sort(function(a,b){return b.score-a.score;});ideas=ideas.slice(0,4);
     // Fetch industry + market cap for top ideas
     if(ideas.length>0){
-      var detailPromises=ideas.map(function(idea){return polyGet('/v3/reference/tickers/'+idea.ticker).then(function(d){var r=d.results||{};return{ticker:idea.ticker,mc:r.market_cap||null,ind:r.sic_description||null};}).catch(function(){return{ticker:idea.ticker,mc:null,ind:null};});});
+      var detailPromises=ideas.map(function(idea){return polyGet('/v3/reference/tickers/'+idea.ticker).then(function(d){var r=d.results||{};return{ticker:idea.ticker,mc:r.market_cap||null,ind:r.sic_description||null,type:r.type||null};}).catch(function(){return{ticker:idea.ticker,mc:null,ind:null,type:null};});});
       var detailResults=await Promise.all(detailPromises);
-      detailResults.forEach(function(r){var idea=ideas.find(function(i){return i.ticker===r.ticker;});if(idea){idea.mcap=r.mc;idea.industry=r.ind;}});
+      detailResults.forEach(function(r){var idea=ideas.find(function(i){return i.ticker===r.ticker;});if(idea){idea.mcap=r.mc;idea.industry=r.ind;idea.tickerType=r.type;}});
     }
     try{localStorage.setItem('mac_top_ideas_'+new Date().toISOString().split('T')[0],JSON.stringify({ideas:ideas,ts:Date.now()}));}catch(e){}
     el.innerHTML=ideas.length>0?renderTopIdeasHTML(ideas,Date.now()):'<div style="text-align:center;padding:14px;color:var(--text-muted);font-size:12px;">No strong setups found. Try full scanners.</div>';

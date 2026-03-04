@@ -444,17 +444,18 @@ async function runSetupScan(statusFn) {
   statusFn('Fetching ticker details...');
   var allMarketCap = {};
   var allIndustry = {};
+  var allType = {}; // 'CS' (stock), 'ETF', 'ADRC', etc.
   var mcBatchSize = 25;
   for (var mi = 0; mi < tickers.length; mi += mcBatchSize) {
     var mcBatch = tickers.slice(mi, mi + mcBatchSize);
     var mcPromises = mcBatch.map(function(ticker) {
       return polyGet('/v3/reference/tickers/' + ticker).then(function(d) {
         var r = d.results || {};
-        return { ticker: ticker, mc: r.market_cap || null, industry: r.sic_description || null };
-      }).catch(function() { return { ticker: ticker, mc: null, industry: null }; });
+        return { ticker: ticker, mc: r.market_cap || null, industry: r.sic_description || null, type: r.type || null };
+      }).catch(function() { return { ticker: ticker, mc: null, industry: null, type: null }; });
     });
     var mcResults = await Promise.all(mcPromises);
-    mcResults.forEach(function(r) { if (r.mc) allMarketCap[r.ticker] = r.mc; if (r.industry) allIndustry[r.ticker] = r.industry; });
+    mcResults.forEach(function(r) { if (r.mc) allMarketCap[r.ticker] = r.mc; if (r.industry) allIndustry[r.ticker] = r.industry; if (r.type) allType[r.ticker] = r.type; });
     var mp = Math.min(mi + mcBatchSize, tickers.length);
     statusFn('Fetching market cap... ' + mp + '/' + tickers.length);
     if (mi + mcBatchSize < tickers.length) {
@@ -471,6 +472,7 @@ async function runSetupScan(statusFn) {
   var allMcap = {}; // Market cap for all tickers
   var allAtr = {}; // ATR for all tickers
   var allIndust = {}; // Industry for all tickers
+  var allTickerType = {}; // Type: CS=stock, ETF, ADRC, etc.
 
   statusFn('Scoring setups...');
 
@@ -531,9 +533,10 @@ async function runSetupScan(statusFn) {
     var sc = calcSetupScore(ticker);
     if (sc != null) allScores[ticker] = sc;
 
-    // Market cap + industry
+    // Market cap + industry + type
     if (allMarketCap[ticker]) allMcap[ticker] = allMarketCap[ticker];
     if (allIndustry[ticker]) allIndust[ticker] = allIndustry[ticker];
+    if (allType[ticker]) allTickerType[ticker] = allType[ticker];
 
     // ATR from bars
     var bars = allBars[ticker];
@@ -695,7 +698,8 @@ async function runSetupScan(statusFn) {
     allScores: allScores,
     allMcap: allMcap,
     allAtr: allAtr,
-    allIndust: allIndust
+    allIndust: allIndust,
+    allTickerType: allTickerType
   };
 
   try { localStorage.setItem(SCANNER_RESULTS_KEY, JSON.stringify(resultData)); } catch(e) {}
@@ -841,6 +845,11 @@ function renderSetupCard(s, idx, scanData) {
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
   html += '<div style="display:flex;align-items:center;gap:6px;">';
   html += '<span class="ticker-link" style="font-size:14px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\'' + s.ticker + '\')">' + s.ticker + '</span>';
+  var _type = (scanData && scanData.allTickerType && scanData.allTickerType[s.ticker]) || '';
+  var _typeLabel = _type === 'ETF' ? 'ETF' : 'Stock';
+  var _typeBg = _type === 'ETF' ? 'var(--amber-bg)' : 'var(--blue-bg)';
+  var _typeColor = _type === 'ETF' ? 'var(--amber)' : 'var(--blue)';
+  html += '<span style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;background:' + _typeBg + ';color:' + _typeColor + ';">' + _typeLabel + '</span>';
   html += '<span style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
   html += '</div>';
   // Score circle — clickable to expand details
@@ -858,8 +867,8 @@ function renderSetupCard(s, idx, scanData) {
   var _mc = (scanData && scanData.allMcap && scanData.allMcap[s.ticker]) || null;
   html += '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px;padding:4px 6px;background:var(--bg-secondary);border-radius:3px;">';
   if (_ind) html += '<span style="color:var(--text-muted);">' + _ind + '</span>';
-  if (_atr) html += '<span style="font-family:var(--font-mono);color:var(--text-secondary);">ATR $' + _atr.toFixed(2) + '</span>';
-  if (_mc) html += '<span style="font-family:var(--font-mono);color:var(--text-secondary);">' + _fmtMcap(_mc) + '</span>';
+  if (_atr) html += '<span style="color:var(--text-muted);">ATR <span style="font-family:var(--font-mono);font-weight:700;color:var(--text-secondary);padding:1px 5px;border:1px solid var(--border);border-radius:3px;">$' + _atr.toFixed(2) + '</span></span>';
+  if (_mc) html += '<span style="color:var(--text-muted);">Mkt Cap <span style="font-family:var(--font-mono);font-weight:700;color:var(--text-secondary);padding:1px 5px;border:1px solid var(--border);border-radius:3px;">' + _fmtMcap(_mc) + '</span></span>';
   html += '</div>';
 
   // ── Expandable detail (hidden, shown on score click) ──
