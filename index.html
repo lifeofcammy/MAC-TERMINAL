@@ -221,33 +221,6 @@
       color: var(--color-text);
       margin-bottom: var(--space-6);
     }
-    .preview-tabs {
-      display: flex;
-      justify-content: center;
-      gap: var(--space-2);
-      margin-bottom: var(--space-6);
-    }
-    .preview-tab {
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      font-weight: 600;
-      padding: var(--space-2) var(--space-5);
-      border-radius: var(--radius-full);
-      border: 2px solid var(--color-border);
-      background: transparent;
-      color: var(--color-text-muted);
-      cursor: pointer;
-      transition: all 180ms ease;
-    }
-    .preview-tab.active {
-      background: var(--color-primary);
-      border-color: var(--color-primary);
-      color: #fff;
-    }
-    .preview-tab:hover:not(.active) {
-      border-color: var(--color-primary);
-      color: var(--color-primary);
-    }
     .preview-img-wrap {
       border-radius: var(--radius-lg);
       overflow: hidden;
@@ -375,13 +348,8 @@
     <section class="preview">
       <p class="preview-label">See It In Action</p>
       <h2 class="preview-heading">One Dashboard. Zero Clutter.</h2>
-      <div class="preview-tabs">
-        <button class="preview-tab active" onclick="switchPreview('overview')">Overview</button>
-        <button class="preview-tab" onclick="switchPreview('scanner')">Scanner</button>
-      </div>
       <div class="preview-img-wrap">
-        <img id="preview-overview" src="images/preview-overview.jpg" alt="MAC Terminal Overview — Morning Mindset, Watchlist, Market Regime, Market Snapshot">
-        <img id="preview-scanner" src="images/preview-scanner.jpg" alt="MAC Terminal Momentum Scanner — VCP setups with scores and trade levels" class="hidden">
+        <img src="images/preview-overview.jpg" alt="MAC Terminal Overview — Morning Mindset, Watchlist, Market Regime, Market Snapshot">
       </div>
     </section>
 
@@ -400,15 +368,6 @@
 
   <!-- JAVASCRIPT -->
   <script>
-    // Preview tab switcher
-    function switchPreview(tab) {
-      document.getElementById('preview-overview').classList.toggle('hidden', tab !== 'overview');
-      document.getElementById('preview-scanner').classList.toggle('hidden', tab !== 'scanner');
-      document.querySelectorAll('.preview-tab').forEach(function(btn) {
-        btn.classList.toggle('active', btn.textContent.toLowerCase() === tab);
-      });
-    }
-
     // Feedback modal
     function openLandingFeedback() {
       if (document.getElementById('fb-overlay')) {
