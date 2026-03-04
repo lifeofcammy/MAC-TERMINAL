@@ -487,7 +487,14 @@ input:focus, textarea:focus, select:focus {
   font-size: 28px;
   font-weight: 700;
   font-family: var(--font-display);
-  color: var(--text-primary);
+  color: var(--blue);
   text-align: center;
   white-space: nowrap;
+}
+.step-header-box {
+  text-align: center;
+  border: 2px solid var(--blue);
+  border-radius: 10px;
+  padding: 10px 20px;
+  display: inline-block;
 }
