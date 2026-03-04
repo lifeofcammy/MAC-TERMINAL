@@ -190,6 +190,7 @@ async function buildMomentumUniverse(statusFn) {
           volDryUp: score.volDryUp,
           distToBreakout: score.distToBreakout,
           pullbackDepth: score.pullbackDepth,
+          atr14: score.atr14,
           bars: null
         });
       }
@@ -343,6 +344,20 @@ function calcUniverseScore(bars, currentPrice) {
 
   var total = Math.round(Math.max(0, ptsTight + ptsExt + ptsVolDry + ptsBreakout + ptsTrend + ptsPullback));
 
+  // ATR (14-period Average True Range)
+  var atr14 = null;
+  if (len >= 15) {
+    var trSum = 0;
+    for (var ai = len - 14; ai < len; ai++) {
+      var tr = highs[ai] - lows[ai];
+      if (ai > 0) {
+        tr = Math.max(tr, Math.abs(highs[ai] - closes[ai - 1]), Math.abs(lows[ai] - closes[ai - 1]));
+      }
+      trSum += tr;
+    }
+    atr14 = trSum / 14;
+  }
+
   return {
     total: total,
     range5: Math.round(range5 * 10) / 10,
@@ -351,7 +366,8 @@ function calcUniverseScore(bars, currentPrice) {
     aboveSMAs: aboveSMAs + '/3',
     volDryUp: Math.round(volRatio * 100),
     distToBreakout: Math.round(distToBreakout * 10) / 10,
-    pullbackDepth: Math.round(pullbackDepth * 10) / 10
+    pullbackDepth: Math.round(pullbackDepth * 10) / 10,
+    atr14: atr14
   };
 }
 
@@ -422,12 +438,34 @@ async function runSetupScan(statusFn) {
     }
   }
 
+  // Fetch market cap from Polygon ticker details
+  statusFn('Fetching market cap data...');
+  var allMarketCap = {};
+  var mcBatchSize = 25;
+  for (var mi = 0; mi < tickers.length; mi += mcBatchSize) {
+    var mcBatch = tickers.slice(mi, mi + mcBatchSize);
+    var mcPromises = mcBatch.map(function(ticker) {
+      return polyGet('/v3/reference/tickers/' + ticker).then(function(d) {
+        return { ticker: ticker, mc: (d.results && d.results.market_cap) ? d.results.market_cap : null };
+      }).catch(function() { return { ticker: ticker, mc: null }; });
+    });
+    var mcResults = await Promise.all(mcPromises);
+    mcResults.forEach(function(r) { if (r.mc) allMarketCap[r.ticker] = r.mc; });
+    var mp = Math.min(mi + mcBatchSize, tickers.length);
+    statusFn('Fetching market cap... ' + mp + '/' + tickers.length);
+    if (mi + mcBatchSize < tickers.length) {
+      await new Promise(function(r) { setTimeout(r, 50); });
+    }
+  }
+
   var marketOpen = isMarketOpenNow();
   var etNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
   var etTimeStr = etNow.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
   var setups = [];
   var allScores = {}; // Track scores for ALL universe tickers (same formula)
+  var allMcap = {}; // Market cap for all tickers
+  var allAtr = {}; // ATR for all tickers
 
   statusFn('Scoring setups...');
 
@@ -483,10 +521,27 @@ async function runSetupScan(statusFn) {
     return Math.round(Math.min(100, Math.max(0, ptsCompress + ptsAlign + ptsExt + ptsVol + ptsMom + ptsBrkout)));
   }
 
-  // Score ALL universe tickers first (for consistent universe list)
+  // Score ALL universe tickers + compute ATR + store market cap
   tickers.forEach(function(ticker) {
     var sc = calcSetupScore(ticker);
     if (sc != null) allScores[ticker] = sc;
+
+    // Market cap
+    if (allMarketCap[ticker]) allMcap[ticker] = allMarketCap[ticker];
+
+    // ATR from bars
+    var bars = allBars[ticker];
+    if (bars && bars.length >= 15) {
+      var trSum = 0;
+      for (var ai = bars.length - 14; ai < bars.length; ai++) {
+        var tr = bars[ai].h - bars[ai].l;
+        if (ai > 0) {
+          tr = Math.max(tr, Math.abs(bars[ai].h - bars[ai - 1].c), Math.abs(bars[ai].l - bars[ai - 1].c));
+        }
+        trSum += tr;
+      }
+      allAtr[ticker] = Math.round((trSum / 14) * 100) / 100;
+    }
   });
 
   // Now build setup cards (with additional filters + full data)
@@ -609,7 +664,9 @@ async function runSetupScan(statusFn) {
     mode: marketOpen ? 'live' : 'eod',
     etTime: etTimeStr,
     setups: topSetups,
-    allScores: allScores
+    allScores: allScores,
+    allMcap: allMcap,
+    allAtr: allAtr
   };
 
   try { localStorage.setItem(SCANNER_RESULTS_KEY, JSON.stringify(resultData)); } catch(e) {}
@@ -828,6 +885,8 @@ function _universeGetVal(t, col) {
     case 'score': return t.score || 0;
     case 'ticker': return (t.ticker || '').toUpperCase();
     case 'price': return t.price || 0;
+    case 'mcap': return t.mcap || 0;
+    case 'atr': return t.atr || 0;
     case 'range5': return t.range5 != null ? t.range5 : -999;
     case 'ext': return t.extFromSma20 != null ? t.extFromSma20 : -999;
     case 'vol': return t.volDryUp != null ? t.volDryUp : -999;
@@ -847,6 +906,16 @@ function sortUniverseBy(col) {
   _rerenderUniverseRows();
 }
 
+function _fmtMcap(v) {
+  if (!v) return '\u2014';
+  if (v >= 1e12) return '$' + (v / 1e12).toFixed(1) + 'T';
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(0) + 'M';
+  return '$' + (v / 1e3).toFixed(0) + 'K';
+}
+
+var _univCols = '30px 46px 50px 68px 62px 50px 50px 48px 48px 44px 44px';
+
 function _rerenderUniverseRows() {
   var tbody = document.getElementById('universe-tbody');
   if (!tbody) return;
@@ -859,7 +928,6 @@ function _rerenderUniverseRows() {
     return asc ? va - vb : vb - va;
   });
 
-  var cols = '36px 60px 50px 75px 55px 55px 55px 50px 50px';
   var html = '';
   list.forEach(function(t, idx) {
     var bg = idx % 2 === 0 ? '' : 'background:var(--bg-secondary);';
@@ -867,16 +935,18 @@ function _rerenderUniverseRows() {
     var sc = t.score || 0;
     var scoreColor = sc >= 60 ? 'var(--green)' : sc >= 40 ? 'var(--blue)' : sc >= 20 ? 'var(--amber)' : 'var(--text-muted)';
 
-    html += '<div style="display:grid;grid-template-columns:' + cols + ';gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:13px;' + bg + 'align-items:center;">';
+    html += '<div style="display:grid;grid-template-columns:' + _univCols + ';gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:12px;' + bg + 'align-items:center;">';
     html += '<span style="color:var(--text-muted);">' + (idx + 1) + '</span>';
     html += '<span style="font-weight:900;font-family:var(--font-mono);color:' + scoreColor + ';">' + sc + '</span>';
     html += '<span onclick="event.stopPropagation();openTVChart(\'' + t.ticker + '\')" title="Click for chart" style="font-weight:800;font-family:var(--font-mono);color:var(--blue);cursor:pointer;">' + t.ticker + '</span>';
     html += '<span style="font-family:var(--font-mono);color:var(--text-secondary);">$' + t.price.toFixed(2) + '</span>';
+    html += '<span style="font-family:var(--font-mono);color:var(--text-muted);">' + _fmtMcap(t.mcap) + '</span>';
+    html += '<span style="font-family:var(--font-mono);color:var(--text-muted);">' + (t.atr != null ? '$' + t.atr.toFixed(2) : '\u2014') + '</span>';
     html += '<span style="color:var(--text-muted);">' + (t.range5 || '\u2014') + '%</span>';
     html += '<span style="color:' + extColor + ';">' + (t.extFromSma20 != null ? (t.extFromSma20 >= 0 ? '+' : '') + t.extFromSma20 + '%' : '\u2014') + '</span>';
     html += '<span style="color:var(--text-muted);">' + (t.volDryUp != null ? t.volDryUp + '%' : '\u2014') + '</span>';
     html += '<span style="color:' + (t.aboveSMAs === '3/3' ? 'var(--green)' : 'var(--text-muted)') + ';">' + (t.aboveSMAs || '\u2014') + '</span>';
-    html += '<span style="font-size:12px;color:var(--text-muted);">' + (t.distToBreakout != null ? t.distToBreakout + '%' : '\u2014') + '</span>';
+    html += '<span style="font-size:11px;color:var(--text-muted);">' + (t.distToBreakout != null ? t.distToBreakout + '%' : '\u2014') + '</span>';
     html += '</div>';
   });
   tbody.innerHTML = html;
@@ -891,17 +961,24 @@ function _rerenderUniverseRows() {
 }
 
 function renderUniverseList(tickers) {
-  // Use setup scan scores if available (consistent with setup cards)
-  var setupScores = null;
+  // Use setup scan data if available (consistent with setup cards)
+  var setupScores = null, setupMcap = null, setupAtr = null;
   try {
     var sr = localStorage.getItem(SCANNER_RESULTS_KEY);
-    if (sr) { var parsed = JSON.parse(sr); setupScores = parsed.allScores || null; }
+    if (sr) {
+      var parsed = JSON.parse(sr);
+      setupScores = parsed.allScores || null;
+      setupMcap = parsed.allMcap || null;
+      setupAtr = parsed.allAtr || null;
+    }
   } catch(e) {}
 
-  // Build list with best available score
+  // Build list with best available score + mcap + atr
   _universeListData = tickers.map(function(t) {
     var s = (setupScores && setupScores[t.ticker] != null) ? setupScores[t.ticker] : (t.score || 0);
-    return { ticker: t.ticker, price: t.price, range5: t.range5, extFromSma20: t.extFromSma20, volDryUp: t.volDryUp, aboveSMAs: t.aboveSMAs, distToBreakout: t.distToBreakout, score: s };
+    var mc = (setupMcap && setupMcap[t.ticker]) ? setupMcap[t.ticker] : null;
+    var atr = (setupAtr && setupAtr[t.ticker]) ? setupAtr[t.ticker] : (t.atr14 || null);
+    return { ticker: t.ticker, price: t.price, range5: t.range5, extFromSma20: t.extFromSma20, volDryUp: t.volDryUp, aboveSMAs: t.aboveSMAs, distToBreakout: t.distToBreakout, score: s, mcap: mc, atr: atr };
   });
 
   // Initial sort
@@ -912,13 +989,14 @@ function renderUniverseList(tickers) {
   var html = '<div class="sc-table-wrap" style=""><div class="card" style="padding:0;overflow:hidden;">';
 
   // Header with clickable sort columns
-  var cols = '36px 60px 50px 75px 55px 55px 55px 50px 50px';
   var headerStyle = 'cursor:pointer;user-select:none;';
-  html += '<div style="display:grid;grid-template-columns:' + cols + ';gap:4px;padding:8px 14px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">';
+  html += '<div style="display:grid;grid-template-columns:' + _univCols + ';gap:4px;padding:8px 14px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">';
   html += '<span>#</span>';
   html += '<span data-univsort="score" onclick="sortUniverseBy(\'score\')" style="' + headerStyle + '">Score<span class="sort-arrow"> \u25BC</span></span>';
   html += '<span data-univsort="ticker" onclick="sortUniverseBy(\'ticker\')" style="' + headerStyle + '">Ticker<span class="sort-arrow"></span></span>';
   html += '<span data-univsort="price" onclick="sortUniverseBy(\'price\')" style="' + headerStyle + '">Price<span class="sort-arrow"></span></span>';
+  html += '<span data-univsort="mcap" onclick="sortUniverseBy(\'mcap\')" style="' + headerStyle + '">MCap<span class="sort-arrow"></span></span>';
+  html += '<span data-univsort="atr" onclick="sortUniverseBy(\'atr\')" style="' + headerStyle + '">ATR<span class="sort-arrow"></span></span>';
   html += '<span data-univsort="range5" onclick="sortUniverseBy(\'range5\')" style="' + headerStyle + '">5d %<span class="sort-arrow"></span></span>';
   html += '<span data-univsort="ext" onclick="sortUniverseBy(\'ext\')" style="' + headerStyle + '">Ext<span class="sort-arrow"></span></span>';
   html += '<span data-univsort="vol" onclick="sortUniverseBy(\'vol\')" style="' + headerStyle + '">Vol<span class="sort-arrow"></span></span>';
@@ -934,16 +1012,18 @@ function renderUniverseList(tickers) {
     var sc = t.score || 0;
     var scoreColor = sc >= 60 ? 'var(--green)' : sc >= 40 ? 'var(--blue)' : sc >= 20 ? 'var(--amber)' : 'var(--text-muted)';
 
-    html += '<div style="display:grid;grid-template-columns:' + cols + ';gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:13px;' + bg + 'align-items:center;">';
+    html += '<div style="display:grid;grid-template-columns:' + _univCols + ';gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:12px;' + bg + 'align-items:center;">';
     html += '<span style="color:var(--text-muted);">' + (idx + 1) + '</span>';
     html += '<span style="font-weight:900;font-family:var(--font-mono);color:' + scoreColor + ';">' + sc + '</span>';
     html += '<span onclick="event.stopPropagation();openTVChart(\'' + t.ticker + '\')" title="Click for chart" style="font-weight:800;font-family:var(--font-mono);color:var(--blue);cursor:pointer;">' + t.ticker + '</span>';
     html += '<span style="font-family:var(--font-mono);color:var(--text-secondary);">$' + t.price.toFixed(2) + '</span>';
+    html += '<span style="font-family:var(--font-mono);color:var(--text-muted);">' + _fmtMcap(t.mcap) + '</span>';
+    html += '<span style="font-family:var(--font-mono);color:var(--text-muted);">' + (t.atr != null ? '$' + t.atr.toFixed(2) : '\u2014') + '</span>';
     html += '<span style="color:var(--text-muted);">' + (t.range5 || '\u2014') + '%</span>';
     html += '<span style="color:' + extColor + ';">' + (t.extFromSma20 != null ? (t.extFromSma20 >= 0 ? '+' : '') + t.extFromSma20 + '%' : '\u2014') + '</span>';
     html += '<span style="color:var(--text-muted);">' + (t.volDryUp != null ? t.volDryUp + '%' : '\u2014') + '</span>';
     html += '<span style="color:' + (t.aboveSMAs === '3/3' ? 'var(--green)' : 'var(--text-muted)') + ';">' + (t.aboveSMAs || '\u2014') + '</span>';
-    html += '<span style="font-size:12px;color:var(--text-muted);">' + (t.distToBreakout != null ? t.distToBreakout + '%' : '\u2014') + '</span>';
+    html += '<span style="font-size:11px;color:var(--text-muted);">' + (t.distToBreakout != null ? t.distToBreakout + '%' : '\u2014') + '</span>';
     html += '</div>';
   });
   html += '</div>';
