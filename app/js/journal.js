@@ -1050,7 +1050,7 @@ function recapAnalyze() {
     runAICoaching(completed, wins, losses, grossPnL, winRate, profitFactor, avgRR, behaviors, sortedByTime, bySymbol);
 
   } catch (err) {
-    document.getElementById('recap-results').innerHTML = `<div style="padding:40px;text-align:center;color:var(--red);"><div style="font-size:18px;margin-bottom:12px;color:var(--red);">✕</div><div style="font-weight:800;font-size:18px;">ANALYSIS ERROR</div><div style="font-size:14px;color:var(--text-muted);margin-top:8px;">${err.message}</div></div>`;
+    document.getElementById('recap-results').innerHTML = `<div style="padding:40px;text-align:center;color:var(--red);"><div style="font-size:18px;margin-bottom:12px;color:var(--red);">✕</div><div style="font-weight:800;font-size:18px;">ANALYSIS ERROR</div><div style="font-size:14px;color:var(--text-muted);margin-top:8px;">${escapeHtml(err.message)}</div></div>`;
     document.getElementById('recap-results').style.display = 'block';
     document.getElementById('recap-empty').style.display = 'none';
   }
@@ -1098,7 +1098,7 @@ Write coaching in these sections using HTML bold tags:
       document.getElementById('ai-coaching-body').innerHTML = '<div style="color:var(--text-muted);">AI analysis unavailable.</div>';
     }
   } catch (e) {
-    document.getElementById('ai-coaching-body').innerHTML = `<div style="color:var(--text-muted);">AI coaching unavailable: ${e.message}</div>`;
+    document.getElementById('ai-coaching-body').innerHTML = `<div style="color:var(--text-muted);">AI coaching unavailable: ${escapeHtml(e.message)}</div>`;
   }
 }
 

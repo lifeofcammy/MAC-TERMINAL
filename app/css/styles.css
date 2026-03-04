@@ -420,7 +420,7 @@ details[open] summary { color: var(--blue) !important; }
 
   /* Tabs */
   .tabs { padding: 0 8px; }
-  .tab { padding: 10px 12px; font-size: 13px; }
+  .tab { padding: 10px 12px; font-size: 12px; }
 
   .main { padding: 14px 10px; }
 
@@ -472,7 +472,7 @@ details[open] summary { color: var(--blue) !important; }
     padding: 0 8px;
     height: 48px;
   }
-  .header-title { font-size: 15px; }
+  .header-title { font-size: 14px; }
 
   /* Tabs: smaller, equal-width */
   .tabs { padding: 0 4px; gap: 0; }
@@ -481,7 +481,7 @@ details[open] summary { color: var(--blue) !important; }
   .main { padding: 10px 8px; }
 
   .card { border-radius: 10px; padding: 12px; }
-  .section-title { font-size: 15px; }
+  .section-title { font-size: 14px; }
 
   /* Overview: Market Snapshot → 2-col (already set) */
   /* Overview: Sector Heatmap → 2-col (already set) */
@@ -494,7 +494,7 @@ details[open] summary { color: var(--blue) !important; }
   /* Trade Journal: stat grid → 2-col on smallest */
   .rv-stat-grid { grid-template-columns: repeat(2, 1fr); }
   .rv-stat-cell { padding: 8px 6px; }
-  .rv-stat-label { font-size: 10px; }
+  .rv-stat-label { font-size: 12px; }
   .rv-stat-value { font-size: 14px; }
 
   /* Analysis: stat grid → 2-col */

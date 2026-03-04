@@ -880,7 +880,7 @@ function renderSetupCard(s, detailIdPrefix) {
 
   // Category badge
   var badgeLabel = isBreakout ? (s.breakingOut ? 'BREAKING OUT' : s.distToBreakout <= 2 ? 'NEAR BREAKOUT' : 'BASE') : s.supportLevel || 'PULLBACK';
-  html += '<span style="font-size:11px;font-weight:700;color:' + accentColor + ';text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border:1px solid ' + accentColor + ';border-radius:4px;">' + badgeLabel + '</span>';
+  html += '<span style="font-size:12px;font-weight:700;color:' + accentColor + ';text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border:1px solid ' + accentColor + ';border-radius:4px;">' + badgeLabel + '</span>';
 
   // Score circle
   html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:2.5px solid ' + scoreColor + ';font-size:14px;font-weight:900;color:' + scoreColor + ';font-family:\'JetBrains Mono\',monospace;">' + s.score + '</div>';
@@ -936,13 +936,13 @@ function renderSetupCard(s, detailIdPrefix) {
 
   // Extra stats
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">';
-  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:11px;">5d Range</div><div style="font-weight:700;font-size:14px;">' + s.range5 + '%</div></div>';
-  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:11px;">Base Vol</div><div style="font-weight:700;font-size:14px;">' + s.baseVolRatio + '% of avg</div></div>';
+  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">5d Range</div><div style="font-weight:700;font-size:14px;">' + s.range5 + '%</div></div>';
+  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Base Vol</div><div style="font-weight:700;font-size:14px;">' + s.baseVolRatio + '% of avg</div></div>';
   if (s.vwap > 0) {
     var aboveVwap = s.price > s.vwap;
-    html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:11px;">VWAP</div><div style="font-weight:700;font-size:14px;color:' + (aboveVwap ? 'var(--green)' : 'var(--red)') + ';">$' + s.vwap.toFixed(2) + '</div></div>';
+    html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">VWAP</div><div style="font-weight:700;font-size:14px;color:' + (aboveVwap ? 'var(--green)' : 'var(--red)') + ';">$' + s.vwap.toFixed(2) + '</div></div>';
   }
-  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:11px;">Risk</div><div style="font-weight:700;font-size:14px;">' + (s.riskPct || 0) + '%</div></div>';
+  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Risk</div><div style="font-weight:700;font-size:14px;">' + (s.riskPct || 0) + '%</div></div>';
   html += '</div>';
 
   html += '</div>'; // close detail
@@ -1014,7 +1014,7 @@ function renderLiveScanResults(data) {
   setups.forEach(function(s, idx) {
     var scoreColor = s.score >= 70 ? 'var(--green)' : 'var(--text-muted)';
     html += '<div class="card" style="padding:14px;border-left:3px solid ' + scoreColor + ';">';
-    html += '<div style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:16px;">' + s.ticker + ' <span style="color:var(--text-secondary);font-size:14px;">$' + s.price.toFixed(2) + '</span> <span style="font-size:14px;color:' + scoreColor + ';">' + s.score + '</span></div>';
+    html += '<div style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + s.ticker + ' <span style="color:var(--text-secondary);font-size:14px;">$' + s.price.toFixed(2) + '</span> <span style="font-size:14px;color:' + scoreColor + ';">' + s.score + '</span></div>';
     if (s.description) html += '<div style="font-size:14px;color:var(--text-secondary);margin-top:4px;">' + s.description + '</div>';
     html += '</div>';
   });

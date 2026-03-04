@@ -8,7 +8,7 @@
 <meta http-equiv="Expires" content="0">
 <title>MAC Terminal — Market Action Center</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=20260303p">
+<link rel="stylesheet" href="css/styles.css?v=20260303r">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -54,7 +54,7 @@
       <svg id="theme-icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       <svg id="theme-icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
     </button>
-    <span id="user-email" style="font-size:11px;color:var(--text-muted);font-weight:500;"></span>
+    <span id="user-email" style="font-size:12px;color:var(--text-muted);font-weight:500;"></span>
     <button class="refresh-btn" onclick="logoutUser()" title="Sign Out">Sign Out</button>
   </div>
 </div>
@@ -108,8 +108,8 @@
         <div style="display:flex;align-items:center;gap:12px;">
           <button onclick="calBackToMonth()" class="refresh-btn">← Calendar</button>
           <div>
-            <div style="font-weight:800;font-size:16px;color:var(--green);" id="day-view-title">Trade Recap</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Drop a file or paste trade data below</div>
+            <div style="font-weight:800;font-size:18px;color:var(--green);" id="day-view-title">Trade Recap</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Drop a file or paste trade data below</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -129,14 +129,14 @@
             <input type="file" id="recap-file-input" accept=".csv,.txt" style="display:none;" onchange="recapHandleDrop(this.files[0])">
             <div style="font-size:28px;margin-bottom:8px;color:var(--text-muted);">↓</div>
             <div style="font-weight:700;font-size:14px;color:var(--text-primary);margin-bottom:4px;">Drop file or click to browse</div>
-            <div style="font-size:11px;color:var(--text-muted);">CSV or text · any broker</div>
-            <div id="recap-file-name" style="margin-top:8px;font-size:11px;color:var(--green);font-weight:700;display:none;"></div>
+            <div style="font-size:12px;color:var(--text-muted);">CSV or text · any broker</div>
+            <div id="recap-file-name" style="margin-top:8px;font-size:12px;color:var(--green);font-weight:700;display:none;"></div>
           </div>
 
           <!-- Paste area -->
           <div style="margin-bottom:12px;">
-            <div style="font-size:10px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;">— OR PASTE —</div>
-            <textarea id="recap-paste" rows="8" placeholder="Paste trade data here..." style="width:100%;font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-secondary);resize:vertical;line-height:1.5;"></textarea>
+            <div style="font-size:12px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;">— OR PASTE —</div>
+            <textarea id="recap-paste" rows="8" placeholder="Paste trade data here..." style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-secondary);resize:vertical;line-height:1.5;"></textarea>
           </div>
 
           <button onclick="recapAnalyze()" class="refresh-btn" style="width:100%;padding:12px;font-size:14px;">ANALYZE TRADES</button>
@@ -148,7 +148,7 @@
             <div style="font-size:20px;color:var(--text-muted);">—</div>
             <div style="font-weight:800;font-size:18px;color:var(--text-primary);">DROP A FILE TO BEGIN</div>
             <div style="font-size:12px;max-width:400px;text-align:center;line-height:1.7;">Drop your trade file on the left or paste the data. Full P&L, behavioral analysis, and AI coaching will appear here.</div>
-            <div id="recap-platform-badge" style="display:none;margin-top:8px;padding:4px 12px;background:rgba(59,130,246,0.1);border-radius:20px;font-size:10px;font-weight:700;color:var(--blue);"></div>
+            <div id="recap-platform-badge" style="display:none;margin-top:8px;padding:4px 12px;background:rgba(59,130,246,0.1);border-radius:20px;font-size:12px;font-weight:700;color:var(--blue);"></div>
           </div>
           <div id="recap-results" style="display:none;"></div>
         </div>
@@ -178,20 +178,20 @@
 
 <!-- JavaScript — load in dependency order (critical path only) -->
 <!-- scanner.js, journal.js, analysis.js, analysis-seed.js lazy-loaded on tab click -->
-<script src="js/auth.js?v=20260303p"></script>
-<script src="js/config.js?v=20260303p"></script>
-<script src="js/db.js?v=20260303p"></script>
-<script src="js/tickers.js?v=20260303p"></script>
-<script src="js/utils.js?v=20260303p"></script>
-<script src="js/account.js?v=20260303p"></script>
-<script src="js/chart.js?v=20260303p"></script>
-<script src="js/api.js?v=20260303p"></script>
-<script src="js/overview.js?v=20260303p"></script>
-<script src="js/watchlist.js?v=20260303p"></script>
-<script src="js/tabs.js?v=20260303p"></script>
-<script src="js/settings.js?v=20260303p"></script>
-<script src="js/feedback.js?v=20260303p"></script>
-<script src="js/init.js?v=20260303p"></script>
+<script src="js/auth.js?v=20260303r"></script>
+<script src="js/config.js?v=20260303r"></script>
+<script src="js/db.js?v=20260303r"></script>
+<script src="js/tickers.js?v=20260303r"></script>
+<script src="js/utils.js?v=20260303r"></script>
+<script src="js/account.js?v=20260303r"></script>
+<script src="js/chart.js?v=20260303r"></script>
+<script src="js/api.js?v=20260303r"></script>
+<script src="js/overview.js?v=20260303r"></script>
+<script src="js/watchlist.js?v=20260303r"></script>
+<script src="js/tabs.js?v=20260303r"></script>
+<script src="js/settings.js?v=20260303r"></script>
+<script src="js/feedback.js?v=20260303r"></script>
+<script src="js/init.js?v=20260303r"></script>
 <script>
 // Theme toggle handler
 (function(){

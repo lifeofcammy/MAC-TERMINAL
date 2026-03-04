@@ -42,7 +42,7 @@ document.querySelectorAll('.tabs > .tab').forEach(tab => {
 
     // Trigger per-tab renders (lazy-load scripts on first click)
     if (tab.dataset.tab === 'scanner') {
-      loadScript('js/scanner.js?v=20260303p').then(function() {
+      loadScript('js/scanner.js?v=20260303r').then(function() {
         if (!window._scannerLoaded) { renderScanner(); window._scannerLoaded = true; }
         if (!_scannerAutoBuildDone && typeof scannerAutoBuild === 'function') {
           _scannerAutoBuildDone = true;
@@ -51,14 +51,14 @@ document.querySelectorAll('.tabs > .tab').forEach(tab => {
       });
     }
     if (tab.dataset.tab === 'recap') {
-      loadScript('js/journal.js?v=20260303p').then(function() {
+      loadScript('js/journal.js?v=20260303r').then(function() {
         if (typeof renderRecapCalendar === 'function') renderRecapCalendar();
       });
     }
     if (tab.dataset.tab === 'analysis') {
       Promise.all([
-        loadScript('js/analysis.js?v=20260303p'),
-        loadScript('js/analysis-seed.js?v=20260303p')
+        loadScript('js/analysis.js?v=20260303r'),
+        loadScript('js/analysis-seed.js?v=20260303r')
       ]).then(function() {
         if (typeof renderAnalysis === 'function') renderAnalysis();
       });

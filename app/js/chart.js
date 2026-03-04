@@ -66,12 +66,12 @@ function openTVChart(ticker) {
   var header = document.createElement('div');
   header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;';
   header.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">'
-    + '<span style="font-size:16px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">' + ticker + '</span>'
+    + '<span style="font-size:16px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">' + escapeHtml(ticker) + '</span>'
     + '<span style="font-size:12px;color:var(--text-muted);">Daily Chart</span>'
     + '</div>'
     + '<div style="display:flex;align-items:center;gap:12px;">'
-    + '<span style="font-size:11px;color:var(--text-muted);opacity:0.7;">15-min delayed</span>'
-    + '<button onclick="document.getElementById(\'tv-chart-modal\').remove()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;line-height:1;padding:0 4px;">&times;</button>'
+    + '<span style="font-size:12px;color:var(--text-muted);opacity:0.7;">15-min delayed</span>'
+    + '<button onclick="document.getElementById(\'tv-chart-modal\').remove()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;line-height:1;padding:0 4px;">&times;</button>'
     + '</div>';
   modal.appendChild(header);
 

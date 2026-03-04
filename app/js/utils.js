@@ -44,3 +44,16 @@ function getDataFreshnessLabel() {
   }
 }
 
+// ==================== HTML ESCAPING ====================
+// Escape all 5 dangerous characters for safe innerHTML injection.
+// Use this for any user-provided or API-returned text inserted via innerHTML.
+function escapeHtml(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+

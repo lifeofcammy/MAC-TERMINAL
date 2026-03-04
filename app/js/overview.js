@@ -144,7 +144,7 @@ function renderBreadthTimeline() {
     if(i === 0) {
       // First reading: neutral (no comparison)
       html += '<div style="flex:1;height:24px;border-radius:4px;background:var(--bg-secondary);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;min-width:0;" title="'+timeStr+': '+r.pct+'% (starting point)">';
-      html += '<span style="font-size:10px;font-weight:700;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+r.pct+'</span>';
+      html += '<span style="font-size:12px;font-weight:700;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+r.pct+'</span>';
       html += '</div>';
     } else {
       var prev = _breadthHistory[i-1].pct;
@@ -155,14 +155,14 @@ function renderBreadthTimeline() {
       else { barColor = 'var(--text-muted)'; barBg = 'var(--bg-secondary)'; }
       var isLast = i === _breadthHistory.length - 1;
       html += '<div style="flex:1;height:24px;border-radius:4px;background:'+barBg+';display:flex;align-items:center;justify-content:center;min-width:0;opacity:'+(isLast?'1':'0.75')+';'+(isLast?'box-shadow:0 0 0 2px var(--bg-primary), 0 0 0 3px '+barBg+';':'')+'" title="'+timeStr+': '+r.pct+'% ('+(diff>0?'+':'')+diff+' vs prev)">';
-      html += '<span style="font-size:10px;font-weight:800;color:'+barColor+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(diff>0?'+':'')+diff+'</span>';
+      html += '<span style="font-size:12px;font-weight:800;color:'+barColor+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(diff>0?'+':'')+diff+'</span>';
       html += '</div>';
     }
   });
   html += '</div>';
 
   // Time labels + breadth values at edges
-  html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:3px;">';
+  html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:3px;">';
   var firstTime = _breadthHistory[0].time.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
   var lastTime = _breadthHistory[_breadthHistory.length-1].time.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
   html += '<span>'+firstTime+' ('+first+'%)</span>';
@@ -484,7 +484,7 @@ async function renderOverview() {
     newsArticles = tier1[3];
     var allSnap = tier1[4];
   } catch(e) {
-    container.innerHTML = '<div class="card" style="text-align:center;color:var(--red);padding:30px;">Failed to load data: '+e.message+'<br><span style="font-size:14px;color:var(--text-muted);">Check your Polygon API key (gear icon).</span></div>';
+    container.innerHTML = '<div class="card" style="text-align:center;color:var(--red);padding:30px;">Failed to load data: '+escapeHtml(e.message)+'<br><span style="font-size:14px;color:var(--text-muted);">Check your Polygon API key (gear icon).</span></div>';
     return;
   }
 
@@ -872,7 +872,7 @@ async function renderOverview() {
     html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.8;">'+sec.name+'</div>';
     html += '<div style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:'+chgColor+';margin-top:3px;">'+pct(sec.dayChg)+'</div>';
     html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.7;margin-top:1px;">Wk: '+pct(sec.weekPerf)+'</div>';
-    if(hasSubsectors) html += '<div style="font-size:10px;color:'+chgColor+';opacity:0.5;margin-top:3px;">tap to expand</div>';
+    if(hasSubsectors) html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.5;margin-top:3px;">tap to expand</div>';
     html += '</div>';
     // Subsector expansion area (hidden by default)
     html += '<div id="subsector-'+sec.etf+'" style="display:none;"></div>';
@@ -922,7 +922,7 @@ async function renderOverview() {
     }
 
     html += '</div>';
-    html += '<div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:4px;">Daily vs. weekly avg \u2014 shows where money is rotating</div>';
+    html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:4px;">Daily vs. weekly avg \u2014 shows where money is rotating</div>';
     html += '</div>';
   }
 
@@ -1180,7 +1180,7 @@ async function toggleSubsectors(sectorEtf) {
       subResults.sort(function(a, b) { return b.pct - a.pct; });
 
       html += '<div style="padding:6px 6px 2px;">';
-      html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Subsectors</div>';
+      html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Subsectors</div>';
       html += '<div style="display:grid;gap:2px;">';
       subResults.forEach(function(r) {
         var color = r.pct >= 0 ? 'var(--green)' : 'var(--red)';
@@ -1224,9 +1224,9 @@ async function toggleSubsectors(sectorEtf) {
 
       if (topLeaders.length > 0) {
         html += '<div style="padding:6px 6px 4px;">';
-        html += '<div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Trend Leaders</div>';
+        html += '<div style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Trend Leaders</div>';
         // Table header
-        html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:2px 8px;font-size:10px;font-weight:700;color:var(--text-muted);padding:0 8px 2px;text-transform:uppercase;letter-spacing:.03em;">';
+        html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:2px 8px;font-size:12px;font-weight:700;color:var(--text-muted);padding:0 8px 2px;text-transform:uppercase;letter-spacing:.03em;">';
         html += '<span>Ticker</span><span style="text-align:right;">Price</span><span style="text-align:right;">Day %</span><span style="text-align:right;">Vol</span>';
         html += '</div>';
         // Rows
@@ -1266,7 +1266,7 @@ function renderThemesHTML(data, cacheTs) {
 
   // Market narrative (if present)
   if(data.narrative){
-    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:6px;border-left:3px solid var(--blue);">' + data.narrative.replace(/</g,'&lt;') + '</div>';
+    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:6px;border-left:3px solid var(--blue);">' + escapeHtml(data.narrative) + '</div>';
   }
 
   // ── INDUSTRY HEAT CHECK (show first for quick scan) ──
@@ -1281,14 +1281,14 @@ function renderThemesHTML(data, cacheTs) {
       html += '<div style="background:'+bg+';border:1px solid '+c+'20;border-radius:8px;padding:8px 12px;min-width:140px;flex:1;max-width:220px;">';
       html += '<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">';
       html += '<span style="font-size:12px;color:'+c+';font-weight:800;">'+arrow+'</span>';
-      html += '<span style="font-size:14px;font-weight:800;color:var(--text-primary);">'+((ind.name||'').replace(/</g,'&lt;'))+'</span>';
+      html += '<span style="font-size:14px;font-weight:800;color:var(--text-primary);">'+escapeHtml(ind.name||'')+'</span>';
       html += '</div>';
       if(ind.tickers && ind.tickers.length>0){
         html += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:3px;">';
-        ind.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:1px 4px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;cursor:pointer;" title="Click for chart" onclick="openTVChart(\''+t+'\');">'+t+'</span>';});
+        ind.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:1px 4px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;cursor:pointer;" title="Click for chart" onclick="openTVChart(\''+escapeHtml(t)+'\');">'+escapeHtml(t)+'</span>';});
         html += '</div>';
       }
-      if(ind.note) html += '<div style="font-size:14px;color:var(--text-muted);line-height:1.3;">'+((ind.note||'').replace(/</g,'&lt;'))+'</div>';
+      if(ind.note) html += '<div style="font-size:14px;color:var(--text-muted);line-height:1.3;">'+escapeHtml(ind.note||'')+'</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -1301,8 +1301,8 @@ function renderThemesHTML(data, cacheTs) {
   // Helper: render sector/industry badge
   function sectorBadge(m){
     var s='';
-    if(m.industry) s += '<span style="font-size:12px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(124,58,237,0.08);color:var(--purple);margin-left:auto;">' + (m.industry||'').replace(/</g,'&lt;') + '</span>';
-    else if(m.sector) s += '<span style="font-size:12px;font-weight:600;padding:1px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;">' + (m.sector||'').replace(/</g,'&lt;') + '</span>';
+    if(m.industry) s += '<span style="font-size:12px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(124,58,237,0.08);color:var(--purple);margin-left:auto;">' + escapeHtml(m.industry||'') + '</span>';
+    else if(m.sector) s += '<span style="font-size:12px;font-weight:600;padding:1px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;">' + escapeHtml(m.sector||'') + '</span>';
     return s;
   }
 
@@ -1313,14 +1313,14 @@ function renderThemesHTML(data, cacheTs) {
     winners.forEach(function(m){
       html += '<div style="background:rgba(16,185,129,0.04);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);border-radius:12px;padding:12px 14px;">';
       html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
-      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + m.ticker + '</span>';
+      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + escapeHtml(m.ticker) + '</span>';
       html += '<span style="font-size:14px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">+' + Math.abs(m.pct).toFixed(1) + '%</span>';
       html += sectorBadge(m);
       html += '</div>';
-      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;">' + (m.reason||'').replace(/</g,'&lt;') + '</div>';
+      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;">' + escapeHtml(m.reason||'') + '</div>';
       if(m.tags && m.tags.length>0){
         html += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;">';
-        m.tags.forEach(function(tag){html += '<span style="font-size:12px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(16,185,129,0.1);color:var(--green);">' + tag + '</span>';});
+        m.tags.forEach(function(tag){html += '<span style="font-size:12px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(16,185,129,0.1);color:var(--green);">' + escapeHtml(tag) + '</span>';});
         html += '</div>';
       }
       html += '</div>';
@@ -1335,14 +1335,14 @@ function renderThemesHTML(data, cacheTs) {
     losers.forEach(function(m){
       html += '<div style="background:rgba(239,68,68,0.04);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);border-radius:12px;padding:12px 14px;">';
       html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
-      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + m.ticker + '</span>';
+      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + escapeHtml(m.ticker) + '</span>';
       html += '<span style="font-size:14px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + (m.pct<0?'':'-') + Math.abs(m.pct).toFixed(1) + '%</span>';
       html += sectorBadge(m);
       html += '</div>';
-      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;">' + (m.reason||'').replace(/</g,'&lt;') + '</div>';
+      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;">' + escapeHtml(m.reason||'') + '</div>';
       if(m.tags && m.tags.length>0){
         html += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;">';
-        m.tags.forEach(function(tag){html += '<span style="font-size:12px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(239,68,68,0.08);color:var(--red);">' + tag + '</span>';});
+        m.tags.forEach(function(tag){html += '<span style="font-size:12px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(239,68,68,0.08);color:var(--red);">' + escapeHtml(tag) + '</span>';});
         html += '</div>';
       }
       html += '</div>';
@@ -1358,8 +1358,8 @@ function renderThemesHTML(data, cacheTs) {
       var colors=['var(--blue)','var(--purple)','var(--cyan)'];var bgs=['rgba(37,99,235,0.05)','rgba(124,58,237,0.05)','rgba(8,145,178,0.05)'];
       var c=colors[i%colors.length],bg=bgs[i%bgs.length];
       html += '<div style="background:'+bg+';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);border-radius:10px;padding:10px 14px;border-left:3px solid '+c+'">';
-      html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">'+(theme.title||'').replace(/</g,'&lt;')+'</div>';
-      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.4;margin-top:2px;">'+(theme.description||'').replace(/</g,'&lt;')+'</div>';
+      html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">'+escapeHtml(theme.title||'')+'</div>';
+      html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.4;margin-top:2px;">'+escapeHtml(theme.description||'')+'</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -1376,11 +1376,11 @@ function renderLegacyThemesHTML(themes, cacheTs) {
     var colors=['var(--blue)','var(--purple)','var(--cyan)'];var bgs=['rgba(37,99,235,0.05)','rgba(124,58,237,0.05)','rgba(8,145,178,0.05)'];
     var c=colors[i%colors.length],bg=bgs[i%bgs.length];
     html += '<div style="background:'+bg+';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);border-radius:12px;padding:12px 14px;border-left:3px solid '+c+'">';
-    html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);margin-bottom:3px;">'+(theme.title||'Theme '+(i+1)).replace(/</g,'&lt;')+'</div>';
-    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:5px;">'+(theme.description||'').replace(/</g,'&lt;')+'</div>';
+    html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);margin-bottom:3px;">'+escapeHtml(theme.title||'Theme '+(i+1))+'</div>';
+    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:5px;">'+escapeHtml(theme.description||'')+'</div>';
     if(theme.tickers&&theme.tickers.length>0){
       html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
-      theme.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+c+'15;color:'+c+';font-family:\'JetBrains Mono\',monospace;cursor:pointer;" title="Click for chart" onclick="openTVChart(\''+t+'\');">'+t+'</span>';});
+      theme.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+c+'15;color:'+c+';font-family:\'JetBrains Mono\',monospace;cursor:pointer;" title="Click for chart" onclick="openTVChart(\''+escapeHtml(t)+'\');">'+escapeHtml(t)+'</span>';});
       html += '</div>';
     }
     html += '</div>';
@@ -1488,7 +1488,7 @@ async function generateThemes() {
     try{localStorage.setItem('mac_themes_'+new Date().toISOString().split('T')[0],JSON.stringify(result));}catch(e){}
     el.innerHTML=renderThemesHTML(result,Date.now());
   }catch(e){
-    el.innerHTML='<div style="padding:10px;color:var(--red);font-size:14px;">Failed: '+e.message+'</div>';
+    el.innerHTML='<div style="padding:10px;color:var(--red);font-size:14px;">Failed: '+escapeHtml(e.message)+'</div>';
   }
   if(btn){btn.textContent='Scan';btn.disabled=false;}
 }
@@ -1524,7 +1524,7 @@ async function runQuickScan() {
     ideas.sort(function(a,b){return b.score-a.score;});ideas=ideas.slice(0,4);
     try{localStorage.setItem('mac_top_ideas_'+new Date().toISOString().split('T')[0],JSON.stringify({ideas:ideas,ts:Date.now()}));}catch(e){}
     el.innerHTML=ideas.length>0?renderTopIdeasHTML(ideas,Date.now()):'<div style="text-align:center;padding:14px;color:var(--text-muted);font-size:12px;">No strong setups found. Try full scanners.</div>';
-  }catch(e){el.innerHTML='<div style="color:var(--red);font-size:12px;">Scan failed: '+e.message+'</div>';}
+  }catch(e){el.innerHTML='<div style="color:var(--red);font-size:12px;">Scan failed: '+escapeHtml(e.message)+'</div>';}
   if(btn){btn.textContent='Scan';btn.disabled=false;}
 }
 
@@ -1570,7 +1570,7 @@ async function loadEconCalendar() {
 
     renderAutoEconCal(el,grouped,Date.now());
   } catch(e) {
-    el.innerHTML='<div style="font-size:14px;color:var(--red);">Failed to load calendar: '+e.message+'</div>';
+    el.innerHTML='<div style="font-size:14px;color:var(--red);">Failed to load calendar: '+escapeHtml(e.message)+'</div>';
   }
 }
 

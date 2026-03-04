@@ -253,13 +253,13 @@ function buildRollingInsights() {
       var dot = t.status === 'active' ? '\u25CF' : t.status === 'watch' ? '\u25D0' : '\u25CB';
       html += '<div style="margin-bottom:8px;">';
       html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">';
-      html += '<span style="color:' + sc + ';font-size:10px;">' + dot + '</span>';
+      html += '<span style="color:' + sc + ';font-size:12px;">' + dot + '</span>';
       html += '<span style="font-size:14px;font-weight:700;color:var(--text-primary);">' + name + '</span>';
       if (t.count > 1) html += '<span style="font-size:12px;color:var(--text-muted);">' + t.count + 'x</span>';
       html += '</div>';
       html += '<div style="display:flex;flex-wrap:wrap;gap:3px;">';
       t.tickers.slice(0, 5).forEach(function(tk) {
-        html += '<span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--bg-secondary);color:var(--text-secondary);font-family:\'JetBrains Mono\',monospace;">' + tk + '</span>';
+        html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--bg-secondary);color:var(--text-secondary);font-family:\'JetBrains Mono\',monospace;">' + tk + '</span>';
       });
       html += '</div>';
       html += '</div>';
@@ -428,19 +428,19 @@ function renderAnalysis() {
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">';
     analysis.probabilityMap.forEach(function(p) {
       var pc = p.probability >= 75 ? 'var(--green)' : p.probability >= 60 ? 'var(--amber)' : 'var(--text-muted)';
-      var tb = p.tier === 1 ? '<span style="font-size:11px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--purple-bg);color:var(--purple);">T1</span>'
-        : p.tier === 2 ? '<span style="font-size:11px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--blue-bg);color:var(--blue);">T2</span>'
-        : '<span style="font-size:11px;font-weight:800;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.1);color:var(--text-muted);">W</span>';
+      var tb = p.tier === 1 ? '<span style="font-size:12px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--purple-bg);color:var(--purple);">T1</span>'
+        : p.tier === 2 ? '<span style="font-size:12px;font-weight:800;padding:2px 5px;border-radius:3px;background:var(--blue-bg);color:var(--blue);">T2</span>'
+        : '<span style="font-size:12px;font-weight:800;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.1);color:var(--text-muted);">W</span>';
       var di = p.direction === 'long' ? '\u2191' : p.direction === 'short' ? '\u2193' : '\u2195';
       var dc = p.direction === 'long' ? 'var(--green)' : p.direction === 'short' ? 'var(--red)' : 'var(--amber)';
       html += '<div class="card" style="padding:14px;position:relative;overflow:hidden;">';
       html += '<div style="position:absolute;bottom:0;left:0;height:3px;width:' + p.probability + '%;background:' + pc + ';border-radius:0 2px 0 0;"></div>';
       html += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;flex-wrap:wrap;">';
       html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + p.ticker + '</span>';
-      html += '<span style="font-weight:800;color:' + pc + ';font-family:\'JetBrains Mono\',monospace;font-size:16px;">' + p.probability + '%</span>';
+      html += '<span style="font-weight:800;color:' + pc + ';font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + p.probability + '%</span>';
       html += '<span style="color:' + dc + ';font-size:14px;font-weight:900;">' + di + '</span>';
       html += tb;
-      if (p.catalyst) html += '<span style="font-size:11px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + p.catalyst + '</span>';
+      if (p.catalyst) html += '<span style="font-size:12px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + p.catalyst + '</span>';
       html += '</div>';
       html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:5px;">' + p.thesis + '</div>';
       if (p.keyLevels) html += '<div style="font-size:12px;color:var(--purple);font-weight:600;font-family:\'JetBrains Mono\',monospace;margin-bottom:3px;">' + p.keyLevels + '</div>';
@@ -456,15 +456,15 @@ function renderAnalysis() {
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">';
     analysis.movers.forEach(function(m) {
       var mc = m.changePct >= 0 ? 'var(--green)' : 'var(--red)';
-      var cb = m.catchable === 'yes' ? '<span style="font-size:11px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);">CATCHABLE</span>'
-        : m.catchable === 'partial' ? '<span style="font-size:11px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--amber-bg);color:var(--amber);">PARTIAL</span>'
-        : '<span style="font-size:11px;font-weight:700;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.12);color:var(--text-muted);">NEWS</span>';
+      var cb = m.catchable === 'yes' ? '<span style="font-size:12px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);">CATCHABLE</span>'
+        : m.catchable === 'partial' ? '<span style="font-size:12px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--amber-bg);color:var(--amber);">PARTIAL</span>'
+        : '<span style="font-size:12px;font-weight:700;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.12);color:var(--text-muted);">NEWS</span>';
       html += '<div class="card" style="padding:14px;">';
       html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">';
       html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + m.ticker + '</span>';
       html += '<span style="font-weight:800;color:' + mc + ';font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + (m.changePct >= 0 ? '+' : '') + m.changePct.toFixed(1) + '%</span>';
       html += cb;
-      if (m.sector) html += '<span style="font-size:11px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;">' + m.sector + '</span>';
+      if (m.sector) html += '<span style="font-size:12px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;">' + m.sector + '</span>';
       html += '</div>';
       html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:4px;">' + m.why + '</div>';
       if (m.lesson) html += '<div style="font-size:14px;color:var(--blue);font-weight:600;line-height:1.4;">\u2192 ' + m.lesson + '</div>';
@@ -487,7 +487,7 @@ function renderAnalysis() {
       html += '</div>';
       html += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;">';
       w.tickers.forEach(function(t) {
-        html += '<span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--bg-secondary);color:var(--text-secondary);font-family:\'JetBrains Mono\',monospace;">' + t + '</span>';
+        html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--bg-secondary);color:var(--text-secondary);font-family:\'JetBrains Mono\',monospace;">' + t + '</span>';
       });
       html += '</div>';
       html += '<div style="font-size:14px;color:var(--text-muted);line-height:1.4;">' + w.note + '</div>';
@@ -508,7 +508,7 @@ function renderAnalysis() {
     var scc = ms.score >= 8 ? 'var(--green)' : ms.score >= 5 ? 'var(--amber)' : 'var(--red)';
     html += '<div class="card" style="padding:20px;text-align:center;margin-bottom:14px;">';
     html += '<div style="width:64px;height:64px;border-radius:50%;background:' + scc + ';display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px;">';
-    html += '<span style="font-weight:900;font-size:24px;color:#fff;">' + ms.score + '</span></div>';
+    html += '<span style="font-weight:900;font-size:18px;color:#fff;">' + ms.score + '</span></div>';
     html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">Discipline Score: ' + ms.score + '/10</div>';
     if (ms.scoreNote) html += '<div style="font-size:14px;color:var(--text-muted);margin-top:6px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6;">' + ms.scoreNote + '</div>';
     html += '</div>';
@@ -594,7 +594,7 @@ function toggleAnalysisDateDropdown() {
       html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:14px;gap:8px;' + (isActive ? 'background:var(--blue-bg);' : '') + '" onclick="analysisCurrentDate=\'' + date + '\';document.getElementById(\'analysis-date-dropdown\').style.display=\'none\';renderAnalysis();" onmouseover="if(!' + isActive + ')this.style.background=\'var(--bg-secondary)\'" onmouseout="if(!' + isActive + ')this.style.background=\'transparent\'">';
       html += '<span style="color:var(--text-secondary);font-weight:' + (isActive ? '700' : '500') + ';white-space:nowrap;">' + dayName + '</span>';
       html += '<span style="font-size:12px;color:var(--text-muted);">' + moverCount + ' movers</span>';
-      if (topMover) html += '<span style="font-weight:700;color:' + topColor + ';font-family:\'JetBrains Mono\',monospace;font-size:11px;white-space:nowrap;">' + topMover + '</span>';
+      if (topMover) html += '<span style="font-weight:700;color:' + topColor + ';font-family:\'JetBrains Mono\',monospace;font-size:12px;white-space:nowrap;">' + topMover + '</span>';
       html += '</div>';
     });
   }
@@ -741,7 +741,7 @@ async function autoGenerateAnalysis(dateStr) {
     renderAnalysis();
 
   }catch(e){
-    if(status)status.innerHTML='<span style="color:var(--red);">Error: '+e.message+'</span>';
+    if(status)status.innerHTML='<span style="color:var(--red);">Error: '+escapeHtml(e.message)+'</span>';
     if(btn){btn.disabled=false;btn.textContent='Generate Analysis';}
   }
 }
@@ -869,7 +869,7 @@ async function backfillAnalysis(lookbackDays) {
     try {
       await autoGenerateAnalysisSilent(missing[i]);
     } catch(e) {
-      setStatus('<span style="color:var(--red);">Error on ' + missing[i] + ': ' + e.message + '</span>');
+      setStatus('<span style="color:var(--red);">Error on ' + escapeHtml(missing[i]) + ': ' + escapeHtml(e.message) + '</span>');
       // Stop on credit/auth errors — no point retrying
       if(e.message.indexOf('credit') >= 0 || e.message.indexOf('401') >= 0 || e.message.indexOf('authentication') >= 0) {
         if(btn7) { btn7.disabled = false; btn7.textContent = 'Fill Missing (' + missing.length + ')'; }
