@@ -811,7 +811,7 @@ function renderSetupCard(s, idx) {
   // Header: ticker, price, score circle
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
   html += '<div style="display:flex;align-items:center;gap:6px;">';
-  html += '<span style="font-size:14px;font-weight:800;font-family:var(--font-mono);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\'' + s.ticker + '\')">' + s.ticker + '</span>';
+  html += '<span class="ticker-link" style="font-size:14px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\'' + s.ticker + '\')">' + s.ticker + '</span>';
   html += '<span style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
   html += '</div>';
   // Score circle — clickable to expand details
@@ -938,7 +938,7 @@ function _rerenderUniverseRows() {
     html += '<div style="display:grid;grid-template-columns:' + _univCols + ';gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:12px;' + bg + 'align-items:center;">';
     html += '<span style="color:var(--text-muted);">' + (idx + 1) + '</span>';
     html += '<span style="font-weight:900;font-family:var(--font-mono);color:' + scoreColor + ';">' + sc + '</span>';
-    html += '<span onclick="event.stopPropagation();openTVChart(\'' + t.ticker + '\')" title="Click for chart" style="font-weight:800;font-family:var(--font-mono);color:var(--blue);cursor:pointer;">' + t.ticker + '</span>';
+    html += '<span onclick="event.stopPropagation();openTVChart(\'' + t.ticker + '\')" title="Click for chart" class="ticker-link">' + t.ticker + '</span>';
     html += '<span style="font-family:var(--font-mono);color:var(--text-secondary);">$' + t.price.toFixed(2) + '</span>';
     html += '<span style="font-family:var(--font-mono);color:var(--text-muted);">' + _fmtMcap(t.mcap) + '</span>';
     html += '<span style="font-family:var(--font-mono);color:var(--text-muted);">' + (t.atr != null ? '$' + t.atr.toFixed(2) : '\u2014') + '</span>';
@@ -1015,7 +1015,7 @@ function renderUniverseList(tickers) {
     html += '<div style="display:grid;grid-template-columns:' + _univCols + ';gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:12px;' + bg + 'align-items:center;">';
     html += '<span style="color:var(--text-muted);">' + (idx + 1) + '</span>';
     html += '<span style="font-weight:900;font-family:var(--font-mono);color:' + scoreColor + ';">' + sc + '</span>';
-    html += '<span onclick="event.stopPropagation();openTVChart(\'' + t.ticker + '\')" title="Click for chart" style="font-weight:800;font-family:var(--font-mono);color:var(--blue);cursor:pointer;">' + t.ticker + '</span>';
+    html += '<span onclick="event.stopPropagation();openTVChart(\'' + t.ticker + '\')" title="Click for chart" class="ticker-link">' + t.ticker + '</span>';
     html += '<span style="font-family:var(--font-mono);color:var(--text-secondary);">$' + t.price.toFixed(2) + '</span>';
     html += '<span style="font-family:var(--font-mono);color:var(--text-muted);">' + _fmtMcap(t.mcap) + '</span>';
     html += '<span style="font-family:var(--font-mono);color:var(--text-muted);">' + (t.atr != null ? '$' + t.atr.toFixed(2) : '\u2014') + '</span>';

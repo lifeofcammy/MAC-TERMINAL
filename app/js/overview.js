@@ -1398,7 +1398,7 @@ function _renderWatchlistItems(wList) {
     html += '<div class="wl-card-'+item.ticker+'" style="background:var(--bg-secondary);border-radius:8px;padding:10px 12px;border-left:3px solid '+biasColor+';position:relative;">';
     html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');refreshWatchlistUI();" style="position:absolute;top:4px;right:6px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;">\u00d7</button>';
     html += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;flex-wrap:wrap;">';
-    html += '<span style="font-size:13px;font-weight:800;font-family:var(--font-mono);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+item.ticker+'\');">'+item.ticker+'</span>';
+    html += '<span class="ticker-link" style="font-size:13px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+item.ticker+'\');">'+item.ticker+'</span>';
     html += '<span style="font-size:11px;font-weight:700;padding:1px 4px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+'</span>';
     html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-muted);">...</span>';
     html += '</div>';
@@ -1525,7 +1525,7 @@ async function showRRGSectorDetail(sectorEtf) {
   var wkColor = secInfo && secInfo.weekPerf >= 0 ? 'var(--green)' : 'var(--red)';
   var headerHtml = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
   headerHtml += '<div style="display:flex;align-items:center;gap:8px;">';
-  headerHtml += '<span style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);cursor:pointer;" title="Click for chart" onclick="openTVChart(\'' + sectorEtf + '\')">' + sectorEtf + '</span>';
+  headerHtml += '<span class="ticker-link" style="font-size:14px;" title="Click for chart" onclick="openTVChart(\'' + sectorEtf + '\')">' + sectorEtf + '</span>';
   headerHtml += '<span style="font-size:14px;font-weight:600;color:var(--text-secondary);">' + (secInfo ? secInfo.name : '') + '</span>';
   headerHtml += '</div>';
   headerHtml += '<div style="display:flex;align-items:center;gap:12px;">';
@@ -1572,7 +1572,7 @@ async function showRRGSectorDetail(sectorEtf) {
         var color = r.pct >= 0 ? 'var(--green)' : 'var(--red)';
         var bg = r.pct >= 0 ? 'var(--green-bg)' : 'var(--red-bg)';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-radius:5px;background:' + bg + ';">';
-        html += '<div style="font-size:13px;"><span style="font-weight:800;font-family:var(--font-mono);color:var(--text-primary);cursor:pointer;" title="Click for chart" onclick="openTVChart(\'' + r.etf + '\')">' + r.etf + '</span> <span style="color:var(--text-muted);">' + r.name + '</span></div>';
+        html += '<div style="font-size:13px;"><span class="ticker-link" style="font-size:13px;" title="Click for chart" onclick="openTVChart(\'' + r.etf + '\')">' + r.etf + '</span> <span style="color:var(--text-muted);">' + r.name + '</span></div>';
         html += '<span style="font-size:13px;font-weight:800;font-family:var(--font-mono);color:' + color + ';">' + (r.pct >= 0 ? '+' : '') + r.pct.toFixed(1) + '%</span>';
         html += '</div>';
       });
@@ -1613,7 +1613,7 @@ async function showRRGSectorDetail(sectorEtf) {
           var volStr = l.vol >= 1000000 ? (l.vol / 1000000).toFixed(1) + 'M' : l.vol >= 1000 ? (l.vol / 1000).toFixed(0) + 'K' : l.vol.toString();
           var volColor = l.volVsAvg >= 1.5 ? 'var(--blue)' : 'var(--text-muted)';
           html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:2px 10px;padding:5px 10px;border-radius:5px;background:' + bg + ';align-items:center;">';
-          html += '<span style="font-size:13px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);cursor:pointer;" title="Click for chart" onclick="openTVChart(\'' + l.ticker + '\')">' + l.ticker + '</span>';
+          html += '<span class="ticker-link" style="font-size:13px;" title="Click for chart" onclick="openTVChart(\'' + l.ticker + '\')">' + l.ticker + '</span>';
           html += '<span style="font-size:13px;font-family:var(--font-mono);color:var(--text-secondary);text-align:right;">$' + l.price.toFixed(2) + '</span>';
           html += '<span style="font-size:13px;font-weight:800;font-family:var(--font-mono);color:' + c + ';text-align:right;">' + (l.dayPct >= 0 ? '+' : '') + l.dayPct.toFixed(1) + '%</span>';
           html += '<span style="font-size:13px;font-family:var(--font-mono);color:' + volColor + ';text-align:right;">' + volStr + '</span>';
@@ -1889,7 +1889,7 @@ function renderTopIdeasHTML(ideas, cacheTs) {
     html += '<div style="background:'+sbg+';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px 16px;border-left:3px solid '+sc+'">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
     html += '<div style="display:flex;align-items:center;gap:6px;">';
-    html += '<span style="font-size:14px;font-weight:800;font-family:var(--font-mono);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+idea.ticker+'\');">'+idea.ticker+'</span>';
+    html += '<span class="ticker-link" style="font-size:14px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+idea.ticker+'\');">'+idea.ticker+'</span>';
     html += '<span style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);">$'+(idea.price?idea.price.toFixed(2):'—')+'</span>';
     html += '</div>';
     html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid '+sc+';font-size:12px;font-weight:900;color:'+sc+';font-family:var(--font-mono);">'+idea.score+'</div>';

@@ -492,6 +492,21 @@ input:focus, textarea:focus, select:focus {
   text-align: center;
   white-space: nowrap;
 }
+.ticker-link {
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--blue);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--amber);
+  background: rgba(245, 158, 11, 0.12);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.ticker-link:hover {
+  background: rgba(245, 158, 11, 0.25);
+}
 .step-header-box {
   text-align: center;
   border: 2px solid var(--blue);
