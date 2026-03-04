@@ -1078,7 +1078,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'regime\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 1</div><div class="card-header-bar">Market Regime</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 1</div><div class="card-header-bar">Market Outlook</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;"><span id="regime-arrow" style="font-size:12px;color:var(--text-muted);">'+(regimeCollapsed?'▶':'▼')+'</span></div>';
   html += '</div>';
   html += '<div id="regime-body" style="'+(regimeCollapsed?'display:none;':'')+'padding:14px 20px;">';
