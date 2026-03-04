@@ -7,6 +7,13 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/app",
+      "destination": "/app/",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/econ-calendar",

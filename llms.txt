@@ -1,0 +1,38 @@
+# MAC Terminal — Market Action Center
+
+> Simplify Your Trading
+
+## What is MAC Terminal?
+MAC Terminal (Market Action Center) is a free trading tools dashboard for beginner to intermediate stock traders. It provides a clean, all-in-one workspace for daily market preparation and trade analysis — no brokerage connection required.
+
+## Website
+https://marketactioncenter.com
+
+## Key Features
+- **Morning Mindset**: AI-generated daily market outlook covering regime, breadth, and sector themes
+- **Market Overview**: Real-time market regime (risk-on/risk-off), breadth direction, sector heat check, top headlines, economic calendar
+- **Setup Scanner**: Scans the full US stock market for compression setups with momentum — finds stocks coiling near moving averages with rising volume
+- **Top Ideas**: Quick scan of 50 popular tickers scored by compression, alignment, extension, and relative volume
+- **AI Trade Journal**: Import trade history via CSV, get AI-powered performance analysis and coaching
+- **AI Trade Analysis**: Analyze individual trades with AI — get setup summaries, pattern review, and improvement suggestions
+- **Watchlist**: Track your favorite tickers with live prices and personal notes
+- **TradingView Charts**: Click any ticker to view a daily chart popup (15-min delayed)
+
+## Who Is It For?
+- Beginner to intermediate stock traders
+- Swing traders and day traders looking for daily market prep
+- Traders who want AI-assisted journaling and trade review
+- Anyone who wants a simple, fast, distraction-free trading dashboard
+
+## Tech Stack
+- Hosted on Vercel
+- Authentication via Supabase (email + Google sign-in)
+- Market data from Polygon.io
+- AI features powered by Anthropic Claude
+- Charts from TradingView (free widget)
+
+## Pricing
+Free to use. No credit card required.
+
+## Contact
+support@marketactioncenter.com

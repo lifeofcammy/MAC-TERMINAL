@@ -1,0 +1,21 @@
+# robots.txt — Market Action Center (marketactioncenter.com)
+
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /app/login.html
+
+# Allow AI search engine crawlers
+User-agent: GPTBot
+Allow: /
+Disallow: /app/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /app/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /app/
+
+Sitemap: https://marketactioncenter.com/sitemap.xml

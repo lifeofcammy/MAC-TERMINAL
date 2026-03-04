@@ -285,7 +285,7 @@ Two-layer system using **Top Ideas-style scoring** across the broader US market:
 - `SUPABASE_PROJECT_REF` — Supabase project reference ID
 - `SUPABASE_ACCESS_TOKEN` — Supabase personal access token
 
-### Latest commit: `bcf08fc` (March 4, 2026)
+### Latest commit: `3377013` (March 4, 2026)
 
 ---
 
