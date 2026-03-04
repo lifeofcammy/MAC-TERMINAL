@@ -2094,11 +2094,11 @@ function renderTopIdeasHTML(ideas, cacheTs) {
     html += '</div>';
     if(idea.source) html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">via '+idea.source+'</div>';
     if(idea.thesis) html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.4;margin-bottom:6px;">'+idea.thesis.replace(/</g,'&lt;')+'</div>';
-    if(idea.entry||idea.stop||idea.target){
-      html += '<div style="display:flex;gap:8px;font-size:12px;font-family:var(--font-mono);padding:4px 6px;background:var(--bg-secondary);border-radius:3px;">';
-      if(idea.entry) html += '<span style="color:var(--blue);">Entry $'+idea.entry+'</span>';
-      if(idea.stop) html += '<span style="color:var(--red);">Stop $'+idea.stop+'</span>';
-      if(idea.target) html += '<span style="color:var(--green);">Target $'+idea.target+'</span>';
+    if(idea.industry||idea.atr||idea.mcap){
+      html += '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px;padding:4px 6px;background:var(--bg-secondary);border-radius:3px;">';
+      if(idea.industry) html += '<span style="color:var(--text-muted);">'+idea.industry+'</span>';
+      if(idea.atr) html += '<span style="font-family:var(--font-mono);color:var(--text-secondary);">ATR $'+idea.atr.toFixed(2)+'</span>';
+      if(idea.mcap) html += '<span style="font-family:var(--font-mono);color:var(--text-secondary);">'+(idea.mcap>=1e12?'$'+(idea.mcap/1e12).toFixed(1)+'T':idea.mcap>=1e9?'$'+(idea.mcap/1e9).toFixed(1)+'B':idea.mcap>=1e6?'$'+(idea.mcap/1e6).toFixed(0)+'M':'$'+idea.mcap)+'</span>';
       html += '</div>';
     }
     html += '</div>';
@@ -2201,10 +2201,18 @@ async function runQuickScan() {
         var dayChg=prev>0?((p-prev)/prev)*100:0;if(dayChg>1)score+=5;else if(dayChg>0)score+=2;
         score=Math.round(Math.min(100,Math.max(0,score)));if(score<30)continue;
         var thesis='';if(spread<=2)thesis+='Tight compression ('+spread.toFixed(1)+'%). ';if(aboveBoth)thesis+='Above 10/20 SMA. ';if(ext<=3)thesis+='Near base ('+ext.toFixed(1)+'%). ';if(rvol&&rvol>=1.5)thesis+=rvol.toFixed(1)+'x volume. ';
-        ideas.push({ticker:ticker,price:p,score:score,source:'Compression',thesis:thesis,entry:p.toFixed(2),stop:(sma20*0.98).toFixed(2),target:(p+(p-sma20*0.98)*2).toFixed(2)});
+        // ATR from bars
+        var qAtr=null;if(bars.length>=15){var trS=0;for(var ai=bars.length-14;ai<bars.length;ai++){var tr=bars[ai].h-bars[ai].l;if(ai>0)tr=Math.max(tr,Math.abs(bars[ai].h-bars[ai-1].c),Math.abs(bars[ai].l-bars[ai-1].c));trS+=tr;}qAtr=Math.round((trS/14)*100)/100;}
+        ideas.push({ticker:ticker,price:p,score:score,source:'Compression',thesis:thesis,atr:qAtr});
       }catch(e){continue;}
     }
     ideas.sort(function(a,b){return b.score-a.score;});ideas=ideas.slice(0,4);
+    // Fetch industry + market cap for top ideas
+    if(ideas.length>0){
+      var detailPromises=ideas.map(function(idea){return polyGet('/v3/reference/tickers/'+idea.ticker).then(function(d){var r=d.results||{};return{ticker:idea.ticker,mc:r.market_cap||null,ind:r.sic_description||null};}).catch(function(){return{ticker:idea.ticker,mc:null,ind:null};});});
+      var detailResults=await Promise.all(detailPromises);
+      detailResults.forEach(function(r){var idea=ideas.find(function(i){return i.ticker===r.ticker;});if(idea){idea.mcap=r.mc;idea.industry=r.ind;}});
+    }
     try{localStorage.setItem('mac_top_ideas_'+new Date().toISOString().split('T')[0],JSON.stringify({ideas:ideas,ts:Date.now()}));}catch(e){}
     el.innerHTML=ideas.length>0?renderTopIdeasHTML(ideas,Date.now()):'<div style="text-align:center;padding:14px;color:var(--text-muted);font-size:12px;">No strong setups found. Try full scanners.</div>';
   }catch(e){el.innerHTML='<div style="color:var(--red);font-size:12px;">Scan failed: '+escapeHtml(e.message)+'</div>';}
