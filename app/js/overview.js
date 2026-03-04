@@ -1330,6 +1330,14 @@ function renderWatchlistSidebar() {
   if (!sidebar) return;
   var wList = getWatchlist();
   var html = '';
+  // Account size box
+  var savedAcct = localStorage.getItem('mac_account_size') || '';
+  html += '<div style="display:flex;align-items:center;gap:6px;background:var(--bg-secondary);border:1.5px solid var(--blue);border-radius:8px;padding:4px 10px;margin-bottom:8px;">';
+  html += '<label style="font-size:12px;color:var(--blue);white-space:nowrap;font-weight:700;">Acct $</label>';
+  html += '<input id="header-account-input" type="number" placeholder="Enter size" min="0" step="1000" value="' + (savedAcct ? savedAcct : '') + '"';
+  html += ' style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;text-align:right;-moz-appearance:textfield;box-sizing:border-box;"';
+  html += ' title="Your account size — used for position sizing" onchange="saveHeaderAccount()" />';
+  html += '</div>';
   html += '<div class="card" style="padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;">';
   html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">Watchlist</div>';
