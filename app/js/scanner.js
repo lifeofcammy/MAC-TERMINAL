@@ -698,7 +698,7 @@ function renderSetupResults(data) {
     return html;
   }
 
-  html += '<div class="sc-results-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start;">';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">';
   setups.forEach(function(s, idx) {
     html += renderSetupCard(s, idx);
   });
@@ -709,51 +709,45 @@ function renderSetupResults(data) {
 
 
 // ==================== RENDER: INDIVIDUAL SETUP CARD ====================
-// Clean card: ticker, price, change, thesis, trade levels
-// Click score circle to expand component breakdown + stats
+// Matches Top Ideas card style exactly — colored left border, tinted bg, compact layout
 
 function renderSetupCard(s, idx) {
   var detailId = 'score-detail-' + idx;
-  var scoreColor = s.score >= 80 ? 'var(--green)' : s.score >= 60 ? 'var(--blue)' : s.score >= 40 ? 'var(--amber)' : 'var(--text-muted)';
-  var changePctColor = s.changePct >= 0 ? 'var(--green)' : 'var(--red)';
+  var sc = s.score >= 80 ? 'var(--green)' : s.score >= 60 ? 'var(--blue)' : s.score >= 40 ? 'var(--amber)' : 'var(--text-muted)';
+  var sbg = s.score >= 80 ? 'rgba(16,185,129,0.06)' : s.score >= 60 ? 'rgba(37,99,235,0.04)' : 'rgba(245,158,11,0.04)';
 
   var html = '';
-  html += '<div style="background:var(--bg-card);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:14px;padding:16px 18px;">';
+  html += '<div style="background:' + sbg + ';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px 16px;border-left:3px solid ' + sc + ';">';
 
-  // Header: ticker, price, change, score
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
-  html += '<div style="display:flex;align-items:center;gap:8px;">';
-  html += '<span style="font-size:18px;font-weight:900;font-family:var(--font-mono);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="openTVChart(\'' + s.ticker + '\')">' + s.ticker + '</span>';
-  html += '<span style="font-size:14px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
-  html += '<span style="font-size:14px;font-weight:700;font-family:var(--font-mono);color:' + changePctColor + ';">' + (s.changePct >= 0 ? '+' : '') + s.changePct.toFixed(2) + '%</span>';
+  // Header: ticker, price, score circle
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
+  html += '<div style="display:flex;align-items:center;gap:6px;">';
+  html += '<span style="font-size:14px;font-weight:800;font-family:var(--font-mono);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\'' + s.ticker + '\')">' + s.ticker + '</span>';
+  html += '<span style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
   html += '</div>';
-
   // Score circle — clickable to expand details
-  html += '<div onclick="event.stopPropagation();var d=document.getElementById(\'' + detailId + '\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';" style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;border:2.5px solid ' + scoreColor + ';font-size:14px;font-weight:900;color:' + scoreColor + ';font-family:var(--font-mono);cursor:pointer;position:relative;" title="Click for score breakdown">';
-  html += s.score;
-  html += '<span style="position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:' + scoreColor + ';display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:900;">i</span>';
-  html += '</div>';
+  html += '<div onclick="event.stopPropagation();var d=document.getElementById(\'' + detailId + '\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid ' + sc + ';font-size:12px;font-weight:900;color:' + sc + ';font-family:var(--font-mono);cursor:pointer;" title="Click for score breakdown">' + s.score + '</div>';
   html += '</div>';
 
   // Thesis
   if (s.thesis) {
-    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:10px;">' + s.thesis + '</div>';
+    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.4;margin-bottom:6px;">' + s.thesis + '</div>';
   }
 
-  // Trade levels (always visible)
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">';
-  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Entry</div><div style="font-weight:800;font-family:var(--font-mono);color:var(--blue);font-size:14px;">$' + s.entryPrice.toFixed(2) + '</div></div>';
-  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Stop</div><div style="font-weight:800;font-family:var(--font-mono);color:var(--red);font-size:14px;">$' + s.stopPrice.toFixed(2) + '</div></div>';
-  html += '<div style="padding:6px 8px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Target</div><div style="font-weight:800;font-family:var(--font-mono);color:var(--green);font-size:14px;">$' + s.targetPrice.toFixed(2) + '</div></div>';
+  // Trade levels — single row like Top Ideas
+  html += '<div style="display:flex;gap:8px;font-size:12px;font-family:var(--font-mono);padding:4px 6px;background:var(--bg-secondary);border-radius:3px;">';
+  html += '<span style="color:var(--blue);">Entry $' + s.entryPrice.toFixed(2) + '</span>';
+  html += '<span style="color:var(--red);">Stop $' + s.stopPrice.toFixed(2) + '</span>';
+  html += '<span style="color:var(--green);">Target $' + s.targetPrice.toFixed(2) + '</span>';
   html += '</div>';
 
   // ── Expandable detail (hidden, shown on score click) ──
   var comps = s.components || {};
-  html += '<div id="' + detailId + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">';
+  html += '<div id="' + detailId + '" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">';
 
   // Component bars
-  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Score Breakdown</div>';
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:14px;margin-bottom:10px;">';
+  html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Score Breakdown</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:12px;margin-bottom:8px;">';
   html += renderComponentBar('Compression', comps.compression || 0, 30, 'var(--blue)');
   html += renderComponentBar('Alignment', comps.alignment || 0, 25, 'var(--blue)');
   var extLabel = (comps.extension || 0) >= 0 ? 'Near Base' : 'Extension';
@@ -762,13 +756,12 @@ function renderSetupCard(s, idx) {
   html += '</div>';
 
   // Quick stats
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">';
-  html += '<div style="padding:5px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Spread</div><div style="font-weight:700;font-size:14px;font-family:var(--font-mono);">' + s.spread + '%</div></div>';
-  html += '<div style="padding:5px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Extension</div><div style="font-weight:700;font-size:14px;font-family:var(--font-mono);">' + (s.ext >= 0 ? '+' : '') + s.ext + '%</div></div>';
-  html += '<div style="padding:5px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">RVol</div><div style="font-weight:700;font-size:14px;font-family:var(--font-mono);">' + (s.rvol ? s.rvol + 'x' : '—') + '</div></div>';
-  html += '<div style="padding:5px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">5d Range</div><div style="font-weight:700;font-size:14px;font-family:var(--font-mono);">' + s.range5 + '%</div></div>';
-  html += '<div style="padding:5px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Breakout</div><div style="font-weight:700;font-size:14px;font-family:var(--font-mono);">' + s.distToBreakout + '%</div></div>';
-  html += '<div style="padding:5px 8px;background:var(--bg-secondary);border-radius:6px;"><div style="color:var(--text-muted);font-size:12px;">Risk</div><div style="font-weight:700;font-size:14px;font-family:var(--font-mono);">' + s.riskPct + '%</div></div>';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:4px;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);">';
+  html += '<span>Spread ' + s.spread + '%</span><span>\u00b7</span>';
+  html += '<span>Ext ' + (s.ext >= 0 ? '+' : '') + s.ext + '%</span><span>\u00b7</span>';
+  html += '<span>RVol ' + (s.rvol ? s.rvol + 'x' : '\u2014') + '</span><span>\u00b7</span>';
+  html += '<span>5d ' + s.range5 + '%</span><span>\u00b7</span>';
+  html += '<span>Risk ' + s.riskPct + '%</span>';
   html += '</div>';
 
   html += '</div>'; // close detail
