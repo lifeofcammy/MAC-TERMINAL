@@ -16,6 +16,9 @@ var _breadthHistory = [];
 var _breadthInterval = null;
 var _breadthLastUpdate = null;
 
+// Global regime label for position sizing (read by chart.js)
+window._currentRegime = 'Neutral';
+
 // Restore breadth history from sessionStorage (survives page refreshes, clears on tab close)
 (function restoreBreadthHistory() {
   try {
@@ -531,6 +534,7 @@ async function refreshRegimeAndBreadth() {
       regimeDetail='Mixed signals across indexes. '+idxAboveBoth+' above both SMAs, '+idxBelowBoth+' below both. '+vixNote+' A+ setups only.\n'+indexNotes;
     }
     if(hasHighImpactEvent&&isMarketOpen()) regimeDetail+=' \u26a0 '+eventName+' today \u2014 volatility expected.';
+    window._currentRegime = regimeLabel;
 
     // 9. Render regime body
     var regimeBody = document.getElementById('regime-body');
@@ -985,6 +989,7 @@ async function renderOverview() {
     regimeDetail='Mixed signals across indexes. '+idxAboveBoth+' above both SMAs, '+idxBelowBoth+' below both. '+vixLine+' A+ setups only.\n'+indexNotes;
   }
   if(hasHighImpactEvent&&live) regimeDetail+=' ⚠ '+eventName+' today — volatility expected.';
+  window._currentRegime = regimeLabel;
 
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'regime\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
