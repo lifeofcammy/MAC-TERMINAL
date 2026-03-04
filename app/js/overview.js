@@ -523,46 +523,54 @@ async function refreshRegimeAndBreadth() {
     } catch(e){}
 
     // 8. Regime decision
-    var regimeLabel='Neutral', regimeColor='var(--text-muted)', regimeDetail='';
+    var regimeLabel='Chop', regimeColor='var(--amber)', regimeDetail='', regimeAction='';
     if(hasHighImpactEvent&&!isMarketOpen()){
       regimeLabel='Wait for '+eventName; regimeColor='var(--purple)';
+      regimeAction='Sit on hands. Wait for data reaction before entering.';
       regimeDetail=eventName+' data expected \u2014 wait for the reaction before entering.';
     }
     else if(avgPct>0.8&&breadthPct>=65&&idxAboveBoth>=3){
-      regimeLabel='Risk On'; regimeColor='var(--green)';
-      regimeDetail='Broad strength. '+idxAboveBoth+'/4 indexes above 10 & 20 SMA. '+sectorsUp+'/'+sectorETFs.length+' sectors green. '+vixNote+'\n'+indexNotes;
+      regimeLabel='Bullish'; regimeColor='var(--green)';
+      regimeAction='Full size. Breakouts and momentum plays. Be aggressive on A+ setups.';
+      regimeDetail=idxAboveBoth+'/4 indexes above 10 & 20 SMA. '+sectorsUp+'/'+sectorETFs.length+' sectors green. '+vixNote+'\n'+indexNotes;
     }
     else if(avgPct<-0.8&&breadthPct<=35&&idxBelowBoth>=3){
-      regimeLabel='Risk Off'; regimeColor='var(--red)';
-      regimeDetail='Broad weakness. '+idxBelowBoth+'/4 indexes below 10 & 20 SMA. '+sectorsDown+'/'+sectorETFs.length+' sectors red. '+vixNote+' Reduce size.\n'+indexNotes;
+      regimeLabel='Bearish'; regimeColor='var(--red)';
+      regimeAction='Reduce size or sit out. Cash is a position. Only short setups or hedges.';
+      regimeDetail=idxBelowBoth+'/4 indexes below 10 & 20 SMA. '+sectorsDown+'/'+sectorETFs.length+' sectors red. '+vixNote+'\n'+indexNotes;
     }
     else if(Math.abs(avgPct)<0.3&&idxMixed>=2){
-      regimeLabel='Choppy / Low Conviction'; regimeColor='var(--amber)';
+      regimeLabel='Chop'; regimeColor='var(--amber)';
+      regimeAction='Sit on hands. No clean direction. Wait for a trend to develop.';
       regimeDetail='Narrow range, mixed signals. '+idxAboveBoth+'/4 above both SMAs, '+idxBelowBoth+'/4 below both, '+idxMixed+'/4 mixed. '+vixNote+'\n'+indexNotes;
     }
     else if(avgPct>0.3||idxAboveBoth>=3){
-      regimeLabel='Lean Bullish'; regimeColor='var(--green)';
-      regimeDetail=idxAboveBoth+'/4 indexes above both SMAs. '+sectorsUp+'/'+sectorETFs.length+' sectors positive. '+vixNote+' Selective longs.\n'+indexNotes;
+      regimeLabel='Slightly Bullish'; regimeColor='var(--green)';
+      regimeAction='Selective longs only. Half size. Stick to your best setups.';
+      regimeDetail=idxAboveBoth+'/4 indexes above both SMAs. '+sectorsUp+'/'+sectorETFs.length+' sectors positive. '+vixNote+'\n'+indexNotes;
     }
     else if(avgPct<-0.3||idxBelowBoth>=3){
-      regimeLabel='Lean Bearish'; regimeColor='var(--red)';
-      regimeDetail=idxBelowBoth+'/4 indexes below both SMAs. '+sectorsDown+'/'+sectorETFs.length+' sectors negative. '+vixNote+' Cautious, reduce size.\n'+indexNotes;
+      regimeLabel='Slightly Bearish'; regimeColor='var(--red)';
+      regimeAction='Reduce size. Be cautious. Take profits quickly on any longs.';
+      regimeDetail=idxBelowBoth+'/4 indexes below both SMAs. '+sectorsDown+'/'+sectorETFs.length+' sectors negative. '+vixNote+'\n'+indexNotes;
     }
     else{
-      regimeLabel='Neutral'; regimeColor='var(--text-muted)';
-      regimeDetail='Mixed signals across indexes. '+idxAboveBoth+' above both SMAs, '+idxBelowBoth+' below both. '+vixNote+' A+ setups only.\n'+indexNotes;
+      regimeLabel='Chop'; regimeColor='var(--amber)';
+      regimeAction='Sit on hands. Mixed signals. A+ setups only, small size.';
+      regimeDetail='Mixed signals across indexes. '+idxAboveBoth+' above both SMAs, '+idxBelowBoth+' below both. '+vixNote+'\n'+indexNotes;
     }
-    if(hasHighImpactEvent&&isMarketOpen()) regimeDetail+=' \u26a0 '+eventName+' today \u2014 volatility expected.';
+    if(hasHighImpactEvent&&isMarketOpen()) regimeAction+=' \u26a0 '+eventName+' today \u2014 expect volatility.';
     window._currentRegime = regimeLabel;
 
     // 9. Render regime body
     var regimeBody = document.getElementById('regime-body');
     if(regimeBody) {
       var rHtml = '';
-      rHtml += '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+regimeColor+';margin-top:4px;flex-shrink:0;"></span>';
-      rHtml += '<div style="min-width:0;flex:1;">';
-      rHtml += '<div style="font-size:14px;font-weight:800;color:'+regimeColor+';">'+regimeLabel+'</div>';
-      rHtml += '<div style="font-size:14px;color:var(--text-secondary);margin-top:2px;line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
+      rHtml += '<div style="text-align:center;margin-bottom:10px;">';
+      rHtml += '<div style="font-family:var(--font-display);font-size:28px;font-weight:700;color:'+regimeColor+';letter-spacing:0.02em;">'+regimeLabel+'</div>';
+      rHtml += '<div style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-top:4px;">'+regimeAction+'</div>';
+      rHtml += '</div>';
+      rHtml += '<div style="font-size:14px;color:var(--text-muted);line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
       // SMA badges
       rHtml += '<div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;">';
       indexes.forEach(function(idx) {
@@ -980,35 +988,43 @@ async function renderOverview() {
   var vixLine=vixNote;
 
   // Regime decision using ALL indexes + VIX
+  var regimeAction='';
   if(hasHighImpactEvent&&!live){
     regimeLabel='Wait for '+eventName;regimeColor='var(--purple)';
+    regimeAction='Sit on hands. Wait for data reaction before entering.';
     regimeDetail=eventName+' data expected — wait for the reaction before entering.';
   }
   else if(avgPct>0.8&&breadthPct>=65&&idxAboveBoth>=3){
-    regimeLabel='Risk On';regimeColor='var(--green)';
-    regimeDetail='Broad strength. '+idxAboveBoth+'/4 indexes above 10 & 20 SMA. '+sectorsUp+'/'+sectorData.length+' sectors green. '+vixLine+'\n'+indexNotes;
+    regimeLabel='Bullish';regimeColor='var(--green)';
+    regimeAction='Full size. Breakouts and momentum plays. Be aggressive on A+ setups.';
+    regimeDetail=idxAboveBoth+'/4 indexes above 10 & 20 SMA. '+sectorsUp+'/'+sectorData.length+' sectors green. '+vixLine+'\n'+indexNotes;
   }
   else if(avgPct<-0.8&&breadthPct<=35&&idxBelowBoth>=3){
-    regimeLabel='Risk Off';regimeColor='var(--red)';
-    regimeDetail='Broad weakness. '+idxBelowBoth+'/4 indexes below 10 & 20 SMA. '+sectorsDown+'/'+sectorData.length+' sectors red. '+vixLine+' Reduce size.\n'+indexNotes;
+    regimeLabel='Bearish';regimeColor='var(--red)';
+    regimeAction='Reduce size or sit out. Cash is a position. Only short setups or hedges.';
+    regimeDetail=idxBelowBoth+'/4 indexes below 10 & 20 SMA. '+sectorsDown+'/'+sectorData.length+' sectors red. '+vixLine+'\n'+indexNotes;
   }
   else if(Math.abs(avgPct)<0.3&&idxMixed>=2){
-    regimeLabel='Choppy / Low Conviction';regimeColor='var(--amber)';
+    regimeLabel='Chop';regimeColor='var(--amber)';
+    regimeAction='Sit on hands. No clean direction. Wait for a trend to develop.';
     regimeDetail='Narrow range, mixed signals. '+idxAboveBoth+'/4 above both SMAs, '+idxBelowBoth+'/4 below both, '+idxMixed+'/4 mixed. '+vixLine+'\n'+indexNotes;
   }
   else if(avgPct>0.3||idxAboveBoth>=3){
-    regimeLabel='Lean Bullish';regimeColor='var(--green)';
-    regimeDetail=idxAboveBoth+'/4 indexes above both SMAs. '+sectorsUp+'/'+sectorData.length+' sectors positive. '+vixLine+' Selective longs.\n'+indexNotes;
+    regimeLabel='Slightly Bullish';regimeColor='var(--green)';
+    regimeAction='Selective longs only. Half size. Stick to your best setups.';
+    regimeDetail=idxAboveBoth+'/4 indexes above both SMAs. '+sectorsUp+'/'+sectorData.length+' sectors positive. '+vixLine+'\n'+indexNotes;
   }
   else if(avgPct<-0.3||idxBelowBoth>=3){
-    regimeLabel='Lean Bearish';regimeColor='var(--red)';
-    regimeDetail=idxBelowBoth+'/4 indexes below both SMAs. '+sectorsDown+'/'+sectorData.length+' sectors negative. '+vixLine+' Cautious, reduce size.\n'+indexNotes;
+    regimeLabel='Slightly Bearish';regimeColor='var(--red)';
+    regimeAction='Reduce size. Be cautious. Take profits quickly on any longs.';
+    regimeDetail=idxBelowBoth+'/4 indexes below both SMAs. '+sectorsDown+'/'+sectorData.length+' sectors negative. '+vixLine+'\n'+indexNotes;
   }
   else{
-    regimeLabel='Neutral';regimeColor='var(--text-muted)';
-    regimeDetail='Mixed signals across indexes. '+idxAboveBoth+' above both SMAs, '+idxBelowBoth+' below both. '+vixLine+' A+ setups only.\n'+indexNotes;
+    regimeLabel='Chop';regimeColor='var(--amber)';
+    regimeAction='Sit on hands. Mixed signals. A+ setups only, small size.';
+    regimeDetail='Mixed signals across indexes. '+idxAboveBoth+' above both SMAs, '+idxBelowBoth+' below both. '+vixLine+'\n'+indexNotes;
   }
-  if(hasHighImpactEvent&&live) regimeDetail+=' ⚠ '+eventName+' today — volatility expected.';
+  if(hasHighImpactEvent&&live) regimeAction+=' \u26a0 '+eventName+' today — expect volatility.';
   window._currentRegime = regimeLabel;
 
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
@@ -1017,11 +1033,12 @@ async function renderOverview() {
   html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 1</div><div class="card-header-bar">Market Regime</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;"><span id="regime-arrow" style="font-size:12px;color:var(--text-muted);">'+(regimeCollapsed?'▶':'▼')+'</span></div>';
   html += '</div>';
-  html += '<div id="regime-body" style="'+(regimeCollapsed?'display:none;':'display:flex;')+'padding:14px 20px;align-items:flex-start;gap:12px;">';
-  html += '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+regimeColor+';margin-top:4px;flex-shrink:0;"></span>';
-  html += '<div style="min-width:0;flex:1;">';
-  html += '<div style="font-size:14px;font-weight:800;color:'+regimeColor+';">'+regimeLabel+'</div>';
-  html += '<div style="font-size:14px;color:var(--text-secondary);margin-top:2px;line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
+  html += '<div id="regime-body" style="'+(regimeCollapsed?'display:none;':'')+'padding:14px 20px;">';
+  html += '<div style="text-align:center;margin-bottom:10px;">';
+  html += '<div style="font-family:var(--font-display);font-size:28px;font-weight:700;color:'+regimeColor+';letter-spacing:0.02em;">'+regimeLabel+'</div>';
+  html += '<div style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-top:4px;">'+regimeAction+'</div>';
+  html += '</div>';
+  html += '<div style="font-size:14px;color:var(--text-muted);line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
   // Show all 4 indexes' SMA status
   var smaIndexes = [
     {name:'SPY',s10:spySma10,s20:spySma20,a10:spyAbove10,a20:spyAbove20},
