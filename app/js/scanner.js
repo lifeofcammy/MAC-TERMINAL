@@ -148,8 +148,8 @@ async function buildMomentumUniverse(statusFn) {
 
   var filtered = allStocks.filter(function(s) {
     if (!s.T || !s.c || !s.v) return false;
-    if (s.c < 10) return false;
-    if (s.v < 500000) return false;
+    if (s.c < 20) return false;
+    if (s.v < 1000000) return false;
     if (s.T.length > 5) return false;
     if (/[.-]/.test(s.T)) return false;
     if (etfSet[s.T]) return false;           // Exclude known ETFs
@@ -158,8 +158,9 @@ async function buildMomentumUniverse(statusFn) {
 
   statusFn('Filtered to ' + filtered.length + ' stocks. Scoring...');
 
-  // Sort by dollar volume (highest liquidity first)
+  // Sort by dollar volume (highest liquidity first) and take top 100
   filtered.sort(function(a, b) { return (b.v * b.c) - (a.v * a.c); });
+  filtered = filtered.slice(0, 100);
 
   // Fetch 60-day bars and score each candidate
   var scored = [];
@@ -246,10 +247,7 @@ function calcUniverseScore(bars, currentPrice) {
 
   // ── HARD FILTERS ──
 
-  // Must be above 50 SMA (uptrend)
-  if (!sma50 || currentPrice < sma50) return { total: 0 };
-
-  // ATR14
+  // ATR14 (for data, no minimum filter)
   var _atr14 = 0;
   if (len >= 15) {
     var _trS = 0;
@@ -261,36 +259,13 @@ function calcUniverseScore(bars, currentPrice) {
     _atr14 = _trS / 14;
   }
 
-  // ATR% ≥ 5%
-  var atrPct = currentPrice > 0 && _atr14 > 0 ? (_atr14 / currentPrice) * 100 : 0;
-  if (atrPct < 5) return { total: 0 };
-
-  // Buyout filters
+  // Range data (for display, not filtering)
   var recent5H = Math.max.apply(null, highs.slice(-5));
   var recent5L = Math.min.apply(null, lows.slice(-5));
   var range5 = ((recent5H - recent5L) / currentPrice) * 100;
   var recent10H = Math.max.apply(null, highs.slice(-10));
   var recent10L = Math.min.apply(null, lows.slice(-10));
   var range10 = ((recent10H - recent10L) / currentPrice) * 100;
-
-  if (range5 < 0.8) return { total: 0 };
-  if (range10 < 1.5 && range5 < 2) return { total: 0 };
-  if (len >= 15) {
-    for (var gi = Math.max(0, len - 30); gi < len - 5; gi++) {
-      var prevC = gi > 0 ? closes[gi - 1] : closes[gi];
-      var gapPct = prevC > 0 ? ((closes[gi] - prevC) / prevC) * 100 : 0;
-      if (gapPct > 10) {
-        var postGapHighs = highs.slice(gi + 2);
-        var postGapLows = lows.slice(gi + 2);
-        if (postGapHighs.length >= 3) {
-          var postH = Math.max.apply(null, postGapHighs);
-          var postL = Math.min.apply(null, postGapLows);
-          var postRange = ((postH - postL) / currentPrice) * 100;
-          if (postRange < 3.5) return { total: 0 };
-        }
-      }
-    }
-  }
 
   // ── SCORING (Top Ideas style — 5 factors, max ~100) ──
 
@@ -548,10 +523,7 @@ async function runSetupScan(statusFn) {
     }
 
     var sma10 = sma(closes, 10), sma20 = sma(closes, 20), sma50 = sma(closes, 50);
-    if (!sma20 || !sma10 || !sma50) return;
-
-    // Must be above 10, 20, AND 50 SMA — confirmed uptrend only
-    if (curPrice < sma10 || curPrice < sma20 || curPrice < sma50) return;
+    if (!sma20 || !sma10) return;
 
     var spread = Math.abs(sma10 - sma20) / curPrice * 100;
     if (spread > 5) return;
@@ -565,34 +537,6 @@ async function runSetupScan(statusFn) {
     var recent5H = Math.max.apply(null, highs.slice(-5));
     var recent5L = Math.min.apply(null, lows.slice(-5));
     var range5 = ((recent5H - recent5L) / curPrice) * 100;
-    if (range5 < 0.8) return; // flatlined deal stock
-    // Buyout filter: 10d range < 1.5% AND 5d range < 2% = dead stock
-    if (highs.length >= 10) {
-      var r10H = Math.max.apply(null, highs.slice(-10));
-      var r10L = Math.min.apply(null, lows.slice(-10));
-      var range10 = ((r10H - r10L) / curPrice) * 100;
-      if (range10 < 1.5 && range5 < 2) return;
-    }
-    // Post-gap flatline: gap >10% then barely moves = acquisition/deal stock
-    if (closes.length >= 15) {
-      for (var bi = Math.max(0, closes.length - 30); bi < closes.length - 5; bi++) {
-        var bPrev = bi > 0 ? closes[bi - 1] : closes[bi];
-        var bGap = bPrev > 0 ? ((closes[bi] - bPrev) / bPrev) * 100 : 0;
-        if (bGap > 10) {
-          var pgH = highs.slice(bi + 2);
-          var pgL = lows.slice(bi + 2);
-          if (pgH.length >= 3) {
-            var pgRange = ((Math.max.apply(null, pgH) - Math.min.apply(null, pgL)) / curPrice) * 100;
-            if (pgRange < 3.5) return;
-          }
-        }
-      }
-    }
-    if (changePct < -8) return;
-
-    // Market cap filter — minimum $500M (avoid micro caps)
-    var mcap = allMarketCap[ticker] || 0;
-    if (mcap > 0 && mcap < 500000000) return;
 
     var score = allScores[ticker] || 0;
     if (score < 30) return;
