@@ -35,16 +35,18 @@
       <div class="header-sub">Market Action Center</div>
     </div>
   </div>
-  <div class="header-tagline" style="position:absolute;left:50%;transform:translateX(-50%);font-family:var(--font-display);font-size:20px;font-weight:400;letter-spacing:0.02em;color:var(--blue);">
-    Simplify Your Trading
-  </div>
-  <div class="header-right">
-    <div id="account-box" style="display:flex;align-items:center;gap:6px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:4px 10px;">
-      <label style="font-size:12px;color:var(--text-muted);white-space:nowrap;">Acct $</label>
-      <input id="header-account-input" type="number" placeholder="25000" min="0" step="1000"
-        style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;text-align:right;-moz-appearance:textfield;"
+  <div style="position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;">
+    <div id="account-box" title="Your account size — used for position sizing when you click any ticker" style="display:flex;align-items:center;gap:6px;background:var(--bg-secondary);border:1.5px solid var(--blue);border-radius:8px;padding:4px 10px;">
+      <label style="font-size:12px;color:var(--blue);white-space:nowrap;font-weight:600;">Acct $</label>
+      <input id="header-account-input" type="number" placeholder="Enter value" min="0" step="1000"
+        style="width:90px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;text-align:right;-moz-appearance:textfield;"
         onchange="saveHeaderAccount()" />
     </div>
+    <div class="header-tagline" style="font-family:var(--font-display);font-size:20px;font-weight:400;letter-spacing:0.02em;color:var(--blue);">
+      Simplify Your Trading
+    </div>
+  </div>
+  <div class="header-right">
     <span class="last-updated" id="lastUpdated"></span>
     <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -191,7 +193,7 @@
 <script src="js/config.js?v=20260304d"></script>
 <script src="js/db.js?v=20260304d"></script>
 <script src="js/utils.js?v=20260304d"></script>
-<script src="js/chart.js?v=20260304d"></script>
+<script src="js/chart.js?v=20260304e"></script>
 <script src="js/api.js?v=20260304d"></script>
 <script src="js/overview.js?v=20260304d"></script>
 <script src="js/watchlist.js?v=20260304d"></script>

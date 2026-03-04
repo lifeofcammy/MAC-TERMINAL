@@ -122,7 +122,7 @@ async function loadTradePanel(ticker, panelEl) {
   var fetchPromises = [
     getDailyBars(ticker, 30).catch(function() { return []; }),
     polyGet('/v3/reference/tickers/' + encodeURIComponent(ticker)).catch(function() { return {}; }),
-    getPolygonNews([ticker], 3).catch(function() { return []; })
+    getPolygonNews([ticker], 5).catch(function() { return []; })
   ];
   if (!scanData) {
     fetchPromises.push(getSnapshots([ticker]).catch(function() { return {}; }));
@@ -267,16 +267,20 @@ function renderInfoRow(d) {
 
   // News links
   if (d.news && d.news.length > 0) {
-    html += '<div style="display:flex;gap:6px;align-items:center;">';
-    html += '<span style="color:var(--text-muted);">News:</span>';
-    d.news.slice(0, 2).forEach(function(article) {
-      var title = (article.title || '').substring(0, 45);
-      if ((article.title || '').length > 45) title += '\u2026';
+    html += '<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border);">';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Recent News</div>';
+    d.news.slice(0, 4).forEach(function(article) {
+      var title = (article.title || '').substring(0, 80);
+      if ((article.title || '').length > 80) title += '\u2026';
       var url = article.article_url || '#';
+      var source = article.publisher ? article.publisher.name || '' : '';
+      html += '<div style="margin-bottom:5px;">';
       html += '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener" '
         + 'onclick="event.stopPropagation();" '
-        + 'style="color:var(--blue);text-decoration:none;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;" '
+        + 'style="color:var(--blue);text-decoration:none;font-size:14px;line-height:1.4;display:block;" '
         + 'title="' + escapeHtml(article.title || '') + '">' + escapeHtml(title) + '</a>';
+      if (source) html += '<span style="font-size:12px;color:var(--text-muted);">' + escapeHtml(source) + '</span>';
+      html += '</div>';
     });
     html += '</div>';
   }
