@@ -465,7 +465,7 @@ async function renderOverview() {
     'XLP': ['PG','KO','PEP','COST','WMT','PM','MO','CL','KMB','GIS','SYY','KDP','KHC','HSY','MKC']
   };
 
-  var snap = {}, sectorSnap = {}, sectorBars = {}, spyBars = [], newsArticles = [];
+  var snap = {}, sectorSnap = {}, sectorBars = {}, spyBars = [];
   var dataFreshness = getDataFreshnessLabel();
   var sectorTickers = sectorETFs.map(function(s){return s.etf;});
 
@@ -475,14 +475,12 @@ async function renderOverview() {
       getSnapshots(indexTickers.concat(extraTickers)),
       getDailyBars('SPY', 30).catch(function(e) { return []; }),
       getSnapshots(sectorTickers),
-      getPolygonNews(null, 25).catch(function(e) { return []; }),
       polyGet('/v2/snapshot/locale/us/markets/stocks/tickers?include_otc=false').catch(function(e) { return { tickers: [] }; })
     ]);
     snap = tier1[0];
     spyBars = tier1[1];
     sectorSnap = tier1[2];
-    newsArticles = tier1[3];
-    var allSnap = tier1[4];
+    var allSnap = tier1[3];
   } catch(e) {
     container.innerHTML = '<div class="card" style="text-align:center;color:var(--red);padding:30px;">Failed to load data: '+escapeHtml(e.message)+'<br><span style="font-size:14px;color:var(--text-muted);">Check your Polygon API key (gear icon).</span></div>';
     return;
@@ -757,7 +755,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'regime\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Market Regime</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Should you be aggressive or cautious today?'+(live?' \xb7 <span style="color:var(--blue);">Auto-refreshes every 15 min</span>':'')+'</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:2px;">Step 1</div><div class="card-header-bar">Market Regime</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;"><span id="regime-arrow" style="font-size:12px;color:var(--text-muted);">'+(regimeCollapsed?'▶':'▼')+'</span></div>';
   html += '</div>';
   html += '<div id="regime-body" style="'+(regimeCollapsed?'display:none;':'display:flex;')+'padding:14px 20px;align-items:flex-start;gap:12px;">';
@@ -791,16 +789,40 @@ async function renderOverview() {
   html += '</div></div>';
   html += '</div>';
 
-  // ════ 3. MARKET SNAPSHOT
+  // ════ 3. STOCK BREADTH (simple gauge — moved before snapshot) ════
+  if(adTotal > 0) {
+    recordBreadthReading({ up: adStocksUp, down: adStocksDown, flat: adStocksFlat, total: adTotal, pct: adBreadthPct });
+
+    var breadthLabel = adBreadthPct >= 60 ? 'Broad Rally' : adBreadthPct <= 40 ? 'Broad Selling' : 'Narrow / Mixed';
+    var breadthColor = adBreadthPct >= 60 ? 'var(--green)' : adBreadthPct <= 40 ? 'var(--red)' : 'var(--amber)';
+    html += '<div class="card" style="padding:0;margin-bottom:14px;overflow:hidden;">';
+    html += '<div style="padding:12px 20px;">';
+    html += '<div style="text-align:center;margin-bottom:4px;"><div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:2px;">Step 2</div><div class="card-header-bar">Stock Breadth</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Is the move broad or narrow? Confirms if the regime call is real.</div></div>';
+    // Gauge bar
+    html += '<div style="margin-top:10px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+    html += '<span style="font-size:12px;font-weight:700;color:var(--green);">'+adBreadthPct+'% Up</span>';
+    html += '<span style="font-size:14px;font-weight:800;color:'+breadthColor+';">'+breadthLabel+'</span>';
+    html += '<span style="font-size:12px;font-weight:700;color:var(--red);">'+(100-adBreadthPct)+'% Down</span>';
+    html += '</div>';
+    html += '<div style="height:8px;border-radius:4px;background:var(--red-bg);overflow:hidden;">';
+    html += '<div style="height:100%;width:'+adBreadthPct+'%;background:var(--green);border-radius:4px;transition:width 0.3s;"></div>';
+    html += '</div>';
+    html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:4px;">'+adStocksUp.toLocaleString()+' advancing · '+adStocksDown.toLocaleString()+' declining · '+adStocksFlat.toLocaleString()+' flat</div>';
+    html += '</div>';
+    html += '</div></div>';
+  }
+
+  // ════ 4. MARKET ANALYSIS (renamed from Snapshot — smaller quotes) ════
   var snapshotCollapsed = localStorage.getItem('mac_snapshot_collapsed')==='true';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'snapshot\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Market Snapshot</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">How the major indexes are moving right now</div></div>';
-  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">'+dataFreshness+'</span><span id="snapshot-arrow" style="font-size:12px;color:var(--text-muted);">'+(snapshotCollapsed?'\u25b6':'\u25bc')+'</span></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:2px;">Step 3</div><div class="card-header-bar">Market Analysis</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">How are the major indexes reacting? Now you know what to do.</div></div>';
+  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:var(--font-body);">'+dataFreshness+'</span><span id="snapshot-arrow" style="font-size:12px;color:var(--text-muted);">'+(snapshotCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="snapshot-body" style="'+(snapshotCollapsed?'display:none;':'')+'padding:12px 16px;">';
-  html += '<div class="ov-snap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">';
+  html += '<div class="ov-snap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;">';
   var snapItems = [
     {ticker:'SPY',label:'S&P 500',data:spyData},
     {ticker:'QQQ',label:'Nasdaq',data:qqqData},
@@ -811,45 +833,26 @@ async function renderOverview() {
   ];
   snapItems.forEach(function(idx){
     var d=idx.data; var color=d.pct>=0?'var(--green)':'var(--red)';
-    var bg=d.pct>=0?'rgba(16,185,129,0.04)':'rgba(239,68,68,0.04)';
-    var borderC=d.pct>=0?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)';
-    // VIX: invert color logic (VIX up = bad)
-    if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';bg=d.pct<=0?'rgba(16,185,129,0.04)':'rgba(239,68,68,0.04)';borderC=d.pct<=0?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)';}
-    html += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:12px;padding:12px 14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);">';
-    html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">'+idx.label+'</div>';
-    html += '<div style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">'+(d.price?'$'+price(d.price):'—')+'</div>';
-    html += '<div style="font-size:14px;font-weight:700;color:'+color+';margin-top:2px;">'+pct(d.pct)+'</div>';
+    var bg=d.pct>=0?'rgba(52,211,153,0.04)':'rgba(252,165,165,0.04)';
+    var borderC=d.pct>=0?'rgba(52,211,153,0.15)':'rgba(252,165,165,0.15)';
+    if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';bg=d.pct<=0?'rgba(52,211,153,0.04)':'rgba(252,165,165,0.04)';borderC=d.pct<=0?'rgba(52,211,153,0.15)':'rgba(252,165,165,0.15)';}
+    html += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:8px;padding:8px 6px;text-align:center;">';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:0.03em;">'+idx.label+'</div>';
+    html += '<div style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);margin-top:1px;">'+(d.price?'$'+price(d.price):'—')+'</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:'+color+';margin-top:1px;">'+pct(d.pct)+'</div>';
     html += '</div>';
   });
   html += '</div>';
   html += '</div>';
   html += '</div>';
 
-  // ════ 4. STOCK BREADTH (advancers/decliners) — auto-refreshes every 15 min ════
-  if(adTotal > 0) {
-    // Record initial reading into history
-    recordBreadthReading({ up: adStocksUp, down: adStocksDown, flat: adStocksFlat, total: adTotal, pct: adBreadthPct });
-
-    var breadthCardCollapsed = localStorage.getItem('mac_breadth_collapsed')==='true';
-    var autoLabel = live ? 'Auto-refreshes every 15 min' : '';
-    html += '<div class="card" style="padding:0;margin-bottom:14px;overflow:hidden;">';
-    html += '<div onclick="toggleCard(\'breadth\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
-    html += '<div style="flex:1;"></div>';
-    html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Stock Breadth</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Are most stocks going up or down today?'+(autoLabel?' · <span style="color:var(--blue);">'+autoLabel+'</span>':'')+'</div></div>';
-    html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;"><span id="breadth-arrow" style="font-size:12px;color:var(--text-muted);">'+(breadthCardCollapsed?'\u25b6':'\u25bc')+'</span></div>';
-    html += '</div>';
-    html += '<div id="breadth-body" style="'+(breadthCardCollapsed?'display:none;':'')+'padding:12px 20px;">';
-    // Initial content will be rendered by renderBreadthBody after innerHTML is set
-    html += '</div></div>';
-  }
-
   // ════ 5. SECTOR HEATMAP (collapsible) ════
   var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')==='true';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Sector Heatmap</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Which sectors are hot and which to avoid</div></div>';
-  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:2px;">Step 4</div><div class="card-header-bar">Sector Heatmap</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Where is money flowing? Find the strongest and weakest sectors.</div></div>';
+  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:var(--font-body);">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
   // Store maps globally for the expand function
@@ -889,42 +892,45 @@ async function renderOverview() {
   });
   rotationData.sort(function(a,b){ return b.rotation - a.rotation; });
 
-  var rotatingIn = rotationData.filter(function(s){ return s.rotation > 0.2; }).slice(0, 4);
-  var rotatingOut = rotationData.filter(function(s){ return s.rotation < -0.2; }).slice(0, 4).reverse();
+  // Show ALL sectors split into two columns: accelerating vs decelerating
+  var rotatingIn = rotationData.filter(function(s){ return s.rotation >= 0; });
+  var rotatingOut = rotationData.filter(function(s){ return s.rotation < 0; }).reverse();
 
-  if(rotatingIn.length > 0 || rotatingOut.length > 0) {
-    html += '<div style="padding:10px 14px;border-top:1px solid var(--border);">';
-    html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;text-align:center;">Sector Rotation</div>';
-    html += '<div style="display:flex;gap:10px;">';
+  html += '<div style="padding:10px 14px;border-top:1px solid var(--border);">';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;text-align:center;">Sector Rotation</div>';
+  html += '<div style="display:flex;gap:10px;">';
 
-    if(rotatingIn.length > 0) {
-      html += '<div style="flex:1;">';
-      html += '<div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px;text-align:center;">\u25b2 Accelerating</div>';
-      rotatingIn.forEach(function(s){
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:2px;background:rgba(16,185,129,0.06);border-radius:4px;">';
-        html += '<span style="font-size:12px;"><span style="font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">' + s.etf + '</span> <span style="font-weight:600;color:var(--text-muted);">' + s.name + '</span></span>';
-        html += '<span style="font-size:12px;color:var(--green);font-weight:700;font-family:var(--font-mono);">+' + s.rotation.toFixed(1) + '</span>';
-        html += '</div>';
-      });
+  html += '<div style="flex:1;">';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px;text-align:center;">\u25b2 Accelerating</div>';
+  if(rotatingIn.length > 0) {
+    rotatingIn.forEach(function(s){
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:2px;background:rgba(52,211,153,0.06);border-radius:4px;">';
+      html += '<span style="font-size:12px;"><span style="font-weight:800;font-family:var(--font-mono);color:var(--text-primary);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px;" title="Click for chart" onclick="openTVChart(\''+s.etf+'\')">' + s.etf + '</span> <span style="font-weight:600;color:var(--text-muted);">' + s.name + '</span></span>';
+      html += '<span style="font-size:12px;color:var(--green);font-weight:700;font-family:var(--font-mono);">+' + s.rotation.toFixed(1) + '</span>';
       html += '</div>';
-    }
-
-    if(rotatingOut.length > 0) {
-      html += '<div style="flex:1;">';
-      html += '<div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:4px;text-align:center;">\u25bc Decelerating</div>';
-      rotatingOut.forEach(function(s){
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:2px;background:rgba(239,68,68,0.06);border-radius:4px;">';
-        html += '<span style="font-size:12px;"><span style="font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">' + s.etf + '</span> <span style="font-weight:600;color:var(--text-muted);">' + s.name + '</span></span>';
-        html += '<span style="font-size:12px;color:var(--red);font-weight:700;font-family:var(--font-mono);">' + s.rotation.toFixed(1) + '</span>';
-        html += '</div>';
-      });
-      html += '</div>';
-    }
-
-    html += '</div>';
-    html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:4px;">Daily vs. weekly avg \u2014 shows where money is rotating</div>';
-    html += '</div>';
+    });
+  } else {
+    html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:4px;">None</div>';
   }
+  html += '</div>';
+
+  html += '<div style="flex:1;">';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:4px;text-align:center;">\u25bc Decelerating</div>';
+  if(rotatingOut.length > 0) {
+    rotatingOut.forEach(function(s){
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:2px;background:rgba(252,165,165,0.06);border-radius:4px;">';
+      html += '<span style="font-size:12px;"><span style="font-weight:800;font-family:var(--font-mono);color:var(--text-primary);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px;" title="Click for chart" onclick="openTVChart(\''+s.etf+'\')">' + s.etf + '</span> <span style="font-weight:600;color:var(--text-muted);">' + s.name + '</span></span>';
+      html += '<span style="font-size:12px;color:var(--red);font-weight:700;font-family:var(--font-mono);">' + s.rotation.toFixed(1) + '</span>';
+      html += '</div>';
+    });
+  } else {
+    html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:4px;">None</div>';
+  }
+  html += '</div>';
+
+  html += '</div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:4px;">Daily vs. weekly avg \u2014 shows where money is rotating</div>';
+  html += '</div>';
 
   html += '</div></div>'; // close heatmap-body, close card
 
@@ -933,7 +939,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'catalysts\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Today\'s Catalysts & Themes</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Events and trends moving the market today</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:2px;">Step 5</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">What events and narratives are driving today\'s price action?</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);">'+tsLabel(ts)+'</span><span id="catalysts-arrow" style="font-size:12px;color:var(--text-muted);">'+(catalystsCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="catalysts-body" style="'+(catalystsCollapsed?'display:none;':'')+'">';
@@ -942,39 +948,6 @@ async function renderOverview() {
   html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Economic Calendar</div>';
   html += '<div id="econ-cal-grid" style="font-size:12px;color:var(--text-muted);">Loading...</div>';
   html += '</div>';
-  // Top news headlines
-  html += '<div style="padding:10px 16px;">';
-  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Top Headlines</div>';
-  // Filter to US stock news only
-  // Require at least one ticker, and exclude foreign ADR patterns (5+ chars ending in Y/F)
-  function hasUsTicker(tickers) {
-    if(!tickers || tickers.length===0) return false;
-    return tickers.some(function(t) {
-      if(!t || t.length===0) return false;
-      if(t.length > 4) return false; // Only 1-4 char tickers (US common stocks)
-      return true;
-    });
-  }
-  var usNewsArticles = newsArticles.filter(function(a){ return hasUsTicker(a.tickers); });
-  if(usNewsArticles.length>0) {
-    var topNews = usNewsArticles.slice(0,5);
-    html += '<div style="display:grid;gap:4px;">';
-    topNews.forEach(function(article){
-      var pubTime = new Date(article.published_utc).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
-      var tickers = (article.tickers||[]).slice(0,3).join(', ');
-      html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px solid var(--border);">';
-      html += '<span style="font-size:12px;color:var(--text-muted);white-space:nowrap;padding-top:2px;">'+pubTime+'</span>';
-      html += '<div style="flex:1;min-width:0;">';
-      html += '<a href="'+(article.article_url||'#')+'" target="_blank" style="font-size:14px;font-weight:600;color:var(--text-primary);text-decoration:none;line-height:1.3;">'+(article.title||'').replace(/</g,'&lt;')+'</a>';
-      if(tickers) html += ' <span style="font-size:14px;color:var(--blue);font-weight:600;">'+tickers+'</span>';
-      html += '</div></div>';
-    });
-    html += '</div>';
-  } else {
-    html += '<div style="font-size:12px;color:var(--text-muted);">No news available.</div>';
-  }
-  html += '</div>';
-
   // ════ TODAY'S THEMES (inside Catalysts card) ════
   html += '<div style="padding:10px 16px;border-top:1px solid var(--border);">';
   html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
@@ -996,7 +969,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'ideas\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Top Ideas</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Today\'s highest-scored trade setups</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:2px;">Step 6</div><div class="card-header-bar">Top Ideas</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><button onclick="event.stopPropagation();runQuickScan()" id="quick-scan-btn" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Scan</button><span id="ideas-arrow" style="font-size:12px;color:var(--text-muted);">'+(ideasCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="ideas-body" style="'+(ideasCollapsed?'display:none;':'')+'">';
@@ -1012,7 +985,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'watchlist\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Watchlist</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Stocks you\'re watching for entries</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Watchlist</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Your personal tickers with bias, notes, and live prices.</div></div>';
   var wList = getWatchlist();
   html += '<div style="flex:1;display:flex;justify-content:flex-end;align-items:center;gap:8px;">';
   if(wList.length>0) html += '<button onclick="event.stopPropagation();clearWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Clear All</button>';

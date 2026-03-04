@@ -1,6 +1,5 @@
 // ==================== feedback.js ====================
-// In-app feedback modal.
-// Stores feedback in Supabase user_settings.preferences JSONB as an array.
+// In-app feedback modal. Sends feedback via email.
 
 // ── Open / Close Modal ──
 function openFeedbackModal() {
@@ -27,9 +26,9 @@ function openFeedbackModal() {
     '<div style="margin-bottom:12px;">' +
       '<label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Category</label>' +
       '<select id="fb-category" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;color:var(--text-primary);font-family:var(--font-body);">' +
-        '<option value="bug">Bug Report</option>' +
-        '<option value="feature">Feature Request</option>' +
-        '<option value="general" selected>General Feedback</option>' +
+        '<option value="Bug Report">Bug Report</option>' +
+        '<option value="Feature Request">Feature Request</option>' +
+        '<option value="General Feedback" selected>General Feedback</option>' +
       '</select>' +
     '</div>' +
     '<div style="margin-bottom:16px;">' +
@@ -63,10 +62,9 @@ function closeFeedbackModal() {
 }
 
 // ── Submit Feedback ──
-async function submitFeedback() {
+function submitFeedback() {
   var category = document.getElementById('fb-category').value;
   var message = document.getElementById('fb-message').value.trim();
-  var btn = document.getElementById('fb-submit-btn');
   var status = document.getElementById('fb-status');
 
   if (!message) {
@@ -76,59 +74,13 @@ async function submitFeedback() {
     return;
   }
 
-  btn.disabled = true;
-  btn.textContent = 'Sending...';
-  status.style.display = 'none';
+  var subject = encodeURIComponent('[MAC Terminal] ' + category);
+  var body = encodeURIComponent(message);
+  window.location.href = 'mailto:support@marketactioncenter.com?subject=' + subject + '&body=' + body;
 
-  try {
-    var sb = window.supabaseClient;
-    var user = window.currentUser;
-    if (!sb || !user || !user.id) throw new Error('Not logged in');
+  status.style.display = 'block';
+  status.style.color = 'var(--green)';
+  status.textContent = 'Opening your email client...';
 
-    // Read current preferences
-    var { data: settings, error: readErr } = await sb
-      .from('user_settings')
-      .select('preferences')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (readErr) throw readErr;
-
-    var prefs = (settings && settings.preferences) ? settings.preferences : {};
-    if (!prefs.feedback) prefs.feedback = [];
-
-    // Append new feedback entry
-    prefs.feedback.push({
-      category: category,
-      message: message,
-      created_at: new Date().toISOString()
-    });
-
-    // Keep only last 50 entries to avoid bloating
-    if (prefs.feedback.length > 50) prefs.feedback = prefs.feedback.slice(-50);
-
-    // Update preferences
-    var { error: updateErr } = await sb
-      .from('user_settings')
-      .update({ preferences: prefs, updated_at: new Date().toISOString() })
-      .eq('user_id', user.id);
-
-    if (updateErr) throw updateErr;
-
-    // Success
-    status.style.display = 'block';
-    status.style.color = 'var(--green)';
-    status.textContent = 'Thank you! Feedback submitted.';
-    btn.textContent = 'Sent ✓';
-
-    // Auto-close after 1.5s
-    setTimeout(function() { closeFeedbackModal(); }, 1500);
-
-  } catch (err) {
-    status.style.display = 'block';
-    status.style.color = 'var(--red)';
-    status.textContent = 'Failed to send: ' + err.message;
-    btn.disabled = false;
-    btn.textContent = 'Submit';
-  }
+  setTimeout(function() { closeFeedbackModal(); }, 1500);
 }

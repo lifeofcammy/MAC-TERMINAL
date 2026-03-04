@@ -33,14 +33,13 @@ function getDataFreshnessLabel() {
   var etTime = et.toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit',hour12:true});
 
   if(marketOpen) {
-    return 'Data via Polygon · Real-time · as of ~' + etTime + ' ET';
+    return 'Real-time · as of ~' + etTime + ' ET';
   } else if(afterHours) {
-    return 'Data via Polygon · Close prices (4:00 PM ET)';
+    return 'Close prices (4:00 PM ET)';
   } else if(preMarket) {
-    return 'Data via Polygon · Prior close (4:00 PM ET)';
+    return 'Prior close (4:00 PM ET)';
   } else {
-    // Weekend
-    return 'Data via Polygon · Last trading day close';
+    return 'Last trading day close';
   }
 }
 
