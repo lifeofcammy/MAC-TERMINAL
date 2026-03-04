@@ -663,7 +663,7 @@ function renderScanner() {
 
   // Universe list (collapsible card)
   var universeCount = (cache && cache.tickers) ? cache.tickers.length : 0;
-  var listCollapsed = localStorage.getItem('mac_universe_collapsed') !== 'false';
+  var listCollapsed = localStorage.getItem('mac_universe_collapsed') === 'true';
   html += '<div class="card" style="margin-top:16px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleUniverse()" style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;">';
   html += '<div style="display:flex;align-items:center;gap:10px;">';
@@ -791,23 +791,27 @@ function renderUniverseList(tickers) {
   var html = '<div class="sc-table-wrap" style=""><div class="card" style="padding:0;overflow:hidden;">';
 
   // Header
-  html += '<div class="sc-table-row" style="display:grid;grid-template-columns:40px 70px 80px 60px 60px 60px 55px 55px;gap:4px;padding:8px 14px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">';
-  html += '<span>#</span><span>Ticker</span><span>Price</span><span>5d %</span><span>Ext</span><span>Vol</span><span>SMAs</span><span>Brkout</span>';
+  var cols = '36px 60px 50px 75px 55px 55px 55px 50px 50px';
+  html += '<div style="display:grid;grid-template-columns:' + cols + ';gap:4px;padding:8px 14px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">';
+  html += '<span>#</span><span>Score</span><span>Ticker</span><span>Price</span><span>5d %</span><span>Ext</span><span>Vol</span><span>SMAs</span><span>Brkout</span>';
   html += '</div>';
 
   tickers.forEach(function(t, idx) {
     var bg = idx % 2 === 0 ? '' : 'background:var(--bg-secondary);';
     var extColor = (t.extFromSma20 || 0) <= 3 ? 'var(--green)' : (t.extFromSma20 || 0) >= 8 ? 'var(--red)' : 'var(--text-muted)';
+    var sc = t.score || 0;
+    var scoreColor = sc >= 60 ? 'var(--green)' : sc >= 40 ? 'var(--blue)' : sc >= 20 ? 'var(--amber)' : 'var(--text-muted)';
 
-    html += '<div class="sc-table-row" style="display:grid;grid-template-columns:40px 70px 80px 60px 60px 60px 55px 55px;gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:14px;' + bg + 'align-items:center;">';
-    html += '<span style="color:var(--text-muted);font-size:14px;">' + (idx + 1) + '</span>';
+    html += '<div style="display:grid;grid-template-columns:' + cols + ';gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:13px;' + bg + 'align-items:center;">';
+    html += '<span style="color:var(--text-muted);">' + (idx + 1) + '</span>';
+    html += '<span style="font-weight:900;font-family:var(--font-mono);color:' + scoreColor + ';">' + sc + '</span>';
     html += '<span onclick="event.stopPropagation();openTVChart(\'' + t.ticker + '\')" title="Click for chart" style="font-weight:800;font-family:var(--font-mono);color:var(--blue);cursor:pointer;">' + t.ticker + '</span>';
     html += '<span style="font-family:var(--font-mono);color:var(--text-secondary);">$' + t.price.toFixed(2) + '</span>';
-    html += '<span style="font-size:14px;color:var(--text-muted);">' + (t.range5 || '—') + '%</span>';
-    html += '<span style="font-size:14px;color:' + extColor + ';">' + (t.extFromSma20 != null ? (t.extFromSma20 >= 0 ? '+' : '') + t.extFromSma20 + '%' : '—') + '</span>';
-    html += '<span style="font-size:14px;color:var(--text-muted);">' + (t.volDryUp != null ? t.volDryUp + '%' : '—') + '</span>';
-    html += '<span style="font-size:14px;color:' + (t.aboveSMAs === '3/3' ? 'var(--green)' : 'var(--text-muted)') + ';">' + (t.aboveSMAs || '—') + '</span>';
-    html += '<span style="font-size:12px;color:var(--text-muted);">' + (t.distToBreakout != null ? t.distToBreakout + '%' : '—') + '</span>';
+    html += '<span style="color:var(--text-muted);">' + (t.range5 || '\u2014') + '%</span>';
+    html += '<span style="color:' + extColor + ';">' + (t.extFromSma20 != null ? (t.extFromSma20 >= 0 ? '+' : '') + t.extFromSma20 + '%' : '\u2014') + '</span>';
+    html += '<span style="color:var(--text-muted);">' + (t.volDryUp != null ? t.volDryUp + '%' : '\u2014') + '</span>';
+    html += '<span style="color:' + (t.aboveSMAs === '3/3' ? 'var(--green)' : 'var(--text-muted)') + ';">' + (t.aboveSMAs || '\u2014') + '</span>';
+    html += '<span style="font-size:12px;color:var(--text-muted);">' + (t.distToBreakout != null ? t.distToBreakout + '%' : '\u2014') + '</span>';
     html += '</div>';
   });
 
