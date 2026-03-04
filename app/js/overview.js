@@ -338,18 +338,7 @@ function renderRRGCanvas(canvasId) {
   ctx.beginPath(); ctx.moveTo(pad.left, cy); ctx.lineTo(pad.left + plotW, cy); ctx.stroke();
   ctx.setLineDash([]);
 
-  // Quadrant labels
-  ctx.font = '600 12px Inter, sans-serif';
-  ctx.fillStyle = isDark ? 'rgba(52,211,153,0.6)' : 'rgba(16,185,129,0.7)';
-  ctx.textAlign = 'right';
-  ctx.fillText('Leading', pad.left + plotW - 6, pad.top + 16);
-  ctx.fillStyle = isDark ? 'rgba(245,158,11,0.6)' : 'rgba(217,119,6,0.7)';
-  ctx.fillText('Weakening', pad.left + plotW - 6, pad.top + plotH - 6);
-  ctx.fillStyle = isDark ? 'rgba(252,165,165,0.6)' : 'rgba(239,68,68,0.6)';
-  ctx.textAlign = 'left';
-  ctx.fillText('Lagging', pad.left + 6, pad.top + plotH - 6);
-  ctx.fillStyle = isDark ? 'rgba(96,165,250,0.6)' : 'rgba(37,99,235,0.6)';
-  ctx.fillText('Improving', pad.left + 6, pad.top + 16);
+  // Quadrant labels are HTML overlays (not drawn on canvas)
 
   // Axis labels
   ctx.font = '10px Inter, sans-serif';
@@ -1219,7 +1208,15 @@ async function renderOverview() {
 
   html += '<div style="padding:10px 8px;">';
   if(rrgData.length > 0) {
-    html += '<div style="position:relative;"><canvas id="rrg-canvas" style="width:100%;border-radius:8px;"></canvas></div>';
+    html += '<div style="position:relative;">';
+    html += '<canvas id="rrg-canvas" style="width:100%;border-radius:8px;"></canvas>';
+    // Quadrant label overlays — clickable, semi-transparent
+    var qBannerStyle = 'position:absolute;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;user-select:none;backdrop-filter:blur(2px);transition:opacity 0.15s;';
+    html += '<div id="rrg-q-leading" onclick="showRRGQuadrant(\'leading\')" style="' + qBannerStyle + 'top:6px;right:6px;background:rgba(16,185,129,0.12);color:rgba(16,185,129,0.8);border:1px solid rgba(16,185,129,0.2);" title="Click to see Leading sectors">Leading \u25b8</div>';
+    html += '<div id="rrg-q-weakening" onclick="showRRGQuadrant(\'weakening\')" style="' + qBannerStyle + 'bottom:6px;right:6px;background:rgba(245,158,11,0.12);color:rgba(217,119,6,0.8);border:1px solid rgba(245,158,11,0.2);" title="Click to see Weakening sectors">Weakening \u25b8</div>';
+    html += '<div id="rrg-q-lagging" onclick="showRRGQuadrant(\'lagging\')" style="' + qBannerStyle + 'bottom:6px;left:6px;background:rgba(239,68,68,0.12);color:rgba(239,68,68,0.8);border:1px solid rgba(239,68,68,0.2);" title="Click to see Lagging sectors">Lagging \u25b8</div>';
+    html += '<div id="rrg-q-improving" onclick="showRRGQuadrant(\'improving\')" style="' + qBannerStyle + 'top:6px;left:6px;background:rgba(37,99,235,0.12);color:rgba(37,99,235,0.8);border:1px solid rgba(37,99,235,0.2);" title="Click to see Improving sectors">Improving \u25b8</div>';
+    html += '</div>';
     // Legend
     html += '<div style="display:flex;justify-content:center;gap:16px;margin-top:6px;font-size:12px;">';
     html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--blue);"></span><span style="color:var(--text-muted);">Sectors</span></span>';
@@ -1451,6 +1448,42 @@ function toggleHeatmap(){
   if(body && body.style.display !== 'none' && window._rrgData && window._rrgData.length > 0) {
     setTimeout(function(){ renderRRGCanvas('rrg-canvas'); }, 50);
   }
+}
+
+// Show sectors in a specific RRG quadrant
+function showRRGQuadrant(quadrant) {
+  var data = window._rrgData;
+  if (!data || data.length === 0) return;
+  var sectors = data.filter(function(d) {
+    if (d.trail.length === 0) return false;
+    var last = d.trail[d.trail.length - 1];
+    var r = last.ratio, m = last.momentum;
+    if (quadrant === 'leading') return r >= 100 && m >= 100;
+    if (quadrant === 'weakening') return r >= 100 && m < 100;
+    if (quadrant === 'lagging') return r < 100 && m < 100;
+    if (quadrant === 'improving') return r < 100 && m >= 100;
+    return false;
+  });
+  var el = document.getElementById('rrg-sector-detail');
+  if (!el) return;
+  var colors = { leading: 'var(--green)', weakening: 'var(--amber)', lagging: 'var(--red)', improving: 'var(--blue)' };
+  var titles = { leading: 'Leading', weakening: 'Weakening', lagging: 'Lagging', improving: 'Improving' };
+  var descs = { leading: 'Strong relative strength & rising momentum', weakening: 'Strong relative strength but momentum fading', lagging: 'Weak relative strength & falling momentum', improving: 'Weak relative strength but momentum building' };
+  var html = '<div style="font-size:14px;font-weight:800;color:' + colors[quadrant] + ';margin-bottom:4px;">' + titles[quadrant] + ' Quadrant</div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">' + descs[quadrant] + '</div>';
+  if (sectors.length === 0) {
+    html += '<div style="font-size:12px;color:var(--text-muted);">No sectors currently in this quadrant.</div>';
+  } else {
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+    sectors.forEach(function(d) {
+      var label = (d.short || d.name) + ' (' + d.etf + ')';
+      var clickAttr = d.isAssetClass ? 'onclick="openTVChart(\'' + d.etf + '\')"' : 'onclick="showRRGSectorDetail(\'' + d.etf + '\')"';
+      html += '<span ' + clickAttr + ' style="padding:4px 10px;background:var(--bg-secondary);border-left:3px solid ' + colors[quadrant] + ';border-radius:6px;font-size:13px;font-weight:700;font-family:var(--font-mono);cursor:pointer;" title="Click for details">' + label + '</span>';
+    });
+    html += '</div>';
+  }
+  el.style.display = 'block';
+  el.innerHTML = html;
 }
 
 // ==================== RRG SECTOR DETAIL (click dot → show subsectors + leaders) ====================
