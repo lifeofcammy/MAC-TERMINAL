@@ -432,17 +432,12 @@ function renderRRGCanvas(canvasId) {
     var tipY = ly + Math.sin(angle) * arrowLen;
     d._tipXY = { x: tipX, y: tipY };
     ctx.beginPath();
-    ctx.arc(tipX, tipY, 8, 0, Math.PI * 2);
-    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.95)';
+    ctx.arc(tipX, tipY, 7, 0, Math.PI * 2);
+    ctx.fillStyle = color;
     ctx.fill();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = isDark ? '#1a1a2e' : '#fff';
+    ctx.lineWidth = 2;
     ctx.stroke();
-    // Plus icon inside circle
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(tipX - 3.5, tipY); ctx.lineTo(tipX + 3.5, tipY); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(tipX, tipY - 3.5); ctx.lineTo(tipX, tipY + 3.5); ctx.stroke();
   });
   // Draw ETF labels next to each dot
   ctx.font = '700 12px Inter, sans-serif';
