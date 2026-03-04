@@ -425,21 +425,33 @@ function renderRRGCanvas(canvasId) {
   });
   // Draw labels in a second pass with collision avoidance
   ctx.font = '600 10px Inter, sans-serif';
+  var labelPad = 4; // Extra padding between labels
   data.forEach(function(d) {
     if (!d._canvasXY) return;
     var lx = d._canvasXY.x, ly = d._canvasXY.y;
     var color = d.isAssetClass ? assetColor : sectorColor;
     var label = d.short || d.name || d.etf;
-    var tw = ctx.measureText(label).width + 6;
-    var lh = 13;
-    // Try positions: right, left, above, below
+    var infoIcon = d.isAssetClass ? '' : ' \u24d8'; // ⓘ for sectors (clickable)
+    var fullLabel = label + infoIcon;
+    var tw = ctx.measureText(fullLabel).width + 8;
+    var lh = 14;
+    // Try 12 positions: close right/left/above/below, then further out, then diagonals
     var candidates = [
-      { x: lx + 11, y: ly - 6 },
-      { x: lx - tw - 8, y: ly - 6 },
-      { x: lx - tw / 2 + 3, y: ly - 14 },
-      { x: lx - tw / 2 + 3, y: ly + 16 }
+      { x: lx + 13, y: ly - 6 },
+      { x: lx - tw - 10, y: ly - 6 },
+      { x: lx - tw / 2, y: ly - 16 },
+      { x: lx - tw / 2, y: ly + 18 },
+      { x: lx + 13, y: ly - 18 },
+      { x: lx + 13, y: ly + 14 },
+      { x: lx - tw - 10, y: ly - 18 },
+      { x: lx - tw - 10, y: ly + 14 },
+      { x: lx + 20, y: ly - 2 },
+      { x: lx - tw - 18, y: ly - 2 },
+      { x: lx - tw / 2, y: ly - 28 },
+      { x: lx - tw / 2, y: ly + 28 }
     ];
     var best = candidates[0];
+    var found = false;
     for (var c = 0; c < candidates.length; c++) {
       var cand = candidates[c];
       // Clamp to canvas bounds
@@ -450,18 +462,24 @@ function renderRRGCanvas(canvasId) {
       var overlap = false;
       for (var p = 0; p < placedLabels.length; p++) {
         var pl = placedLabels[p];
-        if (cand.x < pl.x + pl.w && cand.x + tw > pl.x && cand.y - lh < pl.y && cand.y > pl.y - pl.h) {
+        if (cand.x - labelPad < pl.x + pl.w && cand.x + tw + labelPad > pl.x && cand.y - lh - labelPad < pl.y && cand.y + labelPad > pl.y - pl.h) {
           overlap = true; break;
         }
       }
-      if (!overlap) { best = cand; break; }
+      if (!overlap) { best = cand; found = true; break; }
     }
     placedLabels.push({ x: best.x, y: best.y, w: tw, h: lh });
+    // Draw label background + text
     ctx.fillStyle = labelBg;
-    ctx.fillRect(best.x - 2, best.y - lh, tw, lh + 2);
+    ctx.fillRect(best.x - 3, best.y - lh, tw + 2, lh + 2);
     ctx.fillStyle = color;
     ctx.textAlign = 'left';
-    ctx.fillText(label, best.x + 1, best.y - 1);
+    ctx.fillText(label, best.x, best.y - 1);
+    // Draw info icon in lighter shade for sectors
+    if (!d.isAssetClass) {
+      ctx.fillStyle = isDark ? 'rgba(96,165,250,0.5)' : 'rgba(37,99,235,0.45)';
+      ctx.fillText(' \u24d8', best.x + ctx.measureText(label).width, best.y - 1);
+    }
   });
 }
 
