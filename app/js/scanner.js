@@ -789,11 +789,11 @@ function renderScanner() {
   html += '<div class="card" style="margin-top:16px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleUniverse()" style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;">';
   html += '<div style="display:flex;align-items:center;gap:10px;">';
-  html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Full Universe</span>';
+  html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Candidates</span>';
   if (universeCount > 0) html += '<span style="background:var(--blue);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;">' + universeCount + '</span>';
   html += '</div>';
   html += '<div style="display:flex;align-items:center;gap:10px;">';
-  html += '<span style="font-size:12px;color:var(--text-muted);">All candidates ranked by compression score</span>';
+  html += '<span style="font-size:12px;color:var(--text-muted);">Filtered from full universe, ranked by compression score</span>';
   html += '<span id="universe-arrow" style="font-size:12px;color:var(--text-muted);">' + (listCollapsed ? '▶' : '▼') + '</span>';
   html += '</div>';
   html += '</div>';
@@ -1151,14 +1151,16 @@ async function runFullScanUI() {
       if (progressWrap) progressWrap.style.display = 'none';
       if (idleStatus) {
         // Rebuild the funnel display with fresh data
-        var totalStr = cache.totalScanned ? cache.totalScanned.toLocaleString() : '?';
-        var filteredStr = cache.filteredCount ? cache.filteredCount.toLocaleString() : '?';
         var setupCount = (results.setups || []).length;
         var funnelHtml = '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);flex-wrap:wrap;">';
-        funnelHtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + totalStr + '</span> stocks scanned';
-        funnelHtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
-        funnelHtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + filteredStr + '</span> passed filters';
-        funnelHtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+        if (cache.totalScanned) {
+          funnelHtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.totalScanned.toLocaleString() + '</span> stocks scanned';
+          funnelHtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+        }
+        if (cache.filteredCount) {
+          funnelHtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.filteredCount.toLocaleString() + '</span> passed filters';
+          funnelHtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+        }
         funnelHtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.count + '</span> candidates';
         funnelHtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
         funnelHtml += '<span style="font-family:var(--font-mono);font-weight:700;color:var(--blue);">' + setupCount + '</span> <span style="font-weight:600;color:var(--blue);">setups</span>';
@@ -1260,15 +1262,18 @@ function scannerAutoBuild() {
       if (idleStatus) {
         var cache = getMomentumCache();
         if (cache) {
-          var totalStr = cache.totalScanned ? cache.totalScanned.toLocaleString() : '?';
-          var filteredStr = cache.filteredCount ? cache.filteredCount.toLocaleString() : '?';
-          idleStatus.innerHTML = '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);flex-wrap:wrap;">'
-            + '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + totalStr + '</span> stocks scanned'
-            + '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>'
-            + '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + filteredStr + '</span> passed filters'
-            + '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>'
-            + '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.count + '</span> candidates'
+          var _fhtml = '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);flex-wrap:wrap;">';
+          if (cache.totalScanned) {
+            _fhtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.totalScanned.toLocaleString() + '</span> stocks scanned';
+            _fhtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+          }
+          if (cache.filteredCount) {
+            _fhtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.filteredCount.toLocaleString() + '</span> passed filters';
+            _fhtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+          }
+          _fhtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.count + '</span> candidates'
             + ' · <span style="color:var(--blue);font-weight:600;">Click Scan for setups</span></div>';
+          idleStatus.innerHTML = _fhtml;
         }
       }
       var cache = getMomentumCache();
