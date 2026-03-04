@@ -1332,10 +1332,10 @@ function renderWatchlistSidebar() {
   var html = '';
   // Account size box
   var savedAcct = localStorage.getItem('mac_account_size') || '';
-  html += '<div style="display:flex;align-items:center;gap:6px;background:var(--bg-secondary);border:1.5px solid var(--blue);border-radius:8px;padding:4px 10px;margin-bottom:8px;">';
-  html += '<label style="font-size:12px;color:var(--blue);white-space:nowrap;font-weight:700;">Acct $</label>';
+  html += '<div style="display:flex;align-items:center;gap:8px;background:var(--bg-secondary);border:1.5px solid var(--blue);border-radius:10px;padding:8px 14px;margin-bottom:8px;">';
+  html += '<label style="font-size:14px;color:var(--blue);white-space:nowrap;font-weight:700;">Acct $</label>';
   html += '<input id="header-account-input" type="number" placeholder="Enter size" min="0" step="1000" value="' + (savedAcct ? savedAcct : '') + '"';
-  html += ' style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;text-align:right;-moz-appearance:textfield;box-sizing:border-box;"';
+  html += ' style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:15px;text-align:right;-moz-appearance:textfield;box-sizing:border-box;"';
   html += ' title="Your account size — used for position sizing" onchange="saveHeaderAccount()" />';
   html += '</div>';
   html += '<div style="font-size:11px;color:var(--text-muted);margin:-4px 0 8px 2px;line-height:1.3;">Customizes position sizes, entries, stops & targets across all setups.</div>';
