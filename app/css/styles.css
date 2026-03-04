@@ -172,6 +172,20 @@ body {
 
 .tab-content { display: none; }
 .tab-content.active { display: block; }
+#tab-overview.active { display: flex; gap: 16px; }
+#overview-main { flex: 1; min-width: 0; }
+#watchlist-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 80px;
+  align-self: flex-start;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+/* Hide number input spinners in header account box */
+#header-account-input::-webkit-outer-spin-button,
+#header-account-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
 /* Cards */
 .card {
@@ -349,12 +363,13 @@ input:focus, textarea:focus, select:focus {
 
 /* --- 1024px: Tablet landscape --- */
 @media (max-width: 1024px) {
+  #tab-overview.active { flex-direction: column; }
+  #watchlist-sidebar { width: 100%; position: static; max-height: none; overflow-y: visible; }
+  #account-box { display: none !important; }
   .main { padding: 20px 16px; }
 
   /* Overview: Market Snapshot 6-col → 3-col */
   .ov-snap-grid { grid-template-columns: repeat(3, 1fr) !important; }
-  /* Overview: Sector Heatmap 4-col → 3-col */
-  .ov-heatmap-grid { grid-template-columns: repeat(3, 1fr) !important; }
   /* Analysis: stat cards 4-col → 2-col */
   .an-stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
   /* Analysis: 2-col panels → 1-col */
@@ -395,8 +410,6 @@ input:focus, textarea:focus, select:focus {
 
   /* Overview: Market Snapshot 3-col → 2-col */
   .ov-snap-grid { grid-template-columns: repeat(2, 1fr) !important; }
-  /* Overview: Sector Heatmap 3-col → 2-col */
-  .ov-heatmap-grid { grid-template-columns: repeat(2, 1fr) !important; }
   /* Overview: Econ calendar horizontal → vertical stack */
   .ov-econ-grid { grid-template-columns: 1fr !important; }
   /* Overview: Mindset rules 2-col → 1-col */

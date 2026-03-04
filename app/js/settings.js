@@ -86,6 +86,9 @@ function toggleSettings() {
     else localStorage.removeItem('mcc_account');
     if (riskVal) localStorage.setItem('mcc_risk', riskVal);
     else localStorage.removeItem('mcc_risk');
+    // Sync header account input
+    var headerAcct = document.getElementById('header-account-input');
+    if (headerAcct) headerAcct.value = acctVal;
     // Cloud sync if available
     if (typeof dbSaveUserSettings === 'function') {
       dbSaveUserSettings({ account_size: acctVal, risk_pct: riskVal });

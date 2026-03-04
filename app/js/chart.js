@@ -88,9 +88,9 @@ function calcPositionSize(accountSize, riskPct, regimeMult, entryPrice, stopPric
 // ==================== TRADE DATA PANEL ====================
 
 function _statLine(label, value, color) {
-  return '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
-    + '<span style="font-size:12px;color:var(--text-muted);">' + label + '</span>'
-    + '<span style="font-size:13px;font-weight:700;font-family:var(--font-mono);color:' + color + ';">' + value + '</span>'
+  return '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">'
+    + '<span style="font-size:13px;color:var(--text-muted);">' + label + '</span>'
+    + '<span style="font-size:14px;font-weight:700;font-family:var(--font-mono);color:' + color + ';">' + value + '</span>'
     + '</div>';
 }
 
@@ -199,18 +199,18 @@ function renderTradePanel(panelEl, d) {
   // Header
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
   html += '<div style="display:flex;align-items:center;gap:8px;">';
-  html += '<span style="font-size:14px;font-weight:800;color:var(--text-primary);">Position Sizing</span>';
+  html += '<span style="font-size:16px;font-weight:800;color:var(--text-primary);">Position Sizing</span>';
   html += sourceBadge;
   html += '</div>';
-  html += '<span style="font-size:12px;color:' + d.regimeInfo.color + ';font-weight:700;">' + escapeHtml(d.regimeInfo.label) + '</span>';
+  html += '<span style="font-size:13px;color:' + d.regimeInfo.color + ';font-weight:700;">' + escapeHtml(d.regimeInfo.label) + '</span>';
   html += '</div>';
 
   // 3-column grid
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:10px;">';
 
   // Column 1: Trade Levels
-  html += '<div style="background:var(--bg-secondary);border-radius:8px;padding:10px;">';
-  html += '<div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Trade Levels</div>';
+  html += '<div style="background:var(--bg-secondary);border-radius:8px;padding:14px;">';
+  html += '<div style="font-size:12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">Trade Levels</div>';
   html += _statLine('Entry', _fmtPrice(d.entryPrice), 'var(--blue)');
   html += _statLine('Stop', _fmtPrice(d.stopPrice), 'var(--red)');
   html += _statLine('Risk/Share', d.posSize ? _fmtPrice(d.posSize.riskPerShare) : '---', 'var(--text-secondary)');
@@ -218,8 +218,8 @@ function renderTradePanel(panelEl, d) {
   html += '</div>';
 
   // Column 2: Position Size
-  html += '<div style="background:var(--bg-secondary);border-radius:8px;padding:10px;">';
-  html += '<div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Position Size</div>';
+  html += '<div style="background:var(--bg-secondary);border-radius:8px;padding:14px;">';
+  html += '<div style="font-size:12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">Position Size</div>';
   if (d.posSize) {
     html += _statLine('Shares', d.posSize.shares.toLocaleString(), 'var(--text-primary)');
     html += _statLine('Cost', _fmtDollars(d.posSize.dollarCost), 'var(--text-secondary)');
@@ -231,8 +231,8 @@ function renderTradePanel(panelEl, d) {
   html += '</div>';
 
   // Column 3: Targets & Trail
-  html += '<div style="background:var(--bg-secondary);border-radius:8px;padding:10px;">';
-  html += '<div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Targets & Trail</div>';
+  html += '<div style="background:var(--bg-secondary);border-radius:8px;padding:14px;">';
+  html += '<div style="font-size:12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">Targets & Trail</div>';
   if (d.posSize) {
     html += _statLine('1R \u2192 sell \u2153', _fmtPrice(d.posSize.target1R), 'var(--green)');
     html += _statLine('2R \u2192 sell \u2153', _fmtPrice(d.posSize.target2R), 'var(--green)');
@@ -252,7 +252,7 @@ function renderTradePanel(panelEl, d) {
 }
 
 function renderInfoRow(d) {
-  var html = '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;">';
+  var html = '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px;">';
 
   // Market cap
   html += '<span style="color:var(--text-muted);">Mkt Cap: <strong style="color:var(--text-secondary);">' + _fmtMcap(d.marketCap) + '</strong></span>';
@@ -345,7 +345,7 @@ function openTVChart(ticker) {
   // Data panel (below chart)
   var dataPanel = document.createElement('div');
   dataPanel.id = 'tv-data-panel';
-  dataPanel.style.cssText = 'flex-shrink:0;max-height:220px;overflow-y:auto;border-top:1px solid var(--border);padding:12px 16px;';
+  dataPanel.style.cssText = 'flex-shrink:0;overflow-y:auto;border-top:1px solid var(--border);padding:16px 20px;';
   dataPanel.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:6px;">Loading trade data\u2026</div>';
   modal.appendChild(dataPanel);
 

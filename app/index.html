@@ -8,7 +8,7 @@
 <meta http-equiv="Expires" content="0">
 <title>MAC Terminal — Market Action Center</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=20260304c">
+<link rel="stylesheet" href="css/styles.css?v=20260304d">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -39,6 +39,12 @@
     Simplify Your Trading
   </div>
   <div class="header-right">
+    <div id="account-box" style="display:flex;align-items:center;gap:6px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:4px 10px;">
+      <label style="font-size:12px;color:var(--text-muted);white-space:nowrap;">Acct $</label>
+      <input id="header-account-input" type="number" placeholder="25000" min="0" step="1000"
+        style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;text-align:right;-moz-appearance:textfield;"
+        onchange="saveHeaderAccount()" />
+    </div>
     <span class="last-updated" id="lastUpdated"></span>
     <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -71,7 +77,10 @@
 <div class="main">
 
   <!-- ===================== OVERVIEW TAB ===================== -->
-  <div class="tab-content active" id="tab-overview"></div>
+  <div class="tab-content active" id="tab-overview">
+    <div id="overview-main"></div>
+    <div id="watchlist-sidebar"></div>
+  </div>
 
   <!-- ===================== SCANNER TAB ===================== -->
   <div class="tab-content" id="tab-scanner"></div>
@@ -178,19 +187,35 @@
 
 <!-- JavaScript — load in dependency order (critical path only) -->
 <!-- scanner.js, journal.js, analysis.js, analysis-seed.js lazy-loaded on tab click -->
-<script src="js/auth.js?v=20260304c"></script>
-<script src="js/config.js?v=20260304c"></script>
-<script src="js/db.js?v=20260304c"></script>
-<script src="js/utils.js?v=20260304c"></script>
-<script src="js/chart.js?v=20260304c"></script>
-<script src="js/api.js?v=20260304c"></script>
-<script src="js/overview.js?v=20260304c"></script>
-<script src="js/watchlist.js?v=20260304c"></script>
-<script src="js/tabs.js?v=20260304c"></script>
-<script src="js/settings.js?v=20260304c"></script>
-<script src="js/feedback.js?v=20260304c"></script>
-<script src="js/init.js?v=20260304c"></script>
+<script src="js/auth.js?v=20260304d"></script>
+<script src="js/config.js?v=20260304d"></script>
+<script src="js/db.js?v=20260304d"></script>
+<script src="js/utils.js?v=20260304d"></script>
+<script src="js/chart.js?v=20260304d"></script>
+<script src="js/api.js?v=20260304d"></script>
+<script src="js/overview.js?v=20260304d"></script>
+<script src="js/watchlist.js?v=20260304d"></script>
+<script src="js/tabs.js?v=20260304d"></script>
+<script src="js/settings.js?v=20260304d"></script>
+<script src="js/feedback.js?v=20260304d"></script>
+<script src="js/init.js?v=20260304d"></script>
 <script>
+// Account size box in header — save/load
+function saveHeaderAccount() {
+  var val = document.getElementById('header-account-input').value.trim();
+  if (val) localStorage.setItem('mcc_account', val);
+  else localStorage.removeItem('mcc_account');
+  var settingsInput = document.getElementById('settings-account-size');
+  if (settingsInput) settingsInput.value = val;
+  if (typeof dbSaveUserSettings === 'function') {
+    dbSaveUserSettings({ account_size: val, risk_pct: localStorage.getItem('mcc_risk') || '' });
+  }
+}
+(function(){
+  var h = document.getElementById('header-account-input');
+  if (h) h.value = localStorage.getItem('mcc_account') || '';
+})();
+
 // Theme toggle handler
 (function(){
   var btn = document.getElementById('themeToggle');

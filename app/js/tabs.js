@@ -27,6 +27,10 @@ document.querySelectorAll('.tabs > .tab').forEach(tab => {
     tab.classList.add('active');
     document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
 
+    // Show watchlist sidebar only on overview tab
+    var wlSidebar = document.getElementById('watchlist-sidebar');
+    if (wlSidebar) wlSidebar.style.display = (tab.dataset.tab === 'overview') ? '' : 'none';
+
     // Stop breadth auto-refresh when leaving overview; restart when returning
     if (tab.dataset.tab === 'overview') {
       // Only re-fetch if never loaded — otherwise just show cached content

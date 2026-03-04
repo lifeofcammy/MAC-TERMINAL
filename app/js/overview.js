@@ -222,6 +222,7 @@ function calcRRGData(allAssets, spyBars, barsByTicker) {
     results.push({
       etf: asset.etf,
       name: asset.name,
+      short: asset.short || asset.name,
       ratio: latest.ratio,
       momentum: latest.momentum,
       trail: trail,
@@ -238,7 +239,7 @@ function renderRRGCanvas(canvasId) {
   var data = window._rrgData;
   var dpr = window.devicePixelRatio || 1;
   var w = canvas.parentElement.offsetWidth || 400;
-  var h = 320;
+  var h = 380;
   canvas.width = w * dpr;
   canvas.height = h * dpr;
   canvas.style.width = w + 'px';
@@ -254,11 +255,11 @@ function renderRRGCanvas(canvasId) {
   var textColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)';
   var labelBg = isDark ? 'rgba(26,26,46,0.85)' : 'rgba(250,251,252,0.85)';
 
-  // Quadrant colors (very subtle)
-  var qGreen = isDark ? 'rgba(52,211,153,0.06)' : 'rgba(52,211,153,0.08)';
-  var qYellow = isDark ? 'rgba(245,158,11,0.06)' : 'rgba(245,158,11,0.08)';
-  var qRed = isDark ? 'rgba(252,165,165,0.06)' : 'rgba(252,165,165,0.08)';
-  var qBlue = isDark ? 'rgba(37,99,235,0.06)' : 'rgba(37,99,235,0.08)';
+  // Quadrant colors
+  var qGreen = isDark ? 'rgba(52,211,153,0.10)' : 'rgba(52,211,153,0.12)';
+  var qYellow = isDark ? 'rgba(245,158,11,0.10)' : 'rgba(245,158,11,0.12)';
+  var qRed = isDark ? 'rgba(252,165,165,0.10)' : 'rgba(252,165,165,0.12)';
+  var qBlue = isDark ? 'rgba(37,99,235,0.10)' : 'rgba(37,99,235,0.12)';
 
   // Padding for labels
   var pad = { top: 20, right: 20, bottom: 30, left: 40 };
@@ -322,17 +323,17 @@ function renderRRGCanvas(canvasId) {
   ctx.setLineDash([]);
 
   // Quadrant labels
-  ctx.font = '11px Inter, sans-serif';
-  ctx.fillStyle = isDark ? 'rgba(52,211,153,0.5)' : 'rgba(16,185,129,0.6)';
+  ctx.font = '600 12px Inter, sans-serif';
+  ctx.fillStyle = isDark ? 'rgba(52,211,153,0.6)' : 'rgba(16,185,129,0.7)';
   ctx.textAlign = 'right';
-  ctx.fillText('Leading', pad.left + plotW - 4, pad.top + 14);
-  ctx.fillStyle = isDark ? 'rgba(245,158,11,0.5)' : 'rgba(217,119,6,0.6)';
-  ctx.fillText('Weakening', pad.left + plotW - 4, pad.top + plotH - 4);
-  ctx.fillStyle = isDark ? 'rgba(252,165,165,0.5)' : 'rgba(239,68,68,0.5)';
+  ctx.fillText('Leading', pad.left + plotW - 6, pad.top + 16);
+  ctx.fillStyle = isDark ? 'rgba(245,158,11,0.6)' : 'rgba(217,119,6,0.7)';
+  ctx.fillText('Weakening', pad.left + plotW - 6, pad.top + plotH - 6);
+  ctx.fillStyle = isDark ? 'rgba(252,165,165,0.6)' : 'rgba(239,68,68,0.6)';
   ctx.textAlign = 'left';
-  ctx.fillText('Lagging', pad.left + 4, pad.top + plotH - 4);
-  ctx.fillStyle = isDark ? 'rgba(96,165,250,0.5)' : 'rgba(37,99,235,0.5)';
-  ctx.fillText('Improving', pad.left + 4, pad.top + 14);
+  ctx.fillText('Lagging', pad.left + 6, pad.top + plotH - 6);
+  ctx.fillStyle = isDark ? 'rgba(96,165,250,0.6)' : 'rgba(37,99,235,0.6)';
+  ctx.fillText('Improving', pad.left + 6, pad.top + 16);
 
   // Axis labels
   ctx.font = '10px Inter, sans-serif';
@@ -355,8 +356,9 @@ function renderRRGCanvas(canvasId) {
     // Trail line
     if (d.trail.length > 1) {
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1.5;
-      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.globalAlpha = 0.35;
       ctx.beginPath();
       for (var i = 0; i < d.trail.length; i++) {
         var px = xPos(d.trail[i].ratio), py = yPos(d.trail[i].momentum);
@@ -369,7 +371,7 @@ function renderRRGCanvas(canvasId) {
         var px = xPos(d.trail[i].ratio), py = yPos(d.trail[i].momentum);
         ctx.fillStyle = color;
         ctx.globalAlpha = 0.2 + (i / d.trail.length) * 0.4;
-        ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
       }
       ctx.globalAlpha = 1;
     }
@@ -378,23 +380,24 @@ function renderRRGCanvas(canvasId) {
     var lx = xPos(last.ratio), ly = yPos(last.momentum);
     d._canvasXY = { x: lx, y: ly }; // Store for click detection
     ctx.fillStyle = color;
-    ctx.beginPath(); ctx.arc(lx, ly, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(lx, ly, 6, 0, Math.PI * 2); ctx.fill();
     // White ring
     ctx.strokeStyle = isDark ? '#1a1a2e' : '#fff';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(lx, ly, 4, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(lx, ly, 6, 0, Math.PI * 2); ctx.stroke();
     // Label
-    ctx.font = '600 10px JetBrains Mono, monospace';
+    var label = d.short || d.name || d.etf;
+    ctx.font = '600 11px Inter, sans-serif';
     ctx.fillStyle = labelBg;
-    var tw = ctx.measureText(d.etf).width + 6;
-    var lbx = lx + 6, lby = ly - 6;
+    var tw = ctx.measureText(label).width + 8;
+    var lbx = lx + 8, lby = ly - 8;
     // Prevent label going off-screen
     if (lbx + tw > w - pad.right) lbx = lx - tw - 4;
-    if (lby - 10 < pad.top) lby = ly + 14;
-    ctx.fillRect(lbx - 2, lby - 10, tw, 13);
+    if (lby - 12 < pad.top) lby = ly + 16;
+    ctx.fillRect(lbx - 3, lby - 12, tw, 15);
     ctx.fillStyle = color;
     ctx.textAlign = 'left';
-    ctx.fillText(d.etf, lbx + 1, lby);
+    ctx.fillText(label, lbx + 1, lby);
   });
 }
 
@@ -640,7 +643,7 @@ function stopBreadthAutoRefresh() {
 
 // ==================== RENDER: OVERVIEW ====================
 async function renderOverview() {
-  var container = document.getElementById('tab-overview');
+  var container = document.getElementById('overview-main') || document.getElementById('tab-overview');
   if (!container) return;
   var ts = getTimestamp();
   var live = isMarketOpen();
@@ -651,12 +654,12 @@ async function renderOverview() {
   var indexTickers = ['SPY','QQQ','IWM','DIA'];
   var extraTickers = ['VIXY','UUP']; // VIX proxy via VIXY ETF, DXY proxy via UUP
   var sectorETFs = [
-    {etf:'XLK',name:'Technology'},{etf:'SMH',name:'Semiconductors'},
-    {etf:'XLF',name:'Financials'},{etf:'XLE',name:'Energy'},
-    {etf:'XLV',name:'Healthcare'},{etf:'XLY',name:'Consumer Disc.'},
-    {etf:'XLI',name:'Industrials'},{etf:'XLRE',name:'Real Estate'},
-    {etf:'XLU',name:'Utilities'},{etf:'XLB',name:'Materials'},
-    {etf:'XLC',name:'Comm. Services'},{etf:'XLP',name:'Consumer Staples'}
+    {etf:'XLK',name:'Technology',short:'Tech'},{etf:'SMH',name:'Semiconductors',short:'Semis'},
+    {etf:'XLF',name:'Financials',short:'Finance'},{etf:'XLE',name:'Energy',short:'Energy'},
+    {etf:'XLV',name:'Healthcare',short:'Health'},{etf:'XLY',name:'Consumer Disc.',short:'Consumer'},
+    {etf:'XLI',name:'Industrials',short:'Industrial'},{etf:'XLRE',name:'Real Estate',short:'Real Est'},
+    {etf:'XLU',name:'Utilities',short:'Utilities'},{etf:'XLB',name:'Materials',short:'Materials'},
+    {etf:'XLC',name:'Comm. Services',short:'Comms'},{etf:'XLP',name:'Consumer Staples',short:'Staples'}
   ];
 
   // Subsector ETFs for each sector (click-to-expand)
@@ -693,9 +696,9 @@ async function renderOverview() {
 
   // Asset classes for RRG (Relative Rotation Graph)
   var rrgAssets = [
-    {etf:'BITO',name:'Bitcoin'},{etf:'TLT',name:'Bonds (20Y+)'},
-    {etf:'HYG',name:'High Yield'},{etf:'EFA',name:'Intl Developed'},
-    {etf:'EEM',name:'Emerging Mkts'},{etf:'GLD',name:'Gold'}
+    {etf:'BITO',name:'Bitcoin',short:'Bitcoin'},{etf:'TLT',name:'Bonds (20Y+)',short:'Bonds'},
+    {etf:'HYG',name:'High Yield',short:'HiYield'},{etf:'EFA',name:'Intl Developed',short:'Intl Dev'},
+    {etf:'EEM',name:'Emerging Mkts',short:'Emerging'},{etf:'GLD',name:'Gold',short:'Gold'}
   ];
 
   var snap = {}, sectorSnap = {}, sectorBars = {}, spyBars = [];
@@ -862,6 +865,7 @@ async function renderOverview() {
     return {etf:sec.etf,name:sec.name,price:p,dayChg:dayChg,weekPerf:weekPerf};
   });
   sectorData.sort(function(a,b){return b.dayChg-a.dayChg;});
+  window._sectorData = sectorData;
 
   // ── BREADTH ──
   var sectorsUp = sectorData.filter(function(s){return s.dayChg>0;}).length;
@@ -1085,54 +1089,26 @@ async function renderOverview() {
   html += '</div>';
   html += '</div>';
 
-  // ════ 5. SECTOR HEATMAP (collapsible) ════
+  // ════ 5. SECTOR ROTATION (RRG + click-to-expand detail) ════
   var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')!=='false';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 4</div><div class="card-header-bar">Sector Heatmap</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Where is money flowing? Find the strongest and weakest sectors.</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 4</div><div class="card-header-bar">Sector Rotation</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Where is money flowing? Click a sector for details.</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:var(--font-body);">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
-  // Store maps globally for the expand function
+  // Store maps globally for sector detail expansion
   window._subsectorMap = subsectorMap;
   window._sectorStocks = sectorStocks;
 
-  html += '<div class="ov-heatmap-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:12px 14px;">';
-  sectorData.forEach(function(sec){
-    var chgColor,chgBg;
-    if(sec.dayChg>1){chgColor='var(--text-primary)';chgBg='var(--green-bg)';}
-    else if(sec.dayChg>0.3){chgColor='var(--text-primary)';chgBg='var(--green-bg)';}
-    else if(sec.dayChg>0){chgColor='var(--text-primary)';chgBg='var(--green-bg)';}
-    else if(sec.dayChg>-0.3){chgColor='var(--text-primary)';chgBg='var(--red-bg)';}
-    else if(sec.dayChg>-1){chgColor='var(--text-primary)';chgBg='var(--red-bg)';}
-    else{chgColor='var(--text-primary)';chgBg='var(--red-bg)';}
-    var hasSubsectors = subsectorMap[sec.etf] && subsectorMap[sec.etf].length > 0;
-    html += '<div style="cursor:'+(hasSubsectors?'pointer':'default')+';" '+(hasSubsectors?'onclick="toggleSubsectors(\''+sec.etf+'\')"':'')+'>';
-    var pctColor = sec.dayChg >= 0 ? 'var(--green)' : 'var(--red)';
-    var wkPctColor = sec.weekPerf >= 0 ? 'var(--green)' : 'var(--red)';
-    html += '<div style="background:'+chgBg+';border-radius:6px;padding:10px;text-align:center;">';
-    html += '<div style="font-size:12px;font-weight:800;color:var(--text-primary);">'+sec.etf+'</div>';
-    html += '<div style="font-size:12px;color:var(--text-muted);">'+sec.name+'</div>';
-    html += '<div style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:'+pctColor+';margin-top:3px;">'+pct(sec.dayChg)+'</div>';
-    html += '<div style="font-size:12px;color:'+wkPctColor+';opacity:0.8;margin-top:1px;">Wk: '+pct(sec.weekPerf)+'</div>';
-    if(hasSubsectors) html += '<div style="font-size:12px;color:var(--text-muted);margin-top:3px;">tap to expand</div>';
-    html += '</div>';
-    // Subsector expansion area (hidden by default)
-    html += '<div id="subsector-'+sec.etf+'" style="display:none;"></div>';
-    html += '</div>';
-  });
-  html += '</div>'; // close heatmap grid
-
   // ── RELATIVE ROTATION GRAPH (RRG) ──
-  // Calculate RRG data for sectors + asset classes
-  var allRRGAssets = sectorETFs.map(function(s){ return {etf:s.etf, name:s.name, isAsset:false}; })
-    .concat(rrgAssets.map(function(s){ return {etf:s.etf, name:s.name, isAsset:true}; }));
+  var allRRGAssets = sectorETFs.map(function(s){ return {etf:s.etf, name:s.name, short:s.short, isAsset:false}; })
+    .concat(rrgAssets.map(function(s){ return {etf:s.etf, name:s.name, short:s.short, isAsset:true}; }));
   var rrgData = calcRRGData(allRRGAssets, spyBars, _barsByTicker);
   window._rrgData = rrgData;
 
-  html += '<div style="padding:10px 14px;border-top:1px solid var(--border);">';
-  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;text-align:center;">Relative Rotation</div>';
+  html += '<div style="padding:10px 14px;">';
   if(rrgData.length > 0) {
     html += '<div style="position:relative;"><canvas id="rrg-canvas" style="width:100%;border-radius:8px;"></canvas></div>';
     // Legend
@@ -1143,8 +1119,11 @@ async function renderOverview() {
   } else {
     html += '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-muted);">Insufficient data for RRG (need 15+ trading days)</div>';
   }
-  html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:4px;">Relative strength vs SPY \u2014 clockwise rotation through quadrants</div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:4px;">Click a sector dot for subsectors & leaders \u2014 RS vs SPY</div>';
   html += '</div>';
+
+  // Sector detail panel (populated on click)
+  html += '<div id="rrg-sector-detail" style="display:none;border-top:1px solid var(--border);padding:12px 14px;"></div>';
 
   html += '</div></div>'; // close heatmap-body, close card
 
@@ -1194,51 +1173,10 @@ async function renderOverview() {
   else{html += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">Click "Scan" to find today\'s top setups.</div>';}
   html += '</div></div></div>';
 
-  // ════ 8. WATCHLIST ════
-  var watchlistCollapsed = localStorage.getItem('mac_watchlist_collapsed')!=='false';
-  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div onclick="toggleCard(\'watchlist\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
-  html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Watchlist</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Your personal tickers with bias, notes, and live prices.</div></div>';
-  var wList = getWatchlist();
-  html += '<div style="flex:1;display:flex;justify-content:flex-end;align-items:center;gap:8px;">';
-  if(wList.length>0) html += '<button onclick="event.stopPropagation();clearWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Clear All</button>';
-  html += '<span id="watchlist-arrow" style="font-size:12px;color:var(--text-muted);">'+(watchlistCollapsed?'\u25b6':'\u25bc')+'</span>';
-  html += '</div>';
-  html += '</div>';
-  html += '<div id="watchlist-body" style="'+(watchlistCollapsed?'display:none;':'')+'">';
-  // Add form
-  html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-wrap:wrap;">';
-  html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
-  html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:14px;font-weight:600;color:var(--text-primary);">';
-  html += '<option value="long">\u25b2 Long</option><option value="short">\u25bc Short</option><option value="watch">\u25cf Watch</option></select>';
-  html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="flex:1;min-width:120px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:14px;color:var(--text-primary);" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
-  html += '<button onclick="addToWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:6px 14px;font-size:12px;">+ Add</button>';
-  html += '</div>';
-  // Watchlist items
-  html += '<div id="watchlist-content" style="padding:10px 16px;">';
-  if(wList.length===0) {
-    html += '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:14px;">No tickers. Add symbols above to track them.</div>';
-  } else {
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">';
-    wList.forEach(function(item){
-      var biasColor = item.bias==='long'?'var(--green)':item.bias==='short'?'var(--red)':'var(--amber)';
-      var biasIcon = item.bias==='long'?'\u25b2':item.bias==='short'?'\u25bc':'\u25cf';
-      html += '<div class="wl-card-'+item.ticker+'" style="box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px;border-left:3px solid '+biasColor+';position:relative;">';
-      html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');refreshWatchlistUI();" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">\u00d7</button>';
-      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
-      html += '<span style="font-size:14px;font-weight:800;font-family:var(--font-mono);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+item.ticker+'\');">'+item.ticker+'</span>';
-      html += '<span style="font-size:12px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
-      html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-muted);">Loading...</span>';
-      html += '</div>';
-      if(item.note) html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.3;font-style:italic;">'+item.note.replace(/</g,'&lt;')+'</div>';
-      html += '</div>';
-    });
-    html += '</div>';
-  }
-  html += '</div></div></div>';
-
   container.innerHTML = html;
+
+  // ════ WATCHLIST SIDEBAR ════
+  renderWatchlistSidebar();
   // Render RRG canvas (must be after innerHTML so canvas element exists)
   if(window._rrgData && window._rrgData.length > 0) {
     setTimeout(function(){
@@ -1247,7 +1185,7 @@ async function renderOverview() {
       var rrgEl = document.getElementById('rrg-canvas');
       if(rrgEl) {
         rrgEl.style.cursor = 'pointer';
-        rrgEl.title = 'Click a ticker to view chart';
+        rrgEl.title = 'Click a sector for details';
         rrgEl.addEventListener('click', function(e){
           var rect = rrgEl.getBoundingClientRect();
           var mx = e.clientX - rect.left, my = e.clientY - rect.top;
@@ -1259,7 +1197,13 @@ async function renderOverview() {
             var dist = Math.sqrt(dx*dx + dy*dy);
             if(dist < minDist){ minDist = dist; closest = d; }
           });
-          if(closest && typeof openTVChart === 'function') openTVChart(closest.etf);
+          if(closest) {
+            if(closest.isAssetClass) {
+              if(typeof openTVChart === 'function') openTVChart(closest.etf);
+            } else {
+              showRRGSectorDetail(closest.etf);
+            }
+          }
         });
       }
     }, 50);
@@ -1281,37 +1225,69 @@ async function renderOverview() {
   }
 }
 
-// ==================== WATCHLIST PARTIAL REFRESH ====================
-// Only re-renders the watchlist content + header buttons without reloading entire Overview
-function refreshWatchlistUI() {
+// ==================== WATCHLIST SIDEBAR ====================
+function renderWatchlistSidebar() {
+  var sidebar = document.getElementById('watchlist-sidebar');
+  if (!sidebar) return;
   var wList = getWatchlist();
-  // Update content area
-  var contentEl = document.getElementById('watchlist-content');
-  if (contentEl) {
-    var html = '';
-    if (wList.length === 0) {
-      html += '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:14px;">No tickers. Add symbols above to track them.</div>';
-    } else {
-      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">';
-      wList.forEach(function(item) {
-        var biasColor = item.bias==='long'?'var(--green)':item.bias==='short'?'var(--red)':'var(--amber)';
-        var biasIcon = item.bias==='long'?'▲':item.bias==='short'?'▼':'●';
-        html += '<div class="wl-card-'+item.ticker+'" style="box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px;border-left:3px solid '+biasColor+';position:relative;">';
-        html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');refreshWatchlistUI();" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">×</button>';
-        html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
-        html += '<span style="font-size:14px;font-weight:800;font-family:var(--font-mono);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+item.ticker+'\');">'+item.ticker+'</span>';
-        html += '<span style="font-size:12px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
-        html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-muted);">Loading...</span>';
-        html += '</div>';
-        if(item.note) html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.3;font-style:italic;">'+item.note.replace(/</g,'&lt;')+'</div>';
-        html += '</div>';
-      });
-      html += '</div>';
-    }
-    contentEl.innerHTML = html;
+  var html = '';
+  html += '<div class="card" style="padding:0;overflow:hidden;">';
+  html += '<div style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;">';
+  html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">Watchlist</div>';
+  html += '</div>';
+  // Add form (vertical for narrow sidebar)
+  html += '<div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px;">';
+  html += '<div style="display:flex;gap:6px;">';
+  html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
+  html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:13px;font-weight:600;color:var(--text-primary);">';
+  html += '<option value="long">\u25b2 Long</option><option value="short">\u25bc Short</option><option value="watch">\u25cf Watch</option></select>';
+  html += '<button onclick="addToWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:6px 10px;font-size:12px;">+</button>';
+  html += '</div>';
+  html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:13px;color:var(--text-primary);box-sizing:border-box;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
+  html += '</div>';
+  // Watchlist items
+  html += '<div id="watchlist-content" style="padding:8px 10px;">';
+  html += _renderWatchlistItems(wList);
+  html += '</div>';
+  // Clear all button
+  if(wList.length>0) {
+    html += '<div style="padding:8px 12px;border-top:1px solid var(--border);text-align:center;">';
+    html += '<button onclick="clearWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:4px 10px;font-size:12px;width:100%;">Clear All</button>';
+    html += '</div>';
+  }
+  html += '</div>';
+  sidebar.innerHTML = html;
+}
+
+function _renderWatchlistItems(wList) {
+  if(wList.length===0) {
+    return '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:13px;">No tickers yet.</div>';
+  }
+  var html = '<div style="display:flex;flex-direction:column;gap:6px;">';
+  wList.forEach(function(item){
+    var biasColor = item.bias==='long'?'var(--green)':item.bias==='short'?'var(--red)':'var(--amber)';
+    var biasIcon = item.bias==='long'?'\u25b2':item.bias==='short'?'\u25bc':'\u25cf';
+    html += '<div class="wl-card-'+item.ticker+'" style="background:var(--bg-secondary);border-radius:8px;padding:10px 12px;border-left:3px solid '+biasColor+';position:relative;">';
+    html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');refreshWatchlistUI();" style="position:absolute;top:4px;right:6px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;">\u00d7</button>';
+    html += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;flex-wrap:wrap;">';
+    html += '<span style="font-size:13px;font-weight:800;font-family:var(--font-mono);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+item.ticker+'\');">'+item.ticker+'</span>';
+    html += '<span style="font-size:11px;font-weight:700;padding:1px 4px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+'</span>';
+    html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-muted);">...</span>';
+    html += '</div>';
+    if(item.note) html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.3;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+item.note.replace(/</g,'&lt;')+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+// Partial refresh — re-renders sidebar watchlist items without full rebuild
+function refreshWatchlistUI() {
+  var sidebar = document.getElementById('watchlist-sidebar');
+  if (sidebar) {
+    renderWatchlistSidebar();
     loadWatchlistPrices();
   }
-  // Re-focus the ticker input for quick consecutive adds
   var input = document.getElementById('wl-ticker-input');
   if (input) input.focus();
 }
@@ -1352,7 +1328,138 @@ function toggleCard(name) {
 }
 function toggleHeatmap(){toggleCard('heatmap');}
 
-// Subsector expand/collapse — fetches subsector ETFs + top trending stocks
+// ==================== RRG SECTOR DETAIL (click dot → show subsectors + leaders) ====================
+var _rrgDetailEtf = null;
+var _rrgDetailCache = {};
+async function showRRGSectorDetail(sectorEtf) {
+  var el = document.getElementById('rrg-sector-detail');
+  if (!el) return;
+  // Toggle off if same sector clicked again
+  if (_rrgDetailEtf === sectorEtf && el.style.display !== 'none') {
+    el.style.display = 'none';
+    _rrgDetailEtf = null;
+    return;
+  }
+  _rrgDetailEtf = sectorEtf;
+  el.style.display = 'block';
+
+  // Find sector info from global data
+  var secInfo = null;
+  (window._sectorData || []).forEach(function(s) { if (s.etf === sectorEtf) secInfo = s; });
+  var subs = (window._subsectorMap || {})[sectorEtf] || [];
+  var stocks = (window._sectorStocks || {})[sectorEtf] || [];
+
+  // Header with sector name + performance
+  var pctColor = secInfo && secInfo.dayChg >= 0 ? 'var(--green)' : 'var(--red)';
+  var wkColor = secInfo && secInfo.weekPerf >= 0 ? 'var(--green)' : 'var(--red)';
+  var headerHtml = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
+  headerHtml += '<div style="display:flex;align-items:center;gap:8px;">';
+  headerHtml += '<span style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);cursor:pointer;" title="Click for chart" onclick="openTVChart(\'' + sectorEtf + '\')">' + sectorEtf + '</span>';
+  headerHtml += '<span style="font-size:14px;font-weight:600;color:var(--text-secondary);">' + (secInfo ? secInfo.name : '') + '</span>';
+  headerHtml += '</div>';
+  headerHtml += '<div style="display:flex;align-items:center;gap:12px;">';
+  if (secInfo) {
+    headerHtml += '<span style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:' + pctColor + ';">' + (secInfo.dayChg >= 0 ? '+' : '') + secInfo.dayChg.toFixed(1) + '%</span>';
+    headerHtml += '<span style="font-size:12px;color:' + wkColor + ';">Wk: ' + (secInfo.weekPerf >= 0 ? '+' : '') + secInfo.weekPerf.toFixed(1) + '%</span>';
+  }
+  headerHtml += '<button onclick="document.getElementById(\'rrg-sector-detail\').style.display=\'none\'" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0 4px;">\u2715</button>';
+  headerHtml += '</div></div>';
+
+  // Check cache
+  if (_rrgDetailCache[sectorEtf]) {
+    el.innerHTML = headerHtml + _rrgDetailCache[sectorEtf];
+    return;
+  }
+
+  el.innerHTML = headerHtml + '<div style="text-align:center;padding:10px;font-size:12px;color:var(--text-muted);">Loading sector data...</div>';
+
+  try {
+    var html = '';
+
+    // ── SUBSECTOR ETFs ──
+    if (subs.length > 0) {
+      var subTickers = subs.map(function(s) { return s.etf; });
+      var subSnap = await getSnapshots(subTickers);
+      var subResults = [];
+      for (var i = 0; i < subs.length; i++) {
+        var sub = subs[i];
+        var s = subSnap[sub.etf];
+        var p = 0, prev = 0, pctVal = 0;
+        if (s) {
+          p = s.day && s.day.c && s.day.c > 0 ? s.day.c : (s.prevDay && s.prevDay.c ? s.prevDay.c : (s.lastTrade ? s.lastTrade.p : 0));
+          prev = s.prevDay ? s.prevDay.c : p;
+          if (prev > 0) pctVal = ((p - prev) / prev) * 100;
+        }
+        subResults.push({ etf: sub.etf, name: sub.name, pct: pctVal });
+      }
+      subResults.sort(function(a, b) { return b.pct - a.pct; });
+
+      html += '<div style="margin-bottom:10px;">';
+      html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Subsectors</div>';
+      html += '<div style="display:grid;gap:3px;">';
+      subResults.forEach(function(r) {
+        var color = r.pct >= 0 ? 'var(--green)' : 'var(--red)';
+        var bg = r.pct >= 0 ? 'var(--green-bg)' : 'var(--red-bg)';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-radius:5px;background:' + bg + ';">';
+        html += '<div style="font-size:13px;"><span style="font-weight:800;font-family:var(--font-mono);color:var(--text-primary);cursor:pointer;" title="Click for chart" onclick="openTVChart(\'' + r.etf + '\')">' + r.etf + '</span> <span style="color:var(--text-muted);">' + r.name + '</span></div>';
+        html += '<span style="font-size:13px;font-weight:800;font-family:var(--font-mono);color:' + color + ';">' + (r.pct >= 0 ? '+' : '') + r.pct.toFixed(1) + '%</span>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    // ── TREND LEADERS ──
+    if (stocks.length > 0) {
+      var stockSnap = {};
+      for (var bi = 0; bi < stocks.length; bi += 15) {
+        try { Object.assign(stockSnap, await getSnapshots(stocks.slice(bi, bi + 15))); } catch(e) {}
+      }
+      var leaders = [];
+      for (var si = 0; si < stocks.length; si++) {
+        var t = stocks[si];
+        var ss = stockSnap[t];
+        if (!ss) continue;
+        var pr = ss.day && ss.day.c && ss.day.c > 0 ? ss.day.c : (ss.prevDay && ss.prevDay.c ? ss.prevDay.c : (ss.lastTrade ? ss.lastTrade.p : 0));
+        var pv = ss.prevDay ? ss.prevDay.c : pr;
+        var dayPct = pv > 0 ? ((pr - pv) / pv) * 100 : 0;
+        var vol = ss.day ? ss.day.v : 0;
+        var prevVol = ss.prevDay ? ss.prevDay.v : 0;
+        var volVsAvg = prevVol > 0 ? (vol / prevVol) : 0;
+        leaders.push({ ticker: t, price: pr, dayPct: dayPct, vol: vol, volVsAvg: volVsAvg });
+      }
+      leaders.sort(function(a, b) { return b.dayPct - a.dayPct; });
+      var topLeaders = leaders.slice(0, 5);
+
+      if (topLeaders.length > 0) {
+        html += '<div>';
+        html += '<div style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Trend Leaders</div>';
+        html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:2px 10px;font-size:12px;font-weight:700;color:var(--text-muted);padding:0 10px 3px;text-transform:uppercase;letter-spacing:.03em;">';
+        html += '<span>Ticker</span><span style="text-align:right;">Price</span><span style="text-align:right;">Day %</span><span style="text-align:right;">Vol</span>';
+        html += '</div>';
+        topLeaders.forEach(function(l) {
+          var c = l.dayPct >= 0 ? 'var(--green)' : 'var(--red)';
+          var bg = l.dayPct >= 0 ? 'var(--green-bg)' : 'var(--red-bg)';
+          var volStr = l.vol >= 1000000 ? (l.vol / 1000000).toFixed(1) + 'M' : l.vol >= 1000 ? (l.vol / 1000).toFixed(0) + 'K' : l.vol.toString();
+          var volColor = l.volVsAvg >= 1.5 ? 'var(--blue)' : 'var(--text-muted)';
+          html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:2px 10px;padding:5px 10px;border-radius:5px;background:' + bg + ';align-items:center;">';
+          html += '<span style="font-size:13px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);cursor:pointer;" title="Click for chart" onclick="openTVChart(\'' + l.ticker + '\')">' + l.ticker + '</span>';
+          html += '<span style="font-size:13px;font-family:var(--font-mono);color:var(--text-secondary);text-align:right;">$' + l.price.toFixed(2) + '</span>';
+          html += '<span style="font-size:13px;font-weight:800;font-family:var(--font-mono);color:' + c + ';text-align:right;">' + (l.dayPct >= 0 ? '+' : '') + l.dayPct.toFixed(1) + '%</span>';
+          html += '<span style="font-size:13px;font-family:var(--font-mono);color:' + volColor + ';text-align:right;">' + volStr + '</span>';
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+    }
+
+    _rrgDetailCache[sectorEtf] = html || '<div style="padding:6px;font-size:12px;color:var(--text-muted);text-align:center;">No data available</div>';
+    el.innerHTML = headerHtml + _rrgDetailCache[sectorEtf];
+  } catch (e) {
+    el.innerHTML = headerHtml + '<div style="padding:6px;font-size:12px;color:var(--red);">Failed to load sector data</div>';
+  }
+}
+
+// Subsector expand/collapse (legacy — kept for compatibility)
 var _subsectorLoaded = {};
 async function toggleSubsectors(sectorEtf) {
   var el = document.getElementById('subsector-' + sectorEtf);
