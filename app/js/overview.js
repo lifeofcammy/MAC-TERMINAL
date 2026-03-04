@@ -428,73 +428,19 @@ function renderRRGCanvas(canvasId) {
     ctx.stroke();
     ctx.restore();
   });
-  // Draw labels in a second pass with leader lines for dense areas
-  ctx.font = '600 10px Inter, sans-serif';
-  var labelPad = 6;
-  // Generate candidates at increasing distances (rings)
-  function makeCandidates(lx, ly, tw) {
-    var c = [];
-    var dists = [14, 28, 44, 60];
-    var angles = [0, Math.PI, -Math.PI/2, Math.PI/2, -Math.PI/4, Math.PI/4, -3*Math.PI/4, 3*Math.PI/4];
-    for (var di = 0; di < dists.length; di++) {
-      for (var ai = 0; ai < angles.length; ai++) {
-        var r = dists[di];
-        c.push({ x: lx + Math.cos(angles[ai]) * r - tw/2, y: ly + Math.sin(angles[ai]) * r });
-      }
-    }
-    return c;
-  }
+  // Draw short ETF labels right next to each dot (simple, no collision avoidance needed)
+  ctx.font = '700 9px Inter, sans-serif';
+  ctx.textAlign = 'left';
   data.forEach(function(d) {
     if (!d._canvasXY) return;
     var lx = d._canvasXY.x, ly = d._canvasXY.y;
     var color = d.isAssetClass ? assetColor : sectorColor;
-    var label = d.short || d.name || d.etf;
-    var infoIcon = d.isAssetClass ? '' : ' \u24d8';
-    var fullLabel = label + infoIcon;
-    var tw = ctx.measureText(fullLabel).width + 8;
-    var lh = 14;
-    var candidates = makeCandidates(lx, ly, tw);
-    var best = candidates[0];
-    var found = false;
-    for (var c = 0; c < candidates.length; c++) {
-      var cand = candidates[c];
-      if (cand.x < pad.left) cand.x = pad.left;
-      if (cand.x + tw > w - pad.right) cand.x = w - pad.right - tw;
-      if (cand.y - lh < pad.top) cand.y = pad.top + lh;
-      if (cand.y + 2 > h - pad.bottom) cand.y = h - pad.bottom - 2;
-      var overlap = false;
-      for (var p = 0; p < placedLabels.length; p++) {
-        var pl = placedLabels[p];
-        if (cand.x - labelPad < pl.x + pl.w && cand.x + tw + labelPad > pl.x && cand.y - lh - labelPad < pl.y && cand.y + labelPad > pl.y - pl.h) {
-          overlap = true; break;
-        }
-      }
-      if (!overlap) { best = cand; found = true; break; }
-    }
-    placedLabels.push({ x: best.x, y: best.y, w: tw, h: lh });
-    // Leader line if label is far from dot
-    var labelCx = best.x + tw / 2, labelCy = best.y - lh / 2;
-    var dist = Math.sqrt((labelCx - lx) * (labelCx - lx) + (labelCy - ly) * (labelCy - ly));
-    if (dist > 22) {
-      ctx.strokeStyle = color;
-      ctx.globalAlpha = 0.25;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(lx, ly);
-      ctx.lineTo(labelCx, labelCy);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-    // Draw label background + text
     ctx.fillStyle = labelBg;
-    ctx.fillRect(best.x - 3, best.y - lh, tw + 2, lh + 2);
+    ctx.fillRect(lx + 10, ly - 8, ctx.measureText(d.etf).width + 4, 11);
     ctx.fillStyle = color;
-    ctx.textAlign = 'left';
-    ctx.fillText(label, best.x, best.y - 1);
-    if (!d.isAssetClass) {
-      ctx.fillStyle = isDark ? 'rgba(96,165,250,0.5)' : 'rgba(37,99,235,0.45)';
-      ctx.fillText(' \u24d8', best.x + ctx.measureText(label).width, best.y - 1);
-    }
+    ctx.globalAlpha = 0.85;
+    ctx.fillText(d.etf, lx + 11, ly + 1);
+    ctx.globalAlpha = 1;
   });
 }
 
@@ -1007,7 +953,7 @@ async function renderOverview() {
   html += '<span id="mindset-arrow" style="width:20px;text-align:right;font-size:12px;color:var(--text-muted);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
   html += '</div>';
   // Today's Focus — ALWAYS visible, centered under header
-  html += '<div style="padding:0 16px 10px;text-align:center;"><div style="background:var(--bg-secondary);border:1px solid rgba(230,138,0,0.2);border-radius:6px;padding:10px 14px;display:inline-block;max-width:500px;">';
+  html += '<div style="padding:0 16px 10px;text-align:center;"><div class="center-under-tagline" style="background:var(--bg-secondary);border:1px solid rgba(230,138,0,0.2);border-radius:6px;padding:10px 14px;display:inline-block;max-width:500px;">';
   html += '<div style="font-size:12px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;">Today\'s Focus</div>';
   html += '<div style="font-size:14px;font-weight:700;color:var(--text-primary);line-height:1.4;">'+dailyFocus+'</div>';
   html += '</div></div>';
@@ -1116,9 +1062,10 @@ async function renderOverview() {
   html += '</div>';
   // Regime label — always visible, centered under header
   html += '<div style="text-align:center;padding:10px 20px;border-bottom:1px solid var(--border);">';
+  html += '<div class="center-under-tagline" style="display:inline-block;max-width:600px;">';
   html += '<div style="font-family:var(--font-display);font-size:28px;font-weight:700;color:'+regimeColor+';letter-spacing:0.02em;">'+regimeLabel+'</div>';
   html += '<div style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-top:4px;">'+regimeAction+'</div>';
-  html += '</div>';
+  html += '</div></div>';
   html += '<div id="regime-body" style="'+(regimeCollapsed?'display:none;':'')+'padding:14px 20px;">';
   html += '<div style="font-size:14px;color:var(--text-muted);line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
   // Show all 4 indexes' SMA status
@@ -1226,23 +1173,75 @@ async function renderOverview() {
   html += '<div style="padding:10px 8px;">';
   if(rrgData.length > 0) {
     html += '<div style="position:relative;"><canvas id="rrg-canvas" style="width:100%;border-radius:8px;"></canvas></div>';
-    // Quadrant filter pills — below the chart
-    html += '<div style="display:flex;justify-content:center;gap:6px;margin-top:6px;flex-wrap:wrap;">';
+
+    // ── SECTOR ROTATION TABLE (primary readable view) ──
+    html += '<div style="margin-top:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden;">';
+    // Table header
+    html += '<div style="display:grid;grid-template-columns:90px 1fr 56px 56px 50px;gap:0;padding:6px 12px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;">';
+    html += '<span>Quadrant</span><span>Sector</span><span>RS</span><span>Mom</span><span>Dir</span>';
+    html += '</div>';
+    // Sort by quadrant priority: Leading > Improving > Weakening > Lagging
+    var qOrder = {leading:0, improving:1, weakening:2, lagging:3};
+    var qColors = {leading:'#10B981', improving:'#2563EB', weakening:'#F59E0B', lagging:'#EF4444'};
+    var qLabels = {leading:'Leading', improving:'Improving', weakening:'Weakening', lagging:'Lagging'};
+    var tableRows = rrgData.map(function(d) {
+      if(d.trail.length === 0) return null;
+      var last = d.trail[d.trail.length-1];
+      var r = last.ratio, m = last.momentum;
+      var q = (r >= 100 && m >= 100) ? 'leading' : (r >= 100 && m < 100) ? 'weakening' : (r < 100 && m >= 100) ? 'improving' : 'lagging';
+      // Direction: compare to previous point
+      var dir = '\u25cf'; // neutral dot
+      if(d.trail.length >= 2) {
+        var prev = d.trail[d.trail.length-2];
+        var rDelta = last.ratio - prev.ratio;
+        var mDelta = last.momentum - prev.momentum;
+        if(rDelta > 0 && mDelta > 0) dir = '\u2197'; // ↗ improving
+        else if(rDelta > 0 && mDelta <= 0) dir = '\u2198'; // ↘ weakening
+        else if(rDelta <= 0 && mDelta > 0) dir = '\u2196'; // ↖ recovering
+        else dir = '\u2199'; // ↙ deteriorating
+      }
+      return {d:d, q:q, rs:r, mom:m, dir:dir};
+    }).filter(function(x){return x;});
+    tableRows.sort(function(a,b) { return (qOrder[a.q]||9) - (qOrder[b.q]||9) || b.mom - a.mom; });
+    tableRows.forEach(function(row, idx) {
+      var d = row.d;
+      var qc = qColors[row.q];
+      var clickAttr = d.isAssetClass ? 'onclick="openTVChart(\'' + d.etf + '\')"' : 'onclick="showRRGSectorDetail(\'' + d.etf + '\')"';
+      var rsColor = row.rs >= 100 ? 'var(--green)' : 'var(--red)';
+      var momColor = row.mom >= 100 ? 'var(--green)' : 'var(--red)';
+      html += '<div ' + clickAttr + ' style="display:grid;grid-template-columns:90px 1fr 56px 56px 50px;gap:0;padding:7px 12px;border-bottom:1px solid var(--border);font-size:12px;align-items:center;cursor:pointer;' + (idx % 2 === 1 ? 'background:var(--bg-secondary);' : '') + '" title="Click for details">';
+      // Quadrant badge
+      html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:'+qc+'15;color:'+qc+';border:1px solid '+qc+'30;white-space:nowrap;">'+qLabels[row.q]+'</span>';
+      // Sector name + ETF
+      html += '<span style="display:flex;align-items:center;gap:4px;"><span class="ticker-link" style="font-size:12px;" title="Click for chart">' + d.etf + '</span><span style="font-size:11px;color:var(--text-muted);">' + (d.short || d.name) + '</span></span>';
+      // RS ratio
+      html += '<span style="font-family:var(--font-mono);font-weight:700;color:'+rsColor+';">'+row.rs.toFixed(1)+'</span>';
+      // Momentum
+      html += '<span style="font-family:var(--font-mono);font-weight:700;color:'+momColor+';">'+row.mom.toFixed(1)+'</span>';
+      // Direction arrow
+      html += '<span style="font-size:16px;text-align:center;">'+row.dir+'</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Quadrant filter pills
+    html += '<div style="display:flex;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap;">';
     var qPillStyle = 'padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;user-select:none;';
-    html += '<div onclick="showRRGQuadrant(\'improving\')" style="' + qPillStyle + 'background:rgba(37,99,235,0.1);color:rgba(37,99,235,0.85);border:1px solid rgba(37,99,235,0.2);" title="Click to see Improving sectors">Improving</div>';
     html += '<div onclick="showRRGQuadrant(\'leading\')" style="' + qPillStyle + 'background:rgba(16,185,129,0.1);color:rgba(16,185,129,0.85);border:1px solid rgba(16,185,129,0.2);" title="Click to see Leading sectors">Leading</div>';
+    html += '<div onclick="showRRGQuadrant(\'improving\')" style="' + qPillStyle + 'background:rgba(37,99,235,0.1);color:rgba(37,99,235,0.85);border:1px solid rgba(37,99,235,0.2);" title="Click to see Improving sectors">Improving</div>';
     html += '<div onclick="showRRGQuadrant(\'weakening\')" style="' + qPillStyle + 'background:rgba(245,158,11,0.1);color:rgba(217,119,6,0.85);border:1px solid rgba(245,158,11,0.2);" title="Click to see Weakening sectors">Weakening</div>';
     html += '<div onclick="showRRGQuadrant(\'lagging\')" style="' + qPillStyle + 'background:rgba(239,68,68,0.1);color:rgba(239,68,68,0.85);border:1px solid rgba(239,68,68,0.2);" title="Click to see Lagging sectors">Lagging</div>';
     html += '</div>';
+
     // Legend
-    html += '<div style="display:flex;justify-content:center;gap:16px;margin-top:6px;font-size:12px;">';
-    html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--blue);"></span><span style="color:var(--text-muted);">Sectors</span></span>';
-    html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--amber);"></span><span style="color:var(--text-muted);">Asset Classes</span></span>';
+    html += '<div style="display:flex;justify-content:center;gap:16px;margin-top:6px;font-size:11px;">';
+    html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--blue);"></span><span style="color:var(--text-muted);">Sectors</span></span>';
+    html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);"></span><span style="color:var(--text-muted);">Asset Classes</span></span>';
+    html += '<span style="color:var(--text-muted);">\u2197 Improving \u2198 Weakening \u2196 Recovering \u2199 Deteriorating</span>';
     html += '</div>';
   } else {
     html += '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-muted);">Insufficient data for RRG (need 15+ trading days)</div>';
   }
-  html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:4px;">Click a sector dot for subsectors & leaders \u2014 RS vs SPY</div>';
   html += '</div>';
 
   // Sector detail panel (populated on click)

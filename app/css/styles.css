@@ -175,7 +175,7 @@ body {
 #tab-overview.active { display: flex; gap: 16px; }
 #overview-main { flex: 1; min-width: 0; }
 #watchlist-sidebar {
-  width: 220px;
+  width: 180px;
   flex-shrink: 0;
   position: sticky;
   top: 80px;
@@ -368,6 +368,7 @@ input:focus, textarea:focus, select:focus {
   #account-box { display: none !important; }
   .main { padding: 20px 16px; }
   .step-header-box { left: 0; }
+  .center-under-tagline { left: 0; }
 
   /* Overview: Market Snapshot 6-col → 3-col */
   .ov-snap-grid { grid-template-columns: repeat(3, 1fr) !important; }
@@ -514,5 +515,9 @@ input:focus, textarea:focus, select:focus {
   padding: 10px 20px;
   display: inline-block;
   position: relative;
-  left: 118px; /* offset half of sidebar(220)+gap(16) to center under tagline */
+  left: 98px; /* offset half of sidebar(180)+gap(16) to center under tagline */
+}
+.center-under-tagline {
+  position: relative;
+  left: 98px;
 }

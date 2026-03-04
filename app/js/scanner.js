@@ -323,13 +323,15 @@ function calcUniverseScore(bars, currentPrice) {
     else ptsPullback = 4;
   }
 
-  // ── BUYOUT FILTER (same as before) ──
+  // ── BUYOUT FILTER ──
   if (range5 < 0.8) return { total: 0 };  // Flatlined = deal stock
+  // 10d range < 1.5% AND 5d range < 2% = dead stock (buyout/deal)
+  if (range10 < 1.5 && range5 < 2) return { total: 0 };
   if (len >= 15) {
     for (var gi = Math.max(0, len - 30); gi < len - 5; gi++) {
       var prevC = gi > 0 ? closes[gi - 1] : closes[gi];
       var gapPct = prevC > 0 ? ((closes[gi] - prevC) / prevC) * 100 : 0;
-      if (gapPct > 15) {
+      if (gapPct > 10) {
         var postGapHighs = highs.slice(gi + 2);
         var postGapLows = lows.slice(gi + 2);
         if (postGapHighs.length >= 3) {
@@ -591,7 +593,29 @@ async function runSetupScan(statusFn) {
     var recent5H = Math.max.apply(null, highs.slice(-5));
     var recent5L = Math.min.apply(null, lows.slice(-5));
     var range5 = ((recent5H - recent5L) / curPrice) * 100;
-    if (range5 < 0.8) return;
+    if (range5 < 0.8) return; // flatlined deal stock
+    // Buyout filter: 10d range < 1.5% AND 5d range < 2% = dead stock
+    if (highs.length >= 10) {
+      var r10H = Math.max.apply(null, highs.slice(-10));
+      var r10L = Math.min.apply(null, lows.slice(-10));
+      var range10 = ((r10H - r10L) / curPrice) * 100;
+      if (range10 < 1.5 && range5 < 2) return;
+    }
+    // Post-gap flatline: gap >10% then barely moves = acquisition/deal stock
+    if (closes.length >= 15) {
+      for (var bi = Math.max(0, closes.length - 30); bi < closes.length - 5; bi++) {
+        var bPrev = bi > 0 ? closes[bi - 1] : closes[bi];
+        var bGap = bPrev > 0 ? ((closes[bi] - bPrev) / bPrev) * 100 : 0;
+        if (bGap > 10) {
+          var pgH = highs.slice(bi + 2);
+          var pgL = lows.slice(bi + 2);
+          if (pgH.length >= 3) {
+            var pgRange = ((Math.max.apply(null, pgH) - Math.min.apply(null, pgL)) / curPrice) * 100;
+            if (pgRange < 3.5) return;
+          }
+        }
+      }
+    }
     if (changePct < -8) return;
 
     var score = allScores[ticker] || 0;
