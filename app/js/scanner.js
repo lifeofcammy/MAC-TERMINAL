@@ -161,16 +161,6 @@ async function buildMomentumUniverse(statusFn) {
   // Sort by dollar volume (highest liquidity first)
   filtered.sort(function(a, b) { return (b.v * b.c) - (a.v * a.c); });
 
-  // Fetch SPY bars for Relative Strength comparison
-  var spyBars = [];
-  try { spyBars = await getDailyBarsRetry('SPY', 60); } catch(e) {}
-  var spyReturn20 = 0;
-  if (spyBars.length >= 20) {
-    var spyOld = spyBars[spyBars.length - 20].c;
-    var spyNow = spyBars[spyBars.length - 1].c;
-    spyReturn20 = spyOld > 0 ? ((spyNow - spyOld) / spyOld) * 100 : 0;
-  }
-
   // Fetch 60-day bars and score each candidate
   var scored = [];
   var batchSize = 25;
@@ -186,7 +176,7 @@ async function buildMomentumUniverse(statusFn) {
     var results = await Promise.all(promises);
     results.forEach(function(r) {
       if (!r || !r.bars || r.bars.length < 20) return;
-      var score = calcUniverseScore(r.bars, r.latestClose, spyReturn20);
+      var score = calcUniverseScore(r.bars, r.latestClose);
       if (score.total > 0) {
         scored.push({
           ticker: r.ticker,
@@ -239,7 +229,7 @@ async function buildMomentumUniverse(statusFn) {
 // Rewards: compression, trend, volume dry-up, proximity to breakout
 // Penalizes: extension from 20 SMA, already-ran stocks
 
-function calcUniverseScore(bars, currentPrice, spyReturn20) {
+function calcUniverseScore(bars, currentPrice) {
   var closes = bars.map(function(b) { return b.c; });
   var highs = bars.map(function(b) { return b.h; });
   var lows = bars.map(function(b) { return b.l; });
@@ -254,21 +244,12 @@ function calcUniverseScore(bars, currentPrice, spyReturn20) {
 
   var sma10 = sma(closes, 10), sma20 = sma(closes, 20), sma50 = sma(closes, 50);
 
-  // Must be above 50 SMA to be in universe (uptrend filter)
+  // ── HARD FILTERS ──
+
+  // Must be above 50 SMA (uptrend)
   if (!sma50 || currentPrice < sma50) return { total: 0 };
 
-  // ── 1. COMPRESSION / TIGHTNESS (0-30 pts) — PRIMARY factor ──
-  // ATR-relative: normalize range by the stock's own ATR so high-ATR names
-  // that compress recently still score well
-  var recent5H = Math.max.apply(null, highs.slice(-5));
-  var recent5L = Math.min.apply(null, lows.slice(-5));
-  var range5 = ((recent5H - recent5L) / currentPrice) * 100;
-
-  var recent10H = Math.max.apply(null, highs.slice(-10));
-  var recent10L = Math.min.apply(null, lows.slice(-10));
-  var range10 = ((recent10H - recent10L) / currentPrice) * 100;
-
-  // Compute ATR14 for normalization
+  // ATR14
   var _atr14 = 0;
   if (len >= 15) {
     var _trS = 0;
@@ -280,85 +261,19 @@ function calcUniverseScore(bars, currentPrice, spyReturn20) {
     _atr14 = _trS / 14;
   }
 
-  // Minimum ATR% filter — only keep stocks with ATR ≥ 4.5% of price (Qullamaggie-style)
+  // ATR% ≥ 5%
   var atrPct = currentPrice > 0 && _atr14 > 0 ? (_atr14 / currentPrice) * 100 : 0;
-  if (atrPct < 4.5) return { total: 0 };
+  if (atrPct < 5) return { total: 0 };
 
-  // ATR-relative range: how many ATRs does the 5d/10d range span?
-  var atrRatio5 = (_atr14 > 0) ? (recent5H - recent5L) / _atr14 : range5;
-  var atrRatio10 = (_atr14 > 0) ? (recent10H - recent10L) / _atr14 : range10;
+  // Buyout filters
+  var recent5H = Math.max.apply(null, highs.slice(-5));
+  var recent5L = Math.min.apply(null, lows.slice(-5));
+  var range5 = ((recent5H - recent5L) / currentPrice) * 100;
+  var recent10H = Math.max.apply(null, highs.slice(-10));
+  var recent10L = Math.min.apply(null, lows.slice(-10));
+  var range10 = ((recent10H - recent10L) / currentPrice) * 100;
 
-  var ptsTight = 0;
-  // Score on ATR-relative compression (5d range as multiple of ATR)
-  if (atrRatio5 <= 2) ptsTight = 30;       // 5d range ≤ 2x ATR — very tight
-  else if (atrRatio5 <= 3) ptsTight = 25;
-  else if (atrRatio5 <= 4) ptsTight = 20;
-  else if (atrRatio5 <= 5.5) ptsTight = 14;
-  else if (atrRatio10 <= 6) ptsTight = 10;
-  else if (atrRatio10 <= 8) ptsTight = 5;
-  else ptsTight = 0;
-
-  // ── 2. EXTENSION PENALTY (0 to -20 pts) — how far above 20 SMA ──
-  var extFromSma20 = sma20 > 0 ? ((currentPrice - sma20) / sma20) * 100 : 0;
-  var ptsExt = 0;
-  if (extFromSma20 <= 4) ptsExt = 10;       // Near base — ideal
-  else if (extFromSma20 <= 6) ptsExt = 5;
-  else if (extFromSma20 <= 8) ptsExt = 0;
-  else if (extFromSma20 <= 10) ptsExt = -5;
-  else if (extFromSma20 <= 15) ptsExt = -10;
-  else ptsExt = -20;                         // Very extended — bad
-
-  // ── 3. VOLUME DRY-UP IN BASE (0-20 pts) ──
-  var avgVol20 = sma(volumes, 20);
-  var avgVol5 = sma(volumes.slice(-5), 5);
-  var volRatio = avgVol20 > 0 && avgVol5 ? avgVol5 / avgVol20 : 1;
-
-  var ptsVolDry = 0;
-  if (volRatio <= 0.4) ptsVolDry = 20;
-  else if (volRatio <= 0.55) ptsVolDry = 16;
-  else if (volRatio <= 0.7) ptsVolDry = 12;
-  else if (volRatio <= 0.85) ptsVolDry = 6;
-  else ptsVolDry = 0;
-
-  // ── 4. BREAKOUT PROXIMITY (0-20 pts) — how close to top of range ──
-  var distToBreakout = recent10H > 0 ? ((recent10H - currentPrice) / currentPrice) * 100 : 99;
-  var ptsBreakout = 0;
-  if (distToBreakout <= 0.5) ptsBreakout = 20;
-  else if (distToBreakout <= 1) ptsBreakout = 17;
-  else if (distToBreakout <= 2) ptsBreakout = 13;
-  else if (distToBreakout <= 3) ptsBreakout = 8;
-  else if (distToBreakout <= 5) ptsBreakout = 4;
-  else ptsBreakout = 0;
-
-  // ── 5. TREND QUALITY (0-15 pts) — SMA alignment ──
-  var ptsTrend = 0;
-  var aboveSMAs = 0;
-  if (sma10 && currentPrice > sma10) { aboveSMAs++; ptsTrend += 3; }
-  if (currentPrice > sma20) { aboveSMAs++; ptsTrend += 3; }
-  if (sma50 && currentPrice > sma50) { aboveSMAs++; ptsTrend += 3; }
-  if (sma10 && sma10 > sma20) ptsTrend += 3;
-  if (sma50 && sma20 > sma50) ptsTrend += 3;
-
-  // ── 6. PULLBACK DETECTION (bonus for stocks pulling back to support) ──
-  // If stock was higher recently but has come back to 10/20 SMA, that's interesting
-  var pullbackDepth = 0;
-  if (len >= 10) {
-    var recentHigh = Math.max.apply(null, highs.slice(-15));
-    pullbackDepth = recentHigh > 0 ? ((recentHigh - currentPrice) / recentHigh) * 100 : 0;
-  }
-  var ptsPullback = 0;
-  // Sweet spot: pulled back 3-10% from recent high, now at/near 10 or 20 SMA
-  if (pullbackDepth >= 3 && pullbackDepth <= 10) {
-    var nearSma10 = sma10 && Math.abs(currentPrice - sma10) / currentPrice * 100 <= 1.5;
-    var nearSma20 = Math.abs(currentPrice - sma20) / currentPrice * 100 <= 1.5;
-    if (nearSma10 || nearSma20) ptsPullback = 15;
-    else if (pullbackDepth <= 7) ptsPullback = 8;
-    else ptsPullback = 4;
-  }
-
-  // ── BUYOUT FILTER ──
-  if (range5 < 0.8) return { total: 0 };  // Flatlined = deal stock
-  // 10d range < 1.5% AND 5d range < 2% = dead stock (buyout/deal)
+  if (range5 < 0.8) return { total: 0 };
   if (range10 < 1.5 && range5 < 2) return { total: 0 };
   if (len >= 15) {
     for (var gi = Math.max(0, len - 30); gi < len - 5; gi++) {
@@ -377,56 +292,47 @@ function calcUniverseScore(bars, currentPrice, spyReturn20) {
     }
   }
 
-  // ── 7. RELATIVE STRENGTH vs SPY (0-15 pts) ──
-  var ptsRS = 0;
-  if (len >= 20 && spyReturn20 !== undefined) {
-    var stockOld = closes[len - 20];
-    var stockReturn20 = stockOld > 0 ? ((currentPrice - stockOld) / stockOld) * 100 : 0;
-    var rsRatio = spyReturn20 !== 0 ? stockReturn20 / Math.abs(spyReturn20) : (stockReturn20 > 0 ? 2 : 0);
-    if (rsRatio >= 3) ptsRS = 15;        // 3x+ SPY's move — very strong
-    else if (rsRatio >= 2) ptsRS = 12;
-    else if (rsRatio >= 1.5) ptsRS = 8;
-    else if (rsRatio >= 1) ptsRS = 4;    // Matching SPY
-    else ptsRS = 0;                       // Underperforming
-  }
+  // ── SCORING (Top Ideas style — 5 factors, max ~100) ──
 
-  // ── 8. EPISODIC PIVOT BONUS (0-15 pts) — gap up on catalyst then consolidation ──
-  var ptsEpisodic = 0;
-  if (len >= 10) {
-    for (var ei = Math.max(1, len - 40); ei < len - 3; ei++) {
-      var epGap = closes[ei - 1] > 0 ? ((closes[ei] - closes[ei - 1]) / closes[ei - 1]) * 100 : 0;
-      if (epGap >= 8) {
-        // Found a big gap up — check if price is consolidating above that level
-        var gapClose = closes[ei];
-        var daysAfter = len - ei - 1;
-        if (daysAfter >= 3 && currentPrice >= gapClose * 0.92) {
-          // Price held above 92% of gap close level — consolidating, not fading
-          var postHigh = Math.max.apply(null, highs.slice(ei + 1));
-          var postLow = Math.min.apply(null, lows.slice(ei + 1));
-          var postRangeRatio = _atr14 > 0 ? (postHigh - postLow) / (_atr14 * daysAfter) : 1;
-          if (postRangeRatio <= 0.6) ptsEpisodic = 15;      // Very tight consolidation after gap
-          else if (postRangeRatio <= 0.8) ptsEpisodic = 10;
-          else ptsEpisodic = 5;                               // Held level but loose
-          break;
-        }
-      }
-    }
-  }
+  // 1. SMA Compression (0-30) — spread between 10/20 SMA
+  var spread = sma10 && sma20 ? Math.abs(sma10 - sma20) / currentPrice * 100 : 99;
+  if (spread > 5) return { total: 0 }; // skip if SMAs too far apart
+  var ptsCompress = spread <= 1 ? 30 : spread <= 2 ? 22 : spread <= 3 ? 15 : spread <= 5 ? 8 : 0;
 
-  var total = Math.round(Math.max(0, ptsTight + ptsExt + ptsVolDry + ptsBreakout + ptsTrend + ptsPullback + ptsRS + ptsEpisodic));
+  // 2. SMA Alignment (0-25)
+  var ptsAlign = 0;
+  var aboveBoth = sma10 && currentPrice > sma10 && sma20 && currentPrice > sma20;
+  if (aboveBoth) ptsAlign += 15;
+  if (sma50 && currentPrice > sma50) ptsAlign += 10;
 
-  // ATR already computed above as _atr14
+  // 3. Extension (−5 to +25)
+  var extFromSma20 = sma20 > 0 ? ((currentPrice - sma20) / sma20) * 100 : 0;
+  var ptsExt = extFromSma20 <= 2 ? 25 : extFromSma20 <= 4 ? 18 : extFromSma20 <= 6 ? 10 : extFromSma20 <= 8 ? 4 : -5;
+
+  // 4. Relative Volume (0-10) — last bar vol vs 20d avg
+  var avgVol20 = sma(volumes, 20);
+  var lastVol = volumes[len - 1] || 0;
+  var rvol = avgVol20 > 0 && lastVol > 0 ? lastVol / avgVol20 : 0;
+  var ptsVol = (rvol >= 2) ? 10 : (rvol >= 1.5) ? 7 : (rvol >= 1) ? 4 : 0;
+
+  // 5. Day Change (0-5)
+  var dayChg = len >= 2 && closes[len - 2] > 0 ? ((currentPrice - closes[len - 2]) / closes[len - 2]) * 100 : 0;
+  var ptsMom = dayChg > 1 ? 5 : dayChg > 0 ? 2 : 0;
+
+  var total = Math.round(Math.min(100, Math.max(0, ptsCompress + ptsAlign + ptsExt + ptsVol + ptsMom)));
+
   var atr14 = _atr14 > 0 ? _atr14 : null;
 
   return {
     total: total,
+    spread: Math.round(spread * 10) / 10,
     range5: Math.round(range5 * 10) / 10,
     range10: Math.round(range10 * 10) / 10,
     extFromSma20: Math.round(extFromSma20 * 10) / 10,
-    aboveSMAs: aboveSMAs + '/3',
-    volDryUp: Math.round(volRatio * 100),
-    distToBreakout: Math.round(distToBreakout * 10) / 10,
-    pullbackDepth: Math.round(pullbackDepth * 10) / 10,
+    aboveSMAs: (aboveBoth ? 2 : 0) + (sma50 && currentPrice > sma50 ? 1 : 0) + '/3',
+    volDryUp: Math.round(rvol * 100),
+    distToBreakout: 0,
+    pullbackDepth: 0,
     atr14: atr14
   };
 }
@@ -498,16 +404,6 @@ async function runSetupScan(statusFn) {
     }
   }
 
-  // Fetch SPY bars for Relative Strength comparison
-  var spyBars2 = [];
-  try { spyBars2 = await getDailyBarsRetry('SPY', 60); } catch(e) {}
-  var spyRet20 = 0;
-  if (spyBars2.length >= 20) {
-    var _so = spyBars2[spyBars2.length - 20].c;
-    var _sn = spyBars2[spyBars2.length - 1].c;
-    spyRet20 = _so > 0 ? ((_sn - _so) / _so) * 100 : 0;
-  }
-
   // Fetch market cap + industry from Polygon ticker details
   statusFn('Fetching ticker details...');
   var allMarketCap = {};
@@ -544,7 +440,7 @@ async function runSetupScan(statusFn) {
 
   statusFn('Scoring setups...');
 
-  // Helper: compute setup score for any ticker (same formula for cards + universe list)
+  // Helper: compute setup score for any ticker (Top Ideas style — 5 factors, max ~100)
   function calcSetupScore(ticker) {
     var snap = allSnapshots[ticker];
     var bars = allBars[ticker];
@@ -562,8 +458,6 @@ async function runSetupScan(statusFn) {
     if (curPrice <= 0) return null;
 
     var closes = bars.map(function(b) { return b.c; });
-    var highs = bars.map(function(b) { return b.h; });
-    var lows = bars.map(function(b) { return b.l; });
     var volumes = bars.map(function(b) { return b.v; });
 
     function sma(arr, period) {
@@ -574,75 +468,29 @@ async function runSetupScan(statusFn) {
     var sma10 = sma(closes, 10), sma20 = sma(closes, 20), sma50 = sma(closes, 50);
     if (!sma20 || !sma10) return null;
 
+    // 1. SMA Compression (0-30)
     var spread = Math.abs(sma10 - sma20) / curPrice * 100;
-    var ext = ((curPrice - sma20) / sma20) * 100;
-    var rvol = null;
-    var avgVol20 = sma(volumes, 20);
-    if (avgVol20 > 0 && curVol > 0) rvol = curVol / avgVol20;
+    var ptsCompress = spread <= 1 ? 30 : spread <= 2 ? 22 : spread <= 3 ? 15 : spread <= 5 ? 8 : 0;
 
-    // ATR14 for normalization
-    var _len2 = bars.length;
-    var _atr2 = 0;
-    if (_len2 >= 15) {
-      var _ts2 = 0;
-      for (var _j = _len2 - 14; _j < _len2; _j++) {
-        var _t2 = highs[_j] - lows[_j];
-        if (_j > 0) _t2 = Math.max(_t2, Math.abs(highs[_j] - closes[_j - 1]), Math.abs(lows[_j] - closes[_j - 1]));
-        _ts2 += _t2;
-      }
-      _atr2 = _ts2 / 14;
-    }
-    // ATR-relative SMA spread: how many ATRs apart are the 10/20 SMAs?
-    var spreadATR = (_atr2 > 0) ? Math.abs(sma10 - sma20) / _atr2 : spread;
-
-    // Score: use ATR-relative spread so high-ATR names with converging SMAs score well
-    var ptsCompress = spreadATR <= 0.5 ? 30 : spreadATR <= 1 ? 22 : spreadATR <= 1.5 ? 15 : spreadATR <= 2.5 ? 8 : 0;
+    // 2. SMA Alignment (0-25)
     var ptsAlign = 0;
     if (curPrice > sma10 && curPrice > sma20) ptsAlign += 15;
     if (sma50 && curPrice > sma50) ptsAlign += 10;
-    var ptsExt = ext <= 4 ? 25 : ext <= 6 ? 18 : ext <= 8 ? 10 : ext <= 10 ? 4 : -5;
-    var ptsVol = (rvol && rvol >= 2) ? 10 : (rvol && rvol >= 1.5) ? 7 : (rvol && rvol >= 1) ? 4 : 0;
+
+    // 3. Extension (-5 to +25)
+    var ext = ((curPrice - sma20) / sma20) * 100;
+    var ptsExt = ext <= 2 ? 25 : ext <= 4 ? 18 : ext <= 6 ? 10 : ext <= 8 ? 4 : -5;
+
+    // 4. Relative Volume (0-10)
+    var avgVol20 = sma(volumes, 20);
+    var rvol = (avgVol20 > 0 && curVol > 0) ? curVol / avgVol20 : 0;
+    var ptsVol = (rvol >= 2) ? 10 : (rvol >= 1.5) ? 7 : (rvol >= 1) ? 4 : 0;
+
+    // 5. Day Change (0-5)
     var changePct = ((curPrice - prevClose) / prevClose) * 100;
     var ptsMom = changePct > 1 ? 5 : changePct > 0 ? 2 : 0;
-    var recent10H = Math.max.apply(null, highs.slice(-10));
-    var distToBreakout = recent10H > 0 ? ((recent10H - curPrice) / curPrice) * 100 : 99;
-    var ptsBrkout = distToBreakout <= 1 ? 5 : 0;
 
-    // RS vs SPY (0-15 pts)
-    var _ptsRS2 = 0;
-    var _len3 = closes.length;
-    if (_len3 >= 20) {
-      var _sOld = closes[_len3 - 20];
-      var _sRet = _sOld > 0 ? ((curPrice - _sOld) / _sOld) * 100 : 0;
-      var _rsR = spyRet20 !== 0 ? _sRet / Math.abs(spyRet20) : (_sRet > 0 ? 2 : 0);
-      if (_rsR >= 3) _ptsRS2 = 15;
-      else if (_rsR >= 2) _ptsRS2 = 12;
-      else if (_rsR >= 1.5) _ptsRS2 = 8;
-      else if (_rsR >= 1) _ptsRS2 = 4;
-    }
-
-    // Episodic Pivot bonus (0-15 pts)
-    var _ptsEP2 = 0;
-    if (_len3 >= 10) {
-      for (var _ei = Math.max(1, _len3 - 40); _ei < _len3 - 3; _ei++) {
-        var _epG = closes[_ei - 1] > 0 ? ((closes[_ei] - closes[_ei - 1]) / closes[_ei - 1]) * 100 : 0;
-        if (_epG >= 8) {
-          var _gC = closes[_ei];
-          var _dA = _len3 - _ei - 1;
-          if (_dA >= 3 && curPrice >= _gC * 0.92) {
-            var _pH = Math.max.apply(null, highs.slice(_ei + 1));
-            var _pL = Math.min.apply(null, lows.slice(_ei + 1));
-            var _prR = _atr2 > 0 ? (_pH - _pL) / (_atr2 * _dA) : 1;
-            if (_prR <= 0.6) _ptsEP2 = 15;
-            else if (_prR <= 0.8) _ptsEP2 = 10;
-            else _ptsEP2 = 5;
-            break;
-          }
-        }
-      }
-    }
-
-    return Math.round(Math.min(130, Math.max(0, ptsCompress + ptsAlign + ptsExt + ptsVol + ptsMom + ptsBrkout + _ptsRS2 + _ptsEP2)));
+    return Math.round(Math.min(100, Math.max(0, ptsCompress + ptsAlign + ptsExt + ptsVol + ptsMom)));
   }
 
   // Score ALL universe tickers + compute ATR + store market cap
@@ -714,9 +562,6 @@ async function runSetupScan(statusFn) {
     var avgVol20 = sma(volumes, 20);
     if (avgVol20 > 0 && curVol > 0) rvol = curVol / avgVol20;
 
-    var recent10H = Math.max.apply(null, highs.slice(-10));
-    var distToBreakout = recent10H > 0 ? ((recent10H - curPrice) / curPrice) * 100 : 99;
-
     var recent5H = Math.max.apply(null, highs.slice(-5));
     var recent5L = Math.min.apply(null, lows.slice(-5));
     var range5 = ((recent5H - recent5L) / curPrice) * 100;
@@ -755,39 +600,23 @@ async function runSetupScan(statusFn) {
     // SMA Alignment (for thesis + card data)
     var aboveBoth = curPrice > sma10 && curPrice > sma20;
 
-    // Component scores (for card display)
+    // Component scores (for card display — Top Ideas style, 5 factors)
     var ptsCompress = spread <= 1 ? 30 : spread <= 2 ? 22 : spread <= 3 ? 15 : spread <= 5 ? 8 : 0;
     var ptsAlign = 0;
     if (aboveBoth) ptsAlign += 15;
     if (sma50 && curPrice > sma50) ptsAlign += 10;
-    var ptsExt = ext <= 4 ? 25 : ext <= 6 ? 18 : ext <= 8 ? 10 : ext <= 10 ? 4 : -5;
+    var ptsExt = ext <= 2 ? 25 : ext <= 4 ? 18 : ext <= 6 ? 10 : ext <= 8 ? 4 : -5;
     var ptsVol = (rvol && rvol >= 2) ? 10 : (rvol && rvol >= 1.5) ? 7 : (rvol && rvol >= 1) ? 4 : 0;
     var ptsMom = changePct > 1 ? 5 : changePct > 0 ? 2 : 0;
-    var ptsBrkout = distToBreakout <= 1 ? 5 : 0;
 
     // ── THESIS ──
     var thesis = '';
     if (spread <= 2) thesis += 'Tight compression (' + spread.toFixed(1) + '%). ';
     if (aboveBoth) thesis += 'Above 10/20 SMA. ';
-    if (ext <= 4) thesis += 'Near base (' + ext.toFixed(1) + '%). ';
+    if (ext <= 2) thesis += 'Near base (' + ext.toFixed(1) + '%). ';
     else if (ext > 8) thesis += 'Extended (' + ext.toFixed(1) + '%). ';
     if (rvol && rvol >= 1.5) thesis += rvol.toFixed(1) + 'x volume. ';
     if (changePct > 1) thesis += 'Up ' + changePct.toFixed(1) + '% today. ';
-    if (distToBreakout <= 1) thesis += 'Near breakout. ';
-
-    // RS vs SPY check for thesis
-    var _cLen = closes.length;
-    var _stockRet = _cLen >= 20 && closes[_cLen - 20] > 0 ? ((curPrice - closes[_cLen - 20]) / closes[_cLen - 20]) * 100 : 0;
-    var _rsR2 = spyRet20 !== 0 ? _stockRet / Math.abs(spyRet20) : (_stockRet > 0 ? 2 : 0);
-    if (_rsR2 >= 2) thesis += 'Strong RS (' + _rsR2.toFixed(1) + 'x SPY). ';
-
-    // Episodic Pivot check for thesis
-    var _hasEP = false;
-    for (var _epi = Math.max(1, _cLen - 40); _epi < _cLen - 3; _epi++) {
-      var _epGap2 = closes[_epi - 1] > 0 ? ((closes[_epi] - closes[_epi - 1]) / closes[_epi - 1]) * 100 : 0;
-      if (_epGap2 >= 8 && curPrice >= closes[_epi] * 0.92) { _hasEP = true; break; }
-    }
-    if (_hasEP) thesis += 'Episodic pivot (gap + consolidation). ';
 
     // ── TRADE LEVELS ──
     var stopPrice = sma20 * 0.98;
@@ -807,7 +636,6 @@ async function runSetupScan(statusFn) {
       range5: Math.round(range5 * 10) / 10,
       aboveBoth: aboveBoth,
       aboveSma50: !!(sma50 && curPrice > sma50),
-      distToBreakout: Math.round(distToBreakout * 10) / 10,
       entryPrice: curPrice,
       stopPrice: stopPrice,
       targetPrice: targetPrice,
@@ -817,8 +645,7 @@ async function runSetupScan(statusFn) {
         alignment: ptsAlign,
         extension: ptsExt,
         volume: ptsVol,
-        momentum: ptsMom,
-        breakout: ptsBrkout
+        momentum: ptsMom
       }
     });
   });
@@ -1021,6 +848,7 @@ function renderSetupCard(s, idx, scanData) {
   var extLabel = (comps.extension || 0) >= 0 ? 'Near Base' : 'Extension';
   html += renderComponentBar(extLabel, Math.max(0, comps.extension || 0), 25, 'var(--blue)');
   html += renderComponentBar('Volume', comps.volume || 0, 10, 'var(--blue)');
+  html += renderComponentBar('Momentum', comps.momentum || 0, 5, 'var(--blue)');
   html += '</div>';
 
   // Quick stats
