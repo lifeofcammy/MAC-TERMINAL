@@ -148,7 +148,7 @@ async function buildMomentumUniverse(statusFn) {
 
   var filtered = allStocks.filter(function(s) {
     if (!s.T || !s.c || !s.v) return false;
-    if (s.c < 5) return false;
+    if (s.c < 10) return false;
     if (s.v < 500000) return false;
     if (s.T.length > 5) return false;
     if (/[.-]/.test(s.T)) return false;
@@ -160,6 +160,16 @@ async function buildMomentumUniverse(statusFn) {
 
   // Sort by dollar volume (highest liquidity first)
   filtered.sort(function(a, b) { return (b.v * b.c) - (a.v * a.c); });
+
+  // Fetch SPY bars for Relative Strength comparison
+  var spyBars = [];
+  try { spyBars = await getDailyBarsRetry('SPY', 60); } catch(e) {}
+  var spyReturn20 = 0;
+  if (spyBars.length >= 20) {
+    var spyOld = spyBars[spyBars.length - 20].c;
+    var spyNow = spyBars[spyBars.length - 1].c;
+    spyReturn20 = spyOld > 0 ? ((spyNow - spyOld) / spyOld) * 100 : 0;
+  }
 
   // Fetch 60-day bars and score each candidate
   var scored = [];
@@ -176,7 +186,7 @@ async function buildMomentumUniverse(statusFn) {
     var results = await Promise.all(promises);
     results.forEach(function(r) {
       if (!r || !r.bars || r.bars.length < 20) return;
-      var score = calcUniverseScore(r.bars, r.latestClose);
+      var score = calcUniverseScore(r.bars, r.latestClose, spyReturn20);
       if (score.total > 0) {
         scored.push({
           ticker: r.ticker,
@@ -229,7 +239,7 @@ async function buildMomentumUniverse(statusFn) {
 // Rewards: compression, trend, volume dry-up, proximity to breakout
 // Penalizes: extension from 20 SMA, already-ran stocks
 
-function calcUniverseScore(bars, currentPrice) {
+function calcUniverseScore(bars, currentPrice, spyReturn20) {
   var closes = bars.map(function(b) { return b.c; });
   var highs = bars.map(function(b) { return b.h; });
   var lows = bars.map(function(b) { return b.l; });
@@ -270,9 +280,9 @@ function calcUniverseScore(bars, currentPrice) {
     _atr14 = _trS / 14;
   }
 
-  // Minimum ATR% filter — only keep stocks with ATR ≥ 2.5% of price
+  // Minimum ATR% filter — only keep stocks with ATR ≥ 4.5% of price (Qullamaggie-style)
   var atrPct = currentPrice > 0 && _atr14 > 0 ? (_atr14 / currentPrice) * 100 : 0;
-  if (atrPct < 2.5) return { total: 0 };
+  if (atrPct < 4.5) return { total: 0 };
 
   // ATR-relative range: how many ATRs does the 5d/10d range span?
   var atrRatio5 = (_atr14 > 0) ? (recent5H - recent5L) / _atr14 : range5;
@@ -367,7 +377,43 @@ function calcUniverseScore(bars, currentPrice) {
     }
   }
 
-  var total = Math.round(Math.max(0, ptsTight + ptsExt + ptsVolDry + ptsBreakout + ptsTrend + ptsPullback));
+  // ── 7. RELATIVE STRENGTH vs SPY (0-15 pts) ──
+  var ptsRS = 0;
+  if (len >= 20 && spyReturn20 !== undefined) {
+    var stockOld = closes[len - 20];
+    var stockReturn20 = stockOld > 0 ? ((currentPrice - stockOld) / stockOld) * 100 : 0;
+    var rsRatio = spyReturn20 !== 0 ? stockReturn20 / Math.abs(spyReturn20) : (stockReturn20 > 0 ? 2 : 0);
+    if (rsRatio >= 3) ptsRS = 15;        // 3x+ SPY's move — very strong
+    else if (rsRatio >= 2) ptsRS = 12;
+    else if (rsRatio >= 1.5) ptsRS = 8;
+    else if (rsRatio >= 1) ptsRS = 4;    // Matching SPY
+    else ptsRS = 0;                       // Underperforming
+  }
+
+  // ── 8. EPISODIC PIVOT BONUS (0-15 pts) — gap up on catalyst then consolidation ──
+  var ptsEpisodic = 0;
+  if (len >= 10) {
+    for (var ei = Math.max(1, len - 40); ei < len - 3; ei++) {
+      var epGap = closes[ei - 1] > 0 ? ((closes[ei] - closes[ei - 1]) / closes[ei - 1]) * 100 : 0;
+      if (epGap >= 8) {
+        // Found a big gap up — check if price is consolidating above that level
+        var gapClose = closes[ei];
+        var daysAfter = len - ei - 1;
+        if (daysAfter >= 3 && currentPrice >= gapClose * 0.92) {
+          // Price held above 92% of gap close level — consolidating, not fading
+          var postHigh = Math.max.apply(null, highs.slice(ei + 1));
+          var postLow = Math.min.apply(null, lows.slice(ei + 1));
+          var postRangeRatio = _atr14 > 0 ? (postHigh - postLow) / (_atr14 * daysAfter) : 1;
+          if (postRangeRatio <= 0.6) ptsEpisodic = 15;      // Very tight consolidation after gap
+          else if (postRangeRatio <= 0.8) ptsEpisodic = 10;
+          else ptsEpisodic = 5;                               // Held level but loose
+          break;
+        }
+      }
+    }
+  }
+
+  var total = Math.round(Math.max(0, ptsTight + ptsExt + ptsVolDry + ptsBreakout + ptsTrend + ptsPullback + ptsRS + ptsEpisodic));
 
   // ATR already computed above as _atr14
   var atr14 = _atr14 > 0 ? _atr14 : null;
@@ -450,6 +496,16 @@ async function runSetupScan(statusFn) {
     if (bi + barBatchSize < tickers.length) {
       await new Promise(function(r) { setTimeout(r, 50); });
     }
+  }
+
+  // Fetch SPY bars for Relative Strength comparison
+  var spyBars2 = [];
+  try { spyBars2 = await getDailyBarsRetry('SPY', 60); } catch(e) {}
+  var spyRet20 = 0;
+  if (spyBars2.length >= 20) {
+    var _so = spyBars2[spyBars2.length - 20].c;
+    var _sn = spyBars2[spyBars2.length - 1].c;
+    spyRet20 = _so > 0 ? ((_sn - _so) / _so) * 100 : 0;
   }
 
   // Fetch market cap + industry from Polygon ticker details
@@ -552,7 +608,41 @@ async function runSetupScan(statusFn) {
     var distToBreakout = recent10H > 0 ? ((recent10H - curPrice) / curPrice) * 100 : 99;
     var ptsBrkout = distToBreakout <= 1 ? 5 : 0;
 
-    return Math.round(Math.min(100, Math.max(0, ptsCompress + ptsAlign + ptsExt + ptsVol + ptsMom + ptsBrkout)));
+    // RS vs SPY (0-15 pts)
+    var _ptsRS2 = 0;
+    var _len3 = closes.length;
+    if (_len3 >= 20) {
+      var _sOld = closes[_len3 - 20];
+      var _sRet = _sOld > 0 ? ((curPrice - _sOld) / _sOld) * 100 : 0;
+      var _rsR = spyRet20 !== 0 ? _sRet / Math.abs(spyRet20) : (_sRet > 0 ? 2 : 0);
+      if (_rsR >= 3) _ptsRS2 = 15;
+      else if (_rsR >= 2) _ptsRS2 = 12;
+      else if (_rsR >= 1.5) _ptsRS2 = 8;
+      else if (_rsR >= 1) _ptsRS2 = 4;
+    }
+
+    // Episodic Pivot bonus (0-15 pts)
+    var _ptsEP2 = 0;
+    if (_len3 >= 10) {
+      for (var _ei = Math.max(1, _len3 - 40); _ei < _len3 - 3; _ei++) {
+        var _epG = closes[_ei - 1] > 0 ? ((closes[_ei] - closes[_ei - 1]) / closes[_ei - 1]) * 100 : 0;
+        if (_epG >= 8) {
+          var _gC = closes[_ei];
+          var _dA = _len3 - _ei - 1;
+          if (_dA >= 3 && curPrice >= _gC * 0.92) {
+            var _pH = Math.max.apply(null, highs.slice(_ei + 1));
+            var _pL = Math.min.apply(null, lows.slice(_ei + 1));
+            var _prR = _atr2 > 0 ? (_pH - _pL) / (_atr2 * _dA) : 1;
+            if (_prR <= 0.6) _ptsEP2 = 15;
+            else if (_prR <= 0.8) _ptsEP2 = 10;
+            else _ptsEP2 = 5;
+            break;
+          }
+        }
+      }
+    }
+
+    return Math.round(Math.min(130, Math.max(0, ptsCompress + ptsAlign + ptsExt + ptsVol + ptsMom + ptsBrkout + _ptsRS2 + _ptsEP2)));
   }
 
   // Score ALL universe tickers + compute ATR + store market cap
@@ -652,6 +742,10 @@ async function runSetupScan(statusFn) {
     }
     if (changePct < -8) return;
 
+    // Market cap filter — minimum $500M (avoid micro caps)
+    var mcap = allMarketCap[ticker] || 0;
+    if (mcap > 0 && mcap < 500000000) return;
+
     var score = allScores[ticker] || 0;
     if (score < 30) return;
 
@@ -677,6 +771,20 @@ async function runSetupScan(statusFn) {
     if (rvol && rvol >= 1.5) thesis += rvol.toFixed(1) + 'x volume. ';
     if (changePct > 1) thesis += 'Up ' + changePct.toFixed(1) + '% today. ';
     if (distToBreakout <= 1) thesis += 'Near breakout. ';
+
+    // RS vs SPY check for thesis
+    var _cLen = closes.length;
+    var _stockRet = _cLen >= 20 && closes[_cLen - 20] > 0 ? ((curPrice - closes[_cLen - 20]) / closes[_cLen - 20]) * 100 : 0;
+    var _rsR2 = spyRet20 !== 0 ? _stockRet / Math.abs(spyRet20) : (_stockRet > 0 ? 2 : 0);
+    if (_rsR2 >= 2) thesis += 'Strong RS (' + _rsR2.toFixed(1) + 'x SPY). ';
+
+    // Episodic Pivot check for thesis
+    var _hasEP = false;
+    for (var _epi = Math.max(1, _cLen - 40); _epi < _cLen - 3; _epi++) {
+      var _epGap2 = closes[_epi - 1] > 0 ? ((closes[_epi] - closes[_epi - 1]) / closes[_epi - 1]) * 100 : 0;
+      if (_epGap2 >= 8 && curPrice >= closes[_epi] * 0.92) { _hasEP = true; break; }
+    }
+    if (_hasEP) thesis += 'Episodic pivot (gap + consolidation). ';
 
     // ── TRADE LEVELS ──
     var stopPrice = sma20 * 0.98;
