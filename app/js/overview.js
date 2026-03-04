@@ -173,6 +173,228 @@ function renderBreadthTimeline() {
   return html;
 }
 
+// ==================== RELATIVE ROTATION GRAPH (RRG) ====================
+// Calculates RS-Ratio and RS-Momentum for each asset vs SPY benchmark
+function calcRRGData(allAssets, spyBars, barsByTicker) {
+  if (!spyBars || spyBars.length < 15) return [];
+  var results = [];
+  allAssets.forEach(function(asset) {
+    var bars = barsByTicker[asset.etf];
+    if (!bars || bars.length < 15) return;
+    // Align bars to same length
+    var len = Math.min(bars.length, spyBars.length);
+    var assetBars = bars.slice(bars.length - len);
+    var benchBars = spyBars.slice(spyBars.length - len);
+    // Calculate raw RS (asset close / SPY close) for each day
+    var rawRS = [];
+    for (var i = 0; i < len; i++) {
+      if (benchBars[i].c > 0) rawRS.push(assetBars[i].c / benchBars[i].c);
+      else rawRS.push(0);
+    }
+    if (rawRS.length < 12) return;
+    // Smooth RS with 10-period SMA
+    var smoothRS = [];
+    for (var i = 0; i < rawRS.length; i++) {
+      if (i < 9) { smoothRS.push(null); continue; }
+      var sum = 0;
+      for (var j = i - 9; j <= i; j++) sum += rawRS[j];
+      smoothRS.push(sum / 10);
+    }
+    // Normalize to 100 (current smoothed RS / first valid smoothed RS * 100)
+    var firstValid = null;
+    for (var i = 0; i < smoothRS.length; i++) {
+      if (smoothRS[i] !== null) { firstValid = smoothRS[i]; break; }
+    }
+    if (!firstValid) return;
+    var normRS = smoothRS.map(function(v) { return v !== null ? (v / firstValid) * 100 : null; });
+    // RS-Momentum = 100 * (current normRS / normRS from 1 period ago)
+    var trail = []; // last 5 valid data points for trailing path
+    for (var i = normRS.length - 5; i < normRS.length; i++) {
+      if (i < 1 || normRS[i] === null || normRS[i - 1] === null) continue;
+      var mom = (normRS[i] / normRS[i - 1]) * 100;
+      trail.push({ ratio: normRS[i], momentum: mom });
+    }
+    if (trail.length === 0) return;
+    var latest = trail[trail.length - 1];
+    results.push({
+      etf: asset.etf,
+      name: asset.name,
+      ratio: latest.ratio,
+      momentum: latest.momentum,
+      trail: trail,
+      isAssetClass: asset.isAsset || false
+    });
+  });
+  return results;
+}
+
+// Render RRG as a canvas with 4 colored quadrants and trailing paths
+function renderRRGCanvas(canvasId) {
+  var canvas = document.getElementById(canvasId);
+  if (!canvas || !window._rrgData || window._rrgData.length === 0) return;
+  var data = window._rrgData;
+  var dpr = window.devicePixelRatio || 1;
+  var w = canvas.parentElement.offsetWidth || 400;
+  var h = 320;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  // Colors based on theme
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var bgColor = isDark ? '#1a1a2e' : '#fafbfc';
+  var gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  var axisColor = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)';
+  var textColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)';
+  var labelBg = isDark ? 'rgba(26,26,46,0.85)' : 'rgba(250,251,252,0.85)';
+
+  // Quadrant colors (very subtle)
+  var qGreen = isDark ? 'rgba(52,211,153,0.06)' : 'rgba(52,211,153,0.08)';
+  var qYellow = isDark ? 'rgba(245,158,11,0.06)' : 'rgba(245,158,11,0.08)';
+  var qRed = isDark ? 'rgba(252,165,165,0.06)' : 'rgba(252,165,165,0.08)';
+  var qBlue = isDark ? 'rgba(37,99,235,0.06)' : 'rgba(37,99,235,0.08)';
+
+  // Padding for labels
+  var pad = { top: 20, right: 20, bottom: 30, left: 40 };
+  var plotW = w - pad.left - pad.right;
+  var plotH = h - pad.top - pad.bottom;
+
+  // Determine data range (center on 100,100)
+  var minR = 100, maxR = 100, minM = 100, maxM = 100;
+  data.forEach(function(d) {
+    d.trail.forEach(function(t) {
+      if (t.ratio < minR) minR = t.ratio;
+      if (t.ratio > maxR) maxR = t.ratio;
+      if (t.momentum < minM) minM = t.momentum;
+      if (t.momentum > maxM) maxM = t.momentum;
+    });
+  });
+  // Symmetric range around 100
+  var rangeR = Math.max(maxR - 100, 100 - minR, 1.5) * 1.3;
+  var rangeM = Math.max(maxM - 100, 100 - minM, 0.8) * 1.3;
+  minR = 100 - rangeR; maxR = 100 + rangeR;
+  minM = 100 - rangeM; maxM = 100 + rangeM;
+
+  function xPos(ratio) { return pad.left + ((ratio - minR) / (maxR - minR)) * plotW; }
+  function yPos(mom) { return pad.top + plotH - ((mom - minM) / (maxM - minM)) * plotH; }
+
+  // Clear
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, w, h);
+
+  // Draw 4 quadrant backgrounds
+  var cx = xPos(100), cy = yPos(100);
+  // Leading (top-right): green
+  ctx.fillStyle = qGreen;
+  ctx.fillRect(cx, pad.top, pad.left + plotW - cx, cy - pad.top);
+  // Weakening (bottom-right): yellow
+  ctx.fillStyle = qYellow;
+  ctx.fillRect(cx, cy, pad.left + plotW - cx, pad.top + plotH - cy);
+  // Lagging (bottom-left): red
+  ctx.fillStyle = qRed;
+  ctx.fillRect(pad.left, cy, cx - pad.left, pad.top + plotH - cy);
+  // Improving (top-left): blue
+  ctx.fillStyle = qBlue;
+  ctx.fillRect(pad.left, pad.top, cx - pad.left, cy - pad.top);
+
+  // Draw grid lines
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 1;
+  for (var i = 0; i <= 4; i++) {
+    var gx = pad.left + (plotW / 4) * i;
+    ctx.beginPath(); ctx.moveTo(gx, pad.top); ctx.lineTo(gx, pad.top + plotH); ctx.stroke();
+    var gy = pad.top + (plotH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, gy); ctx.lineTo(pad.left + plotW, gy); ctx.stroke();
+  }
+
+  // Draw center axes (100, 100)
+  ctx.strokeStyle = axisColor;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(cx, pad.top); ctx.lineTo(cx, pad.top + plotH); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.left, cy); ctx.lineTo(pad.left + plotW, cy); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Quadrant labels
+  ctx.font = '11px Inter, sans-serif';
+  ctx.fillStyle = isDark ? 'rgba(52,211,153,0.5)' : 'rgba(16,185,129,0.6)';
+  ctx.textAlign = 'right';
+  ctx.fillText('Leading', pad.left + plotW - 4, pad.top + 14);
+  ctx.fillStyle = isDark ? 'rgba(245,158,11,0.5)' : 'rgba(217,119,6,0.6)';
+  ctx.fillText('Weakening', pad.left + plotW - 4, pad.top + plotH - 4);
+  ctx.fillStyle = isDark ? 'rgba(252,165,165,0.5)' : 'rgba(239,68,68,0.5)';
+  ctx.textAlign = 'left';
+  ctx.fillText('Lagging', pad.left + 4, pad.top + plotH - 4);
+  ctx.fillStyle = isDark ? 'rgba(96,165,250,0.5)' : 'rgba(37,99,235,0.5)';
+  ctx.fillText('Improving', pad.left + 4, pad.top + 14);
+
+  // Axis labels
+  ctx.font = '10px Inter, sans-serif';
+  ctx.fillStyle = textColor;
+  ctx.textAlign = 'center';
+  ctx.fillText('RS-Ratio \u2192', w / 2, h - 4);
+  ctx.save();
+  ctx.translate(10, h / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('RS-Momentum \u2192', 0, 0);
+  ctx.restore();
+
+  // Dot colors for sectors vs asset classes
+  var sectorColor = isDark ? '#60a5fa' : '#2563eb';
+  var assetColor = isDark ? '#f59e0b' : '#d97706';
+
+  // Draw trailing paths + dots for each asset
+  data.forEach(function(d) {
+    var color = d.isAssetClass ? assetColor : sectorColor;
+    // Trail line
+    if (d.trail.length > 1) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.3;
+      ctx.beginPath();
+      for (var i = 0; i < d.trail.length; i++) {
+        var px = xPos(d.trail[i].ratio), py = yPos(d.trail[i].momentum);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      // Small dots for trail points (not the latest)
+      for (var i = 0; i < d.trail.length - 1; i++) {
+        var px = xPos(d.trail[i].ratio), py = yPos(d.trail[i].momentum);
+        ctx.fillStyle = color;
+        ctx.globalAlpha = 0.2 + (i / d.trail.length) * 0.4;
+        ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    // Latest dot (bigger)
+    var last = d.trail[d.trail.length - 1];
+    var lx = xPos(last.ratio), ly = yPos(last.momentum);
+    d._canvasXY = { x: lx, y: ly }; // Store for click detection
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(lx, ly, 4, 0, Math.PI * 2); ctx.fill();
+    // White ring
+    ctx.strokeStyle = isDark ? '#1a1a2e' : '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(lx, ly, 4, 0, Math.PI * 2); ctx.stroke();
+    // Label
+    ctx.font = '600 10px JetBrains Mono, monospace';
+    ctx.fillStyle = labelBg;
+    var tw = ctx.measureText(d.etf).width + 6;
+    var lbx = lx + 6, lby = ly - 6;
+    // Prevent label going off-screen
+    if (lbx + tw > w - pad.right) lbx = lx - tw - 4;
+    if (lby - 10 < pad.top) lby = ly + 14;
+    ctx.fillRect(lbx - 2, lby - 10, tw, 13);
+    ctx.fillStyle = color;
+    ctx.textAlign = 'left';
+    ctx.fillText(d.etf, lbx + 1, lby);
+  });
+}
+
 // ==================== REGIME + BREADTH COMBINED REFRESH ====================
 // Refreshes both cards in one pass — shares index snapshot data
 async function refreshRegimeAndBreadth() {
@@ -465,33 +687,45 @@ async function renderOverview() {
     'XLP': ['PG','KO','PEP','COST','WMT','PM','MO','CL','KMB','GIS','SYY','KDP','KHC','HSY','MKC']
   };
 
+  // Asset classes for RRG (Relative Rotation Graph)
+  var rrgAssets = [
+    {etf:'BITO',name:'Bitcoin'},{etf:'TLT',name:'Bonds (20Y+)'},
+    {etf:'HYG',name:'High Yield'},{etf:'EFA',name:'Intl Developed'},
+    {etf:'EEM',name:'Emerging Mkts'},{etf:'GLD',name:'Gold'}
+  ];
+
   var snap = {}, sectorSnap = {}, sectorBars = {}, spyBars = [];
   var dataFreshness = getDataFreshnessLabel();
   var sectorTickers = sectorETFs.map(function(s){return s.etf;});
+  var rrgTickers = rrgAssets.map(function(s){return s.etf;});
 
   // ── TIER 1: Fire all independent fetches in parallel ──
   try {
     var tier1 = await Promise.all([
       getSnapshots(indexTickers.concat(extraTickers)),
       getDailyBars('SPY', 30).catch(function(e) { return []; }),
-      getSnapshots(sectorTickers),
+      getSnapshots(sectorTickers.concat(rrgTickers)),
       polyGet('/v2/snapshot/locale/us/markets/stocks/tickers?include_otc=false').catch(function(e) { return { tickers: [] }; })
     ]);
     snap = tier1[0];
     spyBars = tier1[1];
-    sectorSnap = tier1[2];
+    sectorSnap = tier1[2]; // Contains both sector + RRG asset snapshots
     var allSnap = tier1[3];
   } catch(e) {
     container.innerHTML = '<div class="card" style="text-align:center;color:var(--red);padding:30px;">Failed to load data: '+escapeHtml(e.message)+'<br><span style="font-size:14px;color:var(--text-muted);">Check your Polygon API key (gear icon).</span></div>';
     return;
   }
 
-  // ── TIER 2: Sector bars + index bars (for SMA + weekend fix) in parallel ──
+  // ── TIER 2: Sector bars + index bars + RRG asset bars in parallel ──
   var barPromises = sectorTickers.map(function(t) {
-    return getDailyBars(t, 10).then(function(bars) { return { ticker: t, bars: bars }; }).catch(function() { return { ticker: t, bars: [] }; });
+    return getDailyBars(t, 30).then(function(bars) { return { ticker: t, bars: bars }; }).catch(function() { return { ticker: t, bars: [] }; });
   });
   // Also fetch QQQ/IWM/DIA bars for SMA calculation + weekend price fix
   ['QQQ','IWM','DIA'].forEach(function(t) {
+    barPromises.push(getDailyBars(t, 30).then(function(bars) { return { ticker: t, bars: bars }; }).catch(function() { return { ticker: t, bars: [] }; }));
+  });
+  // RRG asset bars (30 bars for RS-Ratio smoothing)
+  rrgTickers.forEach(function(t) {
     barPromises.push(getDailyBars(t, 30).then(function(bars) { return { ticker: t, bars: bars }; }).catch(function() { return { ticker: t, bars: [] }; }));
   });
   var allBarResults = await Promise.all(barPromises);
@@ -677,7 +911,7 @@ async function renderOverview() {
   html += '</div></div></div>';
 
   // ════ 2. MARKET REGIME ════
-  var regimeCollapsed = localStorage.getItem('mac_regime_collapsed')==='true';
+  var regimeCollapsed = localStorage.getItem('mac_regime_collapsed')!=='false';
   var regimeLabel='Neutral',regimeColor='var(--text-muted)',regimeDetail='';
   var spyPct=spyData.pct, qqqPct=qqqData.pct, iwmPct=iwmData.pct, diaPct=diaData.pct;
   var avgPct=(spyPct+qqqPct+iwmPct+diaPct)/4;
@@ -755,7 +989,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'regime\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:2px;">Step 1</div><div class="card-header-bar">Market Regime</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 1</div><div class="card-header-bar">Market Regime</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;"><span id="regime-arrow" style="font-size:12px;color:var(--text-muted);">'+(regimeCollapsed?'▶':'▼')+'</span></div>';
   html += '</div>';
   html += '<div id="regime-body" style="'+(regimeCollapsed?'display:none;':'display:flex;')+'padding:14px 20px;align-items:flex-start;gap:12px;">';
@@ -797,7 +1031,7 @@ async function renderOverview() {
     var breadthColor = adBreadthPct >= 60 ? 'var(--green)' : adBreadthPct <= 40 ? 'var(--red)' : 'var(--amber)';
     html += '<div class="card" style="padding:0;margin-bottom:14px;overflow:hidden;">';
     html += '<div style="padding:12px 20px;">';
-    html += '<div style="text-align:center;margin-bottom:4px;"><div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:2px;">Step 2</div><div class="card-header-bar">Stock Breadth</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Is the move broad or narrow? Confirms if the regime call is real.</div></div>';
+    html += '<div style="text-align:center;margin-bottom:4px;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 2</div><div class="card-header-bar">Stock Breadth</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Is the move broad or narrow? Confirms if the regime call is real.</div></div>';
     // Gauge bar
     html += '<div style="margin-top:10px;">';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
@@ -814,11 +1048,11 @@ async function renderOverview() {
   }
 
   // ════ 4. MARKET ANALYSIS (renamed from Snapshot — smaller quotes) ════
-  var snapshotCollapsed = localStorage.getItem('mac_snapshot_collapsed')==='true';
+  var snapshotCollapsed = localStorage.getItem('mac_snapshot_collapsed')!=='false';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'snapshot\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:2px;">Step 3</div><div class="card-header-bar">Market Analysis</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">How are the major indexes reacting? Now you know what to do.</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 3</div><div class="card-header-bar">Market Analysis</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">How are the major indexes reacting? Now you know what to do.</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:var(--font-body);">'+dataFreshness+'</span><span id="snapshot-arrow" style="font-size:12px;color:var(--text-muted);">'+(snapshotCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="snapshot-body" style="'+(snapshotCollapsed?'display:none;':'')+'padding:12px 16px;">';
@@ -847,11 +1081,11 @@ async function renderOverview() {
   html += '</div>';
 
   // ════ 5. SECTOR HEATMAP (collapsible) ════
-  var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')==='true';
+  var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')!=='false';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:2px;">Step 4</div><div class="card-header-bar">Sector Heatmap</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Where is money flowing? Find the strongest and weakest sectors.</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 4</div><div class="card-header-bar">Sector Heatmap</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Where is money flowing? Find the strongest and weakest sectors.</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:var(--font-body);">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
@@ -862,20 +1096,22 @@ async function renderOverview() {
   html += '<div class="ov-heatmap-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:12px 14px;">';
   sectorData.forEach(function(sec){
     var chgColor,chgBg;
-    if(sec.dayChg>1){chgColor='#fff';chgBg='#059669';}
-    else if(sec.dayChg>0.3){chgColor='#fff';chgBg='#10B981';}
-    else if(sec.dayChg>0){chgColor='var(--text-primary)';chgBg='rgba(16,185,129,0.15)';}
-    else if(sec.dayChg>-0.3){chgColor='var(--text-primary)';chgBg='rgba(239,68,68,0.1)';}
-    else if(sec.dayChg>-1){chgColor='#fff';chgBg='#EF4444';}
-    else{chgColor='#fff';chgBg='#DC2626';}
+    if(sec.dayChg>1){chgColor='var(--text-primary)';chgBg='var(--green-bg)';}
+    else if(sec.dayChg>0.3){chgColor='var(--text-primary)';chgBg='var(--green-bg)';}
+    else if(sec.dayChg>0){chgColor='var(--text-primary)';chgBg='var(--green-bg)';}
+    else if(sec.dayChg>-0.3){chgColor='var(--text-primary)';chgBg='var(--red-bg)';}
+    else if(sec.dayChg>-1){chgColor='var(--text-primary)';chgBg='var(--red-bg)';}
+    else{chgColor='var(--text-primary)';chgBg='var(--red-bg)';}
     var hasSubsectors = subsectorMap[sec.etf] && subsectorMap[sec.etf].length > 0;
     html += '<div style="cursor:'+(hasSubsectors?'pointer':'default')+';" '+(hasSubsectors?'onclick="toggleSubsectors(\''+sec.etf+'\')"':'')+'>';
+    var pctColor = sec.dayChg >= 0 ? 'var(--green)' : 'var(--red)';
+    var wkPctColor = sec.weekPerf >= 0 ? 'var(--green)' : 'var(--red)';
     html += '<div style="background:'+chgBg+';border-radius:6px;padding:10px;text-align:center;">';
-    html += '<div style="font-size:12px;font-weight:800;color:'+chgColor+';">'+sec.etf+'</div>';
-    html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.8;">'+sec.name+'</div>';
-    html += '<div style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:'+chgColor+';margin-top:3px;">'+pct(sec.dayChg)+'</div>';
-    html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.7;margin-top:1px;">Wk: '+pct(sec.weekPerf)+'</div>';
-    if(hasSubsectors) html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.5;margin-top:3px;">tap to expand</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:var(--text-primary);">'+sec.etf+'</div>';
+    html += '<div style="font-size:12px;color:var(--text-muted);">'+sec.name+'</div>';
+    html += '<div style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:'+pctColor+';margin-top:3px;">'+pct(sec.dayChg)+'</div>';
+    html += '<div style="font-size:12px;color:'+wkPctColor+';opacity:0.8;margin-top:1px;">Wk: '+pct(sec.weekPerf)+'</div>';
+    if(hasSubsectors) html += '<div style="font-size:12px;color:var(--text-muted);margin-top:3px;">tap to expand</div>';
     html += '</div>';
     // Subsector expansion area (hidden by default)
     html += '<div id="subsector-'+sec.etf+'" style="display:none;"></div>';
@@ -883,63 +1119,36 @@ async function renderOverview() {
   });
   html += '</div>'; // close heatmap grid
 
-  // ── SECTOR ROTATION ──
-  // Compare daily vs weekly performance to identify rotation
-  var rotationData = sectorData.map(function(s){
-    var weeklyDailyAvg = s.weekPerf / 5;
-    var rotationScore = s.dayChg - weeklyDailyAvg;
-    return {etf:s.etf, name:s.name, dayChg:s.dayChg, weekPerf:s.weekPerf, rotation:rotationScore};
-  });
-  rotationData.sort(function(a,b){ return b.rotation - a.rotation; });
-
-  // Show ALL sectors split into two columns: accelerating vs decelerating
-  var rotatingIn = rotationData.filter(function(s){ return s.rotation >= 0; });
-  var rotatingOut = rotationData.filter(function(s){ return s.rotation < 0; }).reverse();
+  // ── RELATIVE ROTATION GRAPH (RRG) ──
+  // Calculate RRG data for sectors + asset classes
+  var allRRGAssets = sectorETFs.map(function(s){ return {etf:s.etf, name:s.name, isAsset:false}; })
+    .concat(rrgAssets.map(function(s){ return {etf:s.etf, name:s.name, isAsset:true}; }));
+  var rrgData = calcRRGData(allRRGAssets, spyBars, _barsByTicker);
+  window._rrgData = rrgData;
 
   html += '<div style="padding:10px 14px;border-top:1px solid var(--border);">';
-  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;text-align:center;">Sector Rotation</div>';
-  html += '<div style="display:flex;gap:10px;">';
-
-  html += '<div style="flex:1;">';
-  html += '<div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px;text-align:center;">\u25b2 Accelerating</div>';
-  if(rotatingIn.length > 0) {
-    rotatingIn.forEach(function(s){
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:2px;background:rgba(52,211,153,0.06);border-radius:4px;">';
-      html += '<span style="font-size:12px;"><span style="font-weight:800;font-family:var(--font-mono);color:var(--text-primary);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px;" title="Click for chart" onclick="openTVChart(\''+s.etf+'\')">' + s.etf + '</span> <span style="font-weight:600;color:var(--text-muted);">' + s.name + '</span></span>';
-      html += '<span style="font-size:12px;color:var(--green);font-weight:700;font-family:var(--font-mono);">+' + s.rotation.toFixed(1) + '</span>';
-      html += '</div>';
-    });
+  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;text-align:center;">Relative Rotation</div>';
+  if(rrgData.length > 0) {
+    html += '<div style="position:relative;"><canvas id="rrg-canvas" style="width:100%;border-radius:8px;"></canvas></div>';
+    // Legend
+    html += '<div style="display:flex;justify-content:center;gap:16px;margin-top:6px;font-size:12px;">';
+    html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--blue);"></span><span style="color:var(--text-muted);">Sectors</span></span>';
+    html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--amber);"></span><span style="color:var(--text-muted);">Asset Classes</span></span>';
+    html += '</div>';
   } else {
-    html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:4px;">None</div>';
+    html += '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-muted);">Insufficient data for RRG (need 15+ trading days)</div>';
   }
-  html += '</div>';
-
-  html += '<div style="flex:1;">';
-  html += '<div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:4px;text-align:center;">\u25bc Decelerating</div>';
-  if(rotatingOut.length > 0) {
-    rotatingOut.forEach(function(s){
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:2px;background:rgba(252,165,165,0.06);border-radius:4px;">';
-      html += '<span style="font-size:12px;"><span style="font-weight:800;font-family:var(--font-mono);color:var(--text-primary);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px;" title="Click for chart" onclick="openTVChart(\''+s.etf+'\')">' + s.etf + '</span> <span style="font-weight:600;color:var(--text-muted);">' + s.name + '</span></span>';
-      html += '<span style="font-size:12px;color:var(--red);font-weight:700;font-family:var(--font-mono);">' + s.rotation.toFixed(1) + '</span>';
-      html += '</div>';
-    });
-  } else {
-    html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:4px;">None</div>';
-  }
-  html += '</div>';
-
-  html += '</div>';
-  html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:4px;">Daily vs. weekly avg \u2014 shows where money is rotating</div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:4px;">Relative strength vs SPY \u2014 clockwise rotation through quadrants</div>';
   html += '</div>';
 
   html += '</div></div>'; // close heatmap-body, close card
 
   // ════ 6. TODAY'S CATALYSTS + THEMES ════
-  var catalystsCollapsed = localStorage.getItem('mac_catalysts_collapsed')==='true';
+  var catalystsCollapsed = localStorage.getItem('mac_catalysts_collapsed')!=='false';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'catalysts\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:2px;">Step 5</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">What events and narratives are driving today\'s price action?</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 5</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">What events and narratives are driving today\'s price action?</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);">'+tsLabel(ts)+'</span><span id="catalysts-arrow" style="font-size:12px;color:var(--text-muted);">'+(catalystsCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="catalysts-body" style="'+(catalystsCollapsed?'display:none;':'')+'">';
@@ -965,11 +1174,11 @@ async function renderOverview() {
   html += '</div>'; // close Catalysts+Themes card
 
   // ════ 7. TOP IDEAS (from scanners) ════
-  var ideasCollapsed = localStorage.getItem('mac_ideas_collapsed')==='true';
+  var ideasCollapsed = localStorage.getItem('mac_ideas_collapsed')!=='false';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'ideas\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:2px;">Step 6</div><div class="card-header-bar">Top Ideas</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div>';
+  html += '<div style="flex:none;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--blue);margin-bottom:4px;">Step 6</div><div class="card-header-bar">Top Ideas</div><div style="font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><button onclick="event.stopPropagation();runQuickScan()" id="quick-scan-btn" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Scan</button><span id="ideas-arrow" style="font-size:12px;color:var(--text-muted);">'+(ideasCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="ideas-body" style="'+(ideasCollapsed?'display:none;':'')+'">';
@@ -981,7 +1190,7 @@ async function renderOverview() {
   html += '</div></div></div>';
 
   // ════ 8. WATCHLIST ════
-  var watchlistCollapsed = localStorage.getItem('mac_watchlist_collapsed')==='true';
+  var watchlistCollapsed = localStorage.getItem('mac_watchlist_collapsed')!=='false';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'watchlist\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
@@ -1025,6 +1234,31 @@ async function renderOverview() {
   html += '</div></div></div>';
 
   container.innerHTML = html;
+  // Render RRG canvas (must be after innerHTML so canvas element exists)
+  if(window._rrgData && window._rrgData.length > 0) {
+    setTimeout(function(){
+      renderRRGCanvas('rrg-canvas');
+      // Click handler: find nearest dot → open TradingView chart
+      var rrgEl = document.getElementById('rrg-canvas');
+      if(rrgEl) {
+        rrgEl.style.cursor = 'pointer';
+        rrgEl.title = 'Click a ticker to view chart';
+        rrgEl.addEventListener('click', function(e){
+          var rect = rrgEl.getBoundingClientRect();
+          var mx = e.clientX - rect.left, my = e.clientY - rect.top;
+          // Find closest dot
+          var closest = null, minDist = 20; // 20px threshold
+          (window._rrgData||[]).forEach(function(d){
+            if(!d._canvasXY) return;
+            var dx = mx - d._canvasXY.x, dy = my - d._canvasXY.y;
+            var dist = Math.sqrt(dx*dx + dy*dy);
+            if(dist < minDist){ minDist = dist; closest = d; }
+          });
+          if(closest && typeof openTVChart === 'function') openTVChart(closest.etf);
+        });
+      }
+    }, 50);
+  }
   loadEconCalendar();
   // Load watchlist live prices async
   loadWatchlistPrices();
