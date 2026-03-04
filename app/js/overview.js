@@ -338,9 +338,9 @@ function renderRRGCanvas(canvasId) {
   ctx.beginPath(); ctx.moveTo(pad.left, cy); ctx.lineTo(pad.left + plotW, cy); ctx.stroke();
   ctx.setLineDash([]);
 
-  // Subtle quadrant labels on canvas
-  ctx.font = '600 11px Inter, sans-serif';
-  ctx.globalAlpha = 0.35;
+  // Quadrant labels on canvas
+  ctx.font = '700 12px Inter, sans-serif';
+  ctx.globalAlpha = 0.7;
   ctx.fillStyle = isDark ? 'rgba(52,211,153,1)' : 'rgba(16,185,129,1)';
   ctx.textAlign = 'right';
   ctx.fillText('Leading', pad.left + plotW - 4, pad.top + 14);
@@ -1477,27 +1477,58 @@ function showRRGQuadrant(quadrant) {
     if (quadrant === 'improving') return r < 100 && m >= 100;
     return false;
   });
-  var el = document.getElementById('rrg-sector-detail');
-  if (!el) return;
-  var colors = { leading: 'var(--green)', weakening: 'var(--amber)', lagging: 'var(--red)', improving: 'var(--blue)' };
+  var colors = { leading: '#10B981', weakening: '#F59E0B', lagging: '#EF4444', improving: '#2563EB' };
   var titles = { leading: 'Leading', weakening: 'Weakening', lagging: 'Lagging', improving: 'Improving' };
-  var descs = { leading: 'Strong relative strength & rising momentum', weakening: 'Strong relative strength but momentum fading', lagging: 'Weak relative strength & falling momentum', improving: 'Weak relative strength but momentum building' };
-  var html = '<div style="font-size:14px;font-weight:800;color:' + colors[quadrant] + ';margin-bottom:4px;">' + titles[quadrant] + ' Quadrant</div>';
-  html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">' + descs[quadrant] + '</div>';
+  var descs = { leading: 'Strong relative strength & rising momentum. These sectors are outperforming and accelerating.', weakening: 'Strong relative strength but momentum is fading. Watch for rotation out.', lagging: 'Weak relative strength & falling momentum. Underperformers to avoid.', improving: 'Weak relative strength but momentum is building. Early rotation candidates.' };
+  var c = colors[quadrant];
+
+  var html = '';
+  // Backdrop
+  html += '<div onclick="closeRRGQuadrantPopup()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;"></div>';
+  // Modal
+  html += '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:var(--bg-primary);border:2px solid ' + c + ';border-radius:14px;padding:24px 28px;min-width:340px;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">';
+  // Close button
+  html += '<button onclick="closeRRGQuadrantPopup()" style="position:absolute;top:10px;right:14px;background:none;border:none;font-size:20px;color:var(--text-muted);cursor:pointer;">&times;</button>';
+  // Header
+  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
+  html += '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + c + ';"></span>';
+  html += '<span style="font-size:20px;font-weight:800;font-family:var(--font-display);color:' + c + ';">' + titles[quadrant] + ' Quadrant</span>';
+  html += '</div>';
+  html += '<div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.4;">' + descs[quadrant] + '</div>';
+
   if (sectors.length === 0) {
-    html += '<div style="font-size:12px;color:var(--text-muted);">No sectors currently in this quadrant.</div>';
+    html += '<div style="font-size:13px;color:var(--text-muted);padding:12px 0;">No sectors currently in this quadrant.</div>';
   } else {
-    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+    html += '<div style="display:flex;flex-direction:column;gap:8px;">';
     sectors.forEach(function(d) {
-      var label = (d.short || d.name) + ' (' + d.etf + ')';
-      var clickAttr = d.isAssetClass ? 'onclick="openTVChart(\'' + d.etf + '\')"' : 'onclick="showRRGSectorDetail(\'' + d.etf + '\')"';
-      html += '<span ' + clickAttr + ' style="padding:4px 10px;background:var(--bg-secondary);border-left:3px solid ' + colors[quadrant] + ';border-radius:6px;font-size:13px;font-weight:700;font-family:var(--font-mono);cursor:pointer;" title="Click for details">' + label + '</span>';
+      var last = d.trail[d.trail.length - 1];
+      var label = d.etf + ' ' + (d.short || d.name);
+      var clickAttr = d.isAssetClass ? 'onclick="closeRRGQuadrantPopup();openTVChart(\'' + d.etf + '\')"' : 'onclick="closeRRGQuadrantPopup();showRRGSectorDetail(\'' + d.etf + '\')"';
+      html += '<div ' + clickAttr + ' style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-secondary);border-left:3px solid ' + c + ';border-radius:8px;cursor:pointer;" title="Click for details">';
+      html += '<span style="font-size:14px;font-weight:700;font-family:var(--font-mono);">' + label + '</span>';
+      html += '<span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">RS ' + last.ratio.toFixed(1) + ' / Mom ' + last.momentum.toFixed(1) + '</span>';
+      html += '</div>';
     });
     html += '</div>';
   }
-  el.style.display = 'block';
-  el.innerHTML = html;
+  html += '</div>';
+
+  // Remove old popup if exists, create new
+  var existing = document.getElementById('rrg-quadrant-popup');
+  if (existing) existing.remove();
+  var popup = document.createElement('div');
+  popup.id = 'rrg-quadrant-popup';
+  popup.innerHTML = html;
+  document.body.appendChild(popup);
 }
+
+function closeRRGQuadrantPopup() {
+  var el = document.getElementById('rrg-quadrant-popup');
+  if (el) el.remove();
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeRRGQuadrantPopup();
+});
 
 // ==================== RRG SECTOR DETAIL (click dot → show subsectors + leaders) ====================
 var _rrgDetailEtf = null;
