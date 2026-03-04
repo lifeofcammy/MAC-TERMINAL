@@ -2,7 +2,7 @@
 
 > This file gives AI assistants full context on the MAC Terminal project.
 > Read this COMPLETELY before making any changes.
-> **Last updated: March 2, 2026**
+> **Last updated: March 4, 2026**
 
 ---
 
@@ -10,12 +10,12 @@
 
 MAC Terminal (Market Action Center) is a **trading tools dashboard** — NOT a trading platform. Target audience: **beginner to intermediate traders**. It helps traders with:
 - Morning market overview (regime, breadth direction, snapshot, catalysts, heatmap, economic calendar)
-- Setup scanner (finds early breakouts + pullback entries before they move)
+- Setup scanner (finds compression setups with momentum across the full US market)
 - Top Ideas (quick scan of 50 popular tickers for compression setups)
 - AI trade journal (import CSV, get AI analysis)
 - AI analysis tab (analyze individual trades)
-- TradingView chart popup (click any ticker to see a daily chart)
-- Watchlist with bias tracking (embedded in Overview, NOT a separate tab)
+- TradingView chart popup (click any ticker to see a daily chart with exchange-aware routing)
+- Watchlist (embedded in Overview, NOT a separate tab)
 
 **Live site:** https://marketactioncenter.com  
 **Dashboard:** https://marketactioncenter.com/app/  
@@ -56,8 +56,8 @@ MAC-TERMINAL/
 │       ├── config.js        # API URLs, Supabase config
 │       ├── auth.js          # Supabase auth guard (redirects to login if not signed in)
 │       ├── chart.js         # TradingView chart popup + first-time hint banner
-│       ├── overview.js      # Overview tab (Morning Mindset, Watchlist, Market Regime, Breadth Direction, Snapshot, Heatmap, Economic Calendar, Top Ideas, Themes)
-│       ├── scanner.js       # Setup Scanner tab (Early Breakouts + Pullback Entries)
+│       ├── overview.js      # Overview tab (Morning Mindset, Watchlist, Market Regime, Breadth Direction, Snapshot, Heat Check, Headlines, Calendar, Top Ideas, Themes)
+│       ├── scanner.js       # Setup Scanner tab (compression setups, Top Ideas-style scoring)
 │       ├── tickers.js       # Stock universe helper
 │       ├── journal.js       # Trade Journal tab (CSV import, AI recap, calendar)
 │       ├── analysis.js      # Analysis tab (AI trade review — 3 sub-tabs: Summary, Setups, Review)
@@ -126,12 +126,12 @@ Card headers use **flex:1 spacers** on left and right with **flex:none** on the 
 
 ---
 
-## Overview Tab (overview.js — 1618 lines)
+## Overview Tab (overview.js — 2318 lines)
 
 The Overview tab is the main dashboard. Cards render top-to-bottom in this order:
 
 1. **Morning Mindset** — AI-generated market outlook using regime, breadth, themes. **Must stay at the top.**
-2. **Watchlist** — Embedded in Overview (NOT a separate tab). Shows user's tickers with bias (long/short/neutral), live prices, notes. Click ticker → TradingView chart.
+2. **Watchlist** — Embedded in Overview (NOT a separate tab). Shows user's tickers with live prices, notes. All cards blue accent (no bias). Click ticker → TradingView chart.
 3. **Market Regime** — SPY vs 20 SMA. Shows Risk-On/Risk-Off with colored dot + text. **NO colored backgrounds. NO override button/dropdown — just "auto".**
 4. **Breadth Direction** — Tracks % of stocks up vs down throughout the day. Green/red stacked bars over time. Shows "Expanding"/"Contracting" with arrow. Auto-refreshes every 15 min. History persisted in sessionStorage.
 5. **Market Snapshot** — SPY/QQQ/IWM/VIX prices and % changes.
@@ -156,64 +156,56 @@ The Overview tab is the main dashboard. Cards render top-to-bottom in this order
 
 ---
 
-## Setup Scanner (scanner.js — 1207 lines)
+## Setup Scanner (scanner.js — 1200 lines)
 
 ### Architecture
-Two-layer system:
-1. **Layer 1: Universe Builder** — Fetches Polygon grouped daily data for ALL US stocks, filters to top ~150 candidates by compression score
-2. **Layer 2: Setup Analysis** — Deep-scores each candidate and categorizes into two groups
+Two-layer system using **Top Ideas-style scoring** across the broader US market:
+1. **Layer 1: Universe Builder** — Fetches Polygon grouped daily data for ALL US stocks, pre-filters, takes top 100 by dollar volume, scores each, keeps top 150 candidates
+2. **Layer 2: Setup Analysis** — Deep-scores each candidate using the same 5-factor system as Top Ideas, returns top 20 setups
 
-### Universe Filters (Layer 1)
-- Price > $5
-- Volume > 500K
+### Universe Pre-Filters (Layer 1)
+- Price ≥ $20
+- Volume ≥ 1M shares/day
 - Ticker length ≤ 5 characters, no dots/dashes
 - **ETF filter**: 100+ known ETF tickers excluded (SPY, QQQ, EWY, etc. — see `KNOWN_ETFS` array)
-- Must be above 97% of 20 SMA (uptrend filter)
+- **Top 100 by dollar volume** (price × volume) — ensures only liquid, well-known names
 
-### Universe Scoring (Layer 1 — `calcUniverseScore`)
+### Scoring (Both Layers — Top Ideas Style, max ~100 pts)
 | Factor | Max Points | What It Measures |
 |--------|-----------|-----------------|
-| Tightness | 30 | 5-day and 10-day price range — tighter = better |
-| Extension Penalty | -20 to +10 | Distance above 20 SMA — near base = good, extended = bad |
-| Volume Dry-Up | 20 | 5-day avg volume vs 20-day avg — declining volume in base = good |
-| Breakout Proximity | 20 | How close to 10-day high — near breakout = good |
-| Trend Quality | 15 | SMA alignment (price > 10 > 20 > 50 SMA) |
-| Pullback Bonus | 15 | 3-10% pullback to 10/20 SMA support |
+| SMA Compression | 30 | Spread between 10 and 20 SMA as % of price — tighter = better |
+| SMA Alignment | 25 | Above 10+20 SMA = +15, above 50 SMA = +10 |
+| Extension | 25 | Distance above 20 SMA — ≤2%=25, ≤4%=18, ≤6%=10, ≤8%=4, >8%=-5 |
+| Relative Volume | 10 | Today's volume vs 20-day average — ≥2x=10, ≥1.5x=7, ≥1x=4 |
+| Day Change | 5 | Up >1%=5, up >0%=2 |
 
-### Buyout Filter
-- Range5 < 0.8% = flatlined deal stock → excluded
-- Gap >15% + post-gap range <3.5% → excluded
-- **Threshold is 3.5%** — intentionally loose
-
-### Two Categories (Layer 2)
-
-**Early Breakouts** (blue accent):
-- Stocks compressing in a tight base, haven't broken out yet
-- Scored on: Tightness (35), Breakout Proximity (25), Volume Dry-Up (20), Extension adjustment (-20 to +10), Trend (10)
-- Badges: "BASE", "NEAR BREAKOUT", "BREAKING OUT"
-
-**Pullback Entries** (purple accent):
-- Stocks that ran, pulled back 3-18% to SMA support, now bouncing
-- Scored on: Pullback Quality (30), Support Level (25), Volume Decline on pullback (20), Trend Intact (15), Bounce Today (10)
-- Shows support level (10 SMA, 20 SMA, 50 SMA)
+- Minimum score: **30** to appear in results
+- Maximum spread: **5%** (SMA10 vs SMA20) — wider = skip
+- Cap results at **20** setups
 
 ### Scanner UI
-- Cards show ticker (clickable → TradingView chart), price, % change, category badge, score circle
-- Component bars visualize each scoring factor
-- Quick stats line: 5d range, extension, RVol, breakout level (for breakouts) or dip %, support, SMAs (for pullbacks)
-- Expandable detail section with thesis, trade levels (entry/stop/target)
+- Single list of cards (blue accent for all — no categories)
+- Cards show: ticker (clickable → TradingView chart), price, % change, score circle
+- Component bars: Compression, Alignment, Extension, RVol, Momentum
+- Quick stats: Spread %, Extension %, RVol, Day Change
+- Thesis text: "Tight compression (X%). Above 10/20 SMA. Near base (X%). Xx volume."
+- Trade levels: Entry = price, Stop = SMA20 × 0.98, Target = price + 2× risk
+- Expandable detail section
 
 ### Scanner Caching
-- Universe cached in localStorage (`mac_momentum_top100`) with timestamp
+- Universe cached in localStorage (`mac_scanner_universe`) with timestamp
 - Scan results cached in localStorage (`mac_scan_results`)
 - Auto-builds universe on page load when cache is stale
+- Legacy key `mac_momentum_top100` auto-cleaned on load
 - To force fresh scan: clear both localStorage keys
 
 ---
 
-## TradingView Chart Popup (chart.js — 114 lines)
+## TradingView Chart Popup (chart.js — 412 lines)
 
 - Click any ticker symbol anywhere in the dashboard → modal popup with TradingView daily chart
+- **Exchange-aware routing**: Looks up exchange via Polygon `/v3/reference/tickers/{ticker}`, prefixes symbol (e.g., `NYSE:WES`, `NASDAQ:AAPL`)
+- MIC code mapping: XNAS/XNGS/XNMS→NASDAQ, XNYS→NYSE, ARCX→NYSE_ARCA, XASE→AMEX
 - **15-minute delayed data** (free widget limitation) — noted in popup header
 - Dark/light theme auto-detected
 - Close via X button, clicking outside, or Escape key
@@ -223,15 +215,15 @@ Two-layer system:
 
 ---
 
-## Top Ideas vs Scanner (they serve different purposes)
+## Top Ideas vs Scanner (same scoring, different universe)
 
 | | Top Ideas (Overview) | Scanner (Scanner tab) |
 |---|---|---|
-| Universe | Fixed ~50 popular tickers | Entire US market → top 150 |
-| Looks for | SMA compression (10/20 spread) | Tight price bases + pullbacks to support |
-| Rewards | Stocks already moving with volume | Stocks that are quiet and coiling |
-| Results | Top 4 cards | Two lists: Early Breakouts + Pullbacks |
-| Speed | Fast (50 tickers) | Slower (thousands → 150) |
+| Universe | Fixed ~50 popular tickers | Top 100 US stocks by dollar volume |
+| Scoring | 5-factor (compression, alignment, extension, RVol, day change) | Same 5-factor scoring |
+| Filters | Spread < 5%, score ≥ 30 | Same filters |
+| Results | Top 4 cards | Top 20 cards |
+| Speed | Fast (50 tickers) | Slower (full market → 100 → score) |
 
 ---
 
@@ -243,7 +235,7 @@ Two-layer system:
 - **When pushing JS updates, bump the `?v=` version** in `app/index.html` so browsers fetch fresh files
 - `app/index.html` also has `<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">` meta tags
 
-### Current version param: `?v=20260302`
+### Current version param: `?v=20260304o` (scanner), `?v=20260304m` (tabs)
 
 ---
 
@@ -275,9 +267,7 @@ Two-layer system:
 - **Keep overview sections lean** — max ~10 items, remove repeat concepts
 - **Whenever referencing sectors, always have the ETF symbol AND name** (e.g., "XLF Financials")
 - **Market Regime: NO colored tinted backgrounds** — colored dot + colored text on clean card
-- **Buyout filter threshold: 3.5%**
 - **News headlines: only show tickers with 1-4 characters** (excludes foreign/OTC)
-- **Extension filter:** Subtle text-only note in thesis section, no badges/colors
 - **Present Q&A summary** (questions asked + proposed solutions) **BEFORE pushing any code changes**
 - **User prefers direct git pushes** to GitHub over drag-and-drop
 
@@ -295,7 +285,7 @@ Two-layer system:
 - `SUPABASE_PROJECT_REF` — Supabase project reference ID
 - `SUPABASE_ACCESS_TOKEN` — Supabase personal access token
 
-### Latest commit: `539ddfb` (March 2, 2026)
+### Latest commit: `bcf08fc` (March 4, 2026)
 
 ---
 
@@ -341,7 +331,7 @@ All clickable tickers should:
 ### Forcing a fresh scan for testing
 In browser console:
 ```js
-localStorage.removeItem('mac_momentum_top100');
+localStorage.removeItem('mac_scanner_universe');
 localStorage.removeItem('mac_scan_results');
 ```
 Then refresh and click Scan.
