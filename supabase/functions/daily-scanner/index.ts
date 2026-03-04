@@ -21,6 +21,9 @@
 // Designed to run at 9:35 AM ET via cron — uses live market prices
 // instead of stale yesterday's closes.
 //
+// Cron: Two pg_cron jobs (13:35 UTC + 14:35 UTC) cover DST year-round.
+// The ET time guard rejects the wrong one instantly.
+//
 // Output format: matches what the frontend (scanner.js / db.js) expects.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -736,6 +739,38 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // ── ET time guard (for cron triggers) ──────────────
+    // Two pg_cron jobs fire daily (13:35 and 14:35 UTC) to cover DST.
+    // Only one will land in the 9:30-9:45 AM ET window.
+    // ?force=true bypasses this check (for manual testing).
+    const urlCheck  = new URL(req.url)
+    const forceRun  = urlCheck.searchParams.get('force') === 'true'
+    const cronTriggered = urlCheck.searchParams.get('source') === 'cron'
+
+    if (cronTriggered && !forceRun) {
+      const etNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
+      const etH   = etNow.getHours()
+      const etM   = etNow.getMinutes()
+      const etDay = etNow.getDay()  // 0=Sun, 6=Sat
+
+      // Skip weekends
+      if (etDay === 0 || etDay === 6) {
+        return new Response(JSON.stringify({ message: 'Weekend — skipping scan', skipped: true }), {
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Only run between 9:30-9:45 AM ET
+      const etMinutes = etH * 60 + etM
+      if (etMinutes < 570 || etMinutes > 585) {  // 570 = 9:30, 585 = 9:45
+        return new Response(JSON.stringify({ message: `Not in 9:30-9:45 AM ET window (current: ${etH}:${String(etM).padStart(2,'0')} ET)`, skipped: true }), {
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      console.log(`[daily-scanner] Cron trigger accepted: ${etH}:${String(etM).padStart(2,'0')} ET`)
+    }
+
     // ── Environment setup ──────────────────────────────
     const polygonKey = Deno.env.get('POLYGON_API_KEY')
     if (!polygonKey) {
@@ -751,10 +786,7 @@ Deno.serve(async (req: Request) => {
     const scanDate = getLastTradingDay()
 
     // ── Cache check (bypass with ?force=true) ──────────
-    const url   = new URL(req.url)
-    const force = url.searchParams.get('force') === 'true'
-
-    if (!force) {
+    if (!forceRun) {
       const { data: existing } = await supabase
         .from('scan_results')
         .select('id')
