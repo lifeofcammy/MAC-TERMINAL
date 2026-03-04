@@ -407,7 +407,7 @@ function renderRRGCanvas(canvasId) {
       angle = Math.atan2(dy, dx);
     }
     // Draw arrow pointer (triangle pointing in direction of movement)
-    var arrowLen = 9, arrowW = 5;
+    var arrowLen = 14, arrowW = 7;
     ctx.save();
     ctx.translate(lx, ly);
     ctx.rotate(angle);
@@ -415,13 +415,13 @@ function renderRRGCanvas(canvasId) {
     ctx.beginPath();
     ctx.moveTo(arrowLen, 0); // tip
     ctx.lineTo(-arrowLen * 0.5, -arrowW);
-    ctx.lineTo(-arrowLen * 0.3, 0);
+    ctx.lineTo(-arrowLen * 0.2, 0);
     ctx.lineTo(-arrowLen * 0.5, arrowW);
     ctx.closePath();
     ctx.fill();
     // Outline
     ctx.strokeStyle = isDark ? '#1a1a2e' : '#fff';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 2;
     ctx.stroke();
     ctx.restore();
   });
