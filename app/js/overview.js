@@ -1338,6 +1338,7 @@ function renderWatchlistSidebar() {
   html += ' style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;text-align:right;-moz-appearance:textfield;box-sizing:border-box;"';
   html += ' title="Your account size — used for position sizing" onchange="saveHeaderAccount()" />';
   html += '</div>';
+  html += '<div style="font-size:11px;color:var(--text-muted);margin:-4px 0 8px 2px;line-height:1.3;">Customizes position sizes, entries, stops & targets across all setups.</div>';
   html += '<div class="card" style="padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;">';
   html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">Watchlist</div>';
