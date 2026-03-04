@@ -150,42 +150,45 @@ function renderBreadthTimeline() {
   var dirColor = delta > 0 ? 'var(--green)' : delta < 0 ? 'var(--red)' : 'var(--text-muted)';
   var dirArrow = delta > 0 ? '\u25b2' : delta < 0 ? '\u25bc' : '\u25cf';
 
-  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
-  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Breadth Direction</div>';
-  html += '<span style="font-size:12px;font-weight:800;color:'+dirColor+';">'+dirArrow+' '+dirLabel+' ('+(delta>0?'+':'')+delta+'%)</span>';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Intraday Direction (15-min)</div>';
+  html += '<span style="font-size:13px;font-weight:800;color:'+dirColor+';">'+dirArrow+' '+dirLabel+' ('+(delta>0?'+':'')+delta+'%)</span>';
   html += '</div>';
 
-  // Direction bars: each bar is green (improving) or red (declining) vs previous
-  // 26 slots = market hours 9:30-4:00 in 15-min intervals
-  html += '<div style="display:flex;gap:2px;align-items:center;">';
+  // Histogram table — each row = one 15-min reading
+  html += '<div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;">';
+  // Header
+  html += '<div style="display:grid;grid-template-columns:70px 50px 50px 1fr;gap:0;padding:5px 10px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;">';
+  html += '<span>Time</span><span>Up %</span><span>Chg</span><span>Direction</span>';
+  html += '</div>';
+
   _breadthHistory.forEach(function(r, i) {
     var timeStr = r.time.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
-    if(i === 0) {
-      // First reading: neutral (no comparison)
-      html += '<div style="flex:1;height:24px;border-radius:4px;background:var(--bg-secondary);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;min-width:0;" title="'+timeStr+': '+r.pct+'% (starting point)">';
-      html += '<span style="font-size:12px;font-weight:700;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+r.pct+'</span>';
-      html += '</div>';
-    } else {
-      var prev = _breadthHistory[i-1].pct;
-      var diff = r.pct - prev;
-      var barColor, barBg;
-      if(diff > 0) { barColor = '#fff'; barBg = 'var(--green)'; }
-      else if(diff < 0) { barColor = '#fff'; barBg = 'var(--red)'; }
-      else { barColor = 'var(--text-muted)'; barBg = 'var(--bg-secondary)'; }
-      var isLast = i === _breadthHistory.length - 1;
-      html += '<div style="flex:1;height:24px;border-radius:4px;background:'+barBg+';display:flex;align-items:center;justify-content:center;min-width:0;opacity:'+(isLast?'1':'0.75')+';'+(isLast?'box-shadow:0 0 0 2px var(--bg-primary), 0 0 0 3px '+barBg+';':'')+'" title="'+timeStr+': '+r.pct+'% ('+(diff>0?'+':'')+diff+' vs prev)">';
-      html += '<span style="font-size:12px;font-weight:800;color:'+barColor+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(diff>0?'+':'')+diff+'</span>';
-      html += '</div>';
+    var diff = 0;
+    var diffStr = '\u2014';
+    var barColor = 'var(--bg-secondary)';
+    var textColor = 'var(--text-muted)';
+    if(i > 0) {
+      diff = r.pct - _breadthHistory[i-1].pct;
+      diffStr = (diff > 0 ? '+' : '') + diff + '%';
+      if(diff > 0) { barColor = 'var(--green)'; textColor = 'var(--green)'; }
+      else if(diff < 0) { barColor = 'var(--red)'; textColor = 'var(--red)'; }
     }
-  });
-  html += '</div>';
+    var isLast = i === _breadthHistory.length - 1;
+    var bg = isLast ? 'background:var(--bg-secondary);' : (i % 2 === 1 ? 'background:var(--bg-secondary);opacity:0.5;' : '');
+    // Bar width: breadth % mapped to visual width
+    var barW = Math.max(2, Math.min(100, r.pct));
 
-  // Time labels + breadth values at edges
-  html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:3px;">';
-  var firstTime = _breadthHistory[0].time.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
-  var lastTime = _breadthHistory[_breadthHistory.length-1].time.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
-  html += '<span>'+firstTime+' ('+first+'%)</span>';
-  html += '<span>'+lastTime+' ('+last+'%)</span>';
+    html += '<div style="display:grid;grid-template-columns:70px 50px 50px 1fr;gap:0;padding:5px 10px;border-bottom:1px solid var(--border);font-size:12px;align-items:center;' + (isLast ? 'background:var(--bg-secondary);' : '') + '">';
+    html += '<span style="font-family:var(--font-mono);color:var(--text-muted);font-size:11px;">' + timeStr + '</span>';
+    html += '<span style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary);">' + r.pct + '%</span>';
+    html += '<span style="font-family:var(--font-mono);font-weight:800;color:' + textColor + ';">' + diffStr + '</span>';
+    // Visual bar
+    html += '<div style="height:14px;border-radius:3px;background:var(--bg-secondary);overflow:hidden;position:relative;">';
+    html += '<div style="height:100%;width:' + barW + '%;background:' + barColor + ';border-radius:3px;transition:width 0.3s;opacity:0.7;"></div>';
+    html += '</div>';
+    html += '</div>';
+  });
   html += '</div>';
 
   html += '</div>';
@@ -1003,8 +1006,8 @@ async function renderOverview() {
   html += '<div style="text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 1</div><div class="card-header-bar">Morning Mindset</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Set your mental game before the market opens</div></div></div>';
   html += '<span id="mindset-arrow" style="width:20px;text-align:right;font-size:12px;color:var(--text-muted);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
   html += '</div>';
-  // Today's Focus — ALWAYS visible
-  html += '<div style="padding:0 16px 10px;"><div style="background:var(--bg-secondary);border:1px solid rgba(230,138,0,0.2);border-radius:6px;padding:10px 14px;">';
+  // Today's Focus — ALWAYS visible, centered under header
+  html += '<div style="padding:0 16px 10px;text-align:center;"><div style="background:var(--bg-secondary);border:1px solid rgba(230,138,0,0.2);border-radius:6px;padding:10px 14px;display:inline-block;max-width:500px;">';
   html += '<div style="font-size:12px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;">Today\'s Focus</div>';
   html += '<div style="font-size:14px;font-weight:700;color:var(--text-primary);line-height:1.4;">'+dailyFocus+'</div>';
   html += '</div></div>';
@@ -1111,11 +1114,12 @@ async function renderOverview() {
   html += '<div style="flex:none;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 2</div><div class="card-header-bar">Market Outlook</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div></div>';
   html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;"><span id="regime-arrow" style="font-size:12px;color:var(--text-muted);">'+(regimeCollapsed?'▶':'▼')+'</span></div>';
   html += '</div>';
-  html += '<div id="regime-body" style="'+(regimeCollapsed?'display:none;':'')+'padding:14px 20px;">';
-  html += '<div style="text-align:center;margin-bottom:10px;">';
+  // Regime label — always visible, centered under header
+  html += '<div style="text-align:center;padding:10px 20px;border-bottom:1px solid var(--border);">';
   html += '<div style="font-family:var(--font-display);font-size:28px;font-weight:700;color:'+regimeColor+';letter-spacing:0.02em;">'+regimeLabel+'</div>';
   html += '<div style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-top:4px;">'+regimeAction+'</div>';
   html += '</div>';
+  html += '<div id="regime-body" style="'+(regimeCollapsed?'display:none;':'')+'padding:14px 20px;">';
   html += '<div style="font-size:14px;color:var(--text-muted);line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
   // Show all 4 indexes' SMA status
   var smaIndexes = [
