@@ -338,7 +338,20 @@ function renderRRGCanvas(canvasId) {
   ctx.beginPath(); ctx.moveTo(pad.left, cy); ctx.lineTo(pad.left + plotW, cy); ctx.stroke();
   ctx.setLineDash([]);
 
-  // Quadrant labels are HTML overlays (not drawn on canvas)
+  // Subtle quadrant labels on canvas
+  ctx.font = '600 11px Inter, sans-serif';
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = isDark ? 'rgba(52,211,153,1)' : 'rgba(16,185,129,1)';
+  ctx.textAlign = 'right';
+  ctx.fillText('Leading', pad.left + plotW - 4, pad.top + 14);
+  ctx.fillStyle = isDark ? 'rgba(245,158,11,1)' : 'rgba(217,119,6,1)';
+  ctx.fillText('Weakening', pad.left + plotW - 4, pad.top + plotH - 4);
+  ctx.fillStyle = isDark ? 'rgba(252,165,165,1)' : 'rgba(239,68,68,1)';
+  ctx.textAlign = 'left';
+  ctx.fillText('Lagging', pad.left + 4, pad.top + plotH - 4);
+  ctx.fillStyle = isDark ? 'rgba(96,165,250,1)' : 'rgba(37,99,235,1)';
+  ctx.fillText('Improving', pad.left + 4, pad.top + 14);
+  ctx.globalAlpha = 1;
 
   // Axis labels
   ctx.font = '10px Inter, sans-serif';
@@ -1208,14 +1221,14 @@ async function renderOverview() {
 
   html += '<div style="padding:10px 8px;">';
   if(rrgData.length > 0) {
-    html += '<div style="position:relative;">';
-    html += '<canvas id="rrg-canvas" style="width:100%;border-radius:8px;"></canvas>';
-    // Quadrant label overlays — clickable, semi-transparent
-    var qBannerStyle = 'position:absolute;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;user-select:none;backdrop-filter:blur(2px);transition:opacity 0.15s;';
-    html += '<div id="rrg-q-leading" onclick="showRRGQuadrant(\'leading\')" style="' + qBannerStyle + 'top:6px;right:6px;background:rgba(16,185,129,0.12);color:rgba(16,185,129,0.8);border:1px solid rgba(16,185,129,0.2);" title="Click to see Leading sectors">Leading \u25b8</div>';
-    html += '<div id="rrg-q-weakening" onclick="showRRGQuadrant(\'weakening\')" style="' + qBannerStyle + 'bottom:6px;right:6px;background:rgba(245,158,11,0.12);color:rgba(217,119,6,0.8);border:1px solid rgba(245,158,11,0.2);" title="Click to see Weakening sectors">Weakening \u25b8</div>';
-    html += '<div id="rrg-q-lagging" onclick="showRRGQuadrant(\'lagging\')" style="' + qBannerStyle + 'bottom:6px;left:6px;background:rgba(239,68,68,0.12);color:rgba(239,68,68,0.8);border:1px solid rgba(239,68,68,0.2);" title="Click to see Lagging sectors">Lagging \u25b8</div>';
-    html += '<div id="rrg-q-improving" onclick="showRRGQuadrant(\'improving\')" style="' + qBannerStyle + 'top:6px;left:6px;background:rgba(37,99,235,0.12);color:rgba(37,99,235,0.8);border:1px solid rgba(37,99,235,0.2);" title="Click to see Improving sectors">Improving \u25b8</div>';
+    html += '<div style="position:relative;"><canvas id="rrg-canvas" style="width:100%;border-radius:8px;"></canvas></div>';
+    // Quadrant filter pills — below the chart
+    html += '<div style="display:flex;justify-content:center;gap:6px;margin-top:6px;flex-wrap:wrap;">';
+    var qPillStyle = 'padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;user-select:none;';
+    html += '<div onclick="showRRGQuadrant(\'improving\')" style="' + qPillStyle + 'background:rgba(37,99,235,0.1);color:rgba(37,99,235,0.85);border:1px solid rgba(37,99,235,0.2);" title="Click to see Improving sectors">Improving</div>';
+    html += '<div onclick="showRRGQuadrant(\'leading\')" style="' + qPillStyle + 'background:rgba(16,185,129,0.1);color:rgba(16,185,129,0.85);border:1px solid rgba(16,185,129,0.2);" title="Click to see Leading sectors">Leading</div>';
+    html += '<div onclick="showRRGQuadrant(\'weakening\')" style="' + qPillStyle + 'background:rgba(245,158,11,0.1);color:rgba(217,119,6,0.85);border:1px solid rgba(245,158,11,0.2);" title="Click to see Weakening sectors">Weakening</div>';
+    html += '<div onclick="showRRGQuadrant(\'lagging\')" style="' + qPillStyle + 'background:rgba(239,68,68,0.1);color:rgba(239,68,68,0.85);border:1px solid rgba(239,68,68,0.2);" title="Click to see Lagging sectors">Lagging</div>';
     html += '</div>';
     // Legend
     html += '<div style="display:flex;justify-content:center;gap:16px;margin-top:6px;font-size:12px;">';
