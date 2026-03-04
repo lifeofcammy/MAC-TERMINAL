@@ -168,14 +168,14 @@ body {
 
 
 /* Main */
-.main { padding: 32px 12px 32px 32px; max-width: 1600px; margin: 0 auto; }
+.main { padding: 32px; max-width: 1600px; margin: 0 auto; }
 
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 #tab-overview.active { display: flex; gap: 16px; }
 #overview-main { flex: 1; min-width: 0; }
 #watchlist-sidebar {
-  width: 200px;
+  width: 300px;
   flex-shrink: 0;
   position: sticky;
   top: 80px;
@@ -515,9 +515,9 @@ input:focus, textarea:focus, select:focus {
   padding: 10px 20px;
   display: inline-block;
   position: relative;
-  left: 98px; /* offset half of sidebar(200)+gap(16)-rightPad(12) to center under tagline */
+  left: 158px; /* offset half of sidebar(300)+gap(16) to center under tagline */
 }
 .center-under-tagline {
   position: relative;
-  left: 98px;
+  left: 158px;
 }
