@@ -9,6 +9,7 @@
 // Supported tasks:
 //   - generate_analysis: Generate end-of-day market analysis for a given date
 //   - analysis_chat: Chat with the AI about a specific day's analysis
+//   - generate_themes: Generate today's market themes from biggest movers
 //
 // Rate limiting: max 20 AI calls per user per hour (tracked in-memory per instance)
 
@@ -266,8 +267,75 @@ Deno.serve(async (req) => {
         messages: chatMessages,
       }
 
+    } else if (task === 'generate_themes') {
+      // Validate inputs: movers array + optional market/news context
+      const movers = validateMoverData(body.movers)
+      if (movers.length === 0) {
+        return new Response(JSON.stringify({ error: 'No valid mover data provided.' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const marketContext = sanitizeString(body.marketContext, 500)
+      const generalNews = sanitizeString(body.generalNews, 2000)
+
+      const moverContext = movers.map(m => {
+        const dir = m.pct > 0 ? 'UP' : 'DOWN'
+        const newsStr = m.newsHeadlines.length > 0
+          ? '\n  Headlines: ' + m.newsHeadlines.slice(0, 3).join('; ')
+          : '\n  No specific headlines found.'
+        return `${m.ticker} ${dir} ${m.pct.toFixed(1)}% ($${m.close.toFixed(2)})${newsStr}`
+      }).join('\n\n')
+
+      const prompt = `You are a professional market analyst. Here are today's biggest stock movers with their associated headlines.
+
+Market Indices: ${marketContext}
+
+Biggest Movers:
+${moverContext}
+
+General Headlines:
+${generalNews}
+
+Your task:
+1. For each significant mover, write a 1-2 sentence explanation of WHY it moved (the catalyst). Include its SECTOR and specific INDUSTRY.
+2. Group the day's action into 2-3 overarching themes (e.g., "AI Infrastructure Boom", "Earnings Season Winners", "Macro Fears").
+3. Write a 1-sentence market narrative summary.
+4. Create an industry heat check — which specific industries are hot/cold today.
+
+Return JSON ONLY in this exact format:
+{
+  "narrative": "One sentence market summary",
+  "movers": [
+    {"ticker": "DELL", "pct": 21.8, "direction": "up", "reason": "Crushed Q4 earnings...", "sector": "Technology", "industry": "Hardware/Servers", "tags": ["Earnings", "AI"]}
+  ],
+  "themes": [
+    {"title": "AI Infrastructure Spending Accelerates", "description": "DELL and... drove gains as AI capex surges."}
+  ],
+  "industries": [
+    {"name": "Semiconductors", "direction": "up", "tickers": ["NVDA","AMD","AVGO"], "note": "AI chip demand driving broad strength"}
+  ]
+}
+
+Rules:
+- Only include movers that moved >2% and have a clear catalyst.
+- "direction" must be "up" or "down".
+- "pct" should be the actual percentage change (positive number for up, negative for down).
+- "sector" is the broad GICS sector (Technology, Healthcare, Financials, etc.).
+- "industry" is the specific sub-industry (Semiconductors, Cybersecurity, SaaS, E-commerce, Biotech, etc.).
+- "tags" are short category labels like "Earnings", "M&A", "Guidance", "Macro", "AI", etc.
+- "industries" array: group movers by their specific industry, show direction and brief note. Include 3-6 industries.
+- Keep everything concise and trader-focused. No fluff.
+- Return ONLY the JSON object.`
+
+      anthropicBody = {
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2048,
+        messages: [{ role: 'user', content: prompt }],
+      }
+
     } else {
-      return new Response(JSON.stringify({ error: `Unknown task: ${task}. Supported: generate_analysis, analysis_chat` }), {
+      return new Response(JSON.stringify({ error: `Unknown task: ${task}. Supported: generate_analysis, analysis_chat, generate_themes` }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })

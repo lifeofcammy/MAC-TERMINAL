@@ -1773,20 +1773,17 @@ async function generateThemes() {
     if(prog)prog.textContent='Fetching news for movers...';
     var moverNews={};
     for(var ni=0;ni<topMovers.length;ni++){
-      try{var articles=await getPolygonNews(topMovers[ni].ticker,5);moverNews[topMovers[ni].ticker]=articles.map(function(a){return a.title||'';}).filter(function(t){return t.length>0;});}catch(e){moverNews[topMovers[ni].ticker]=[];}
+      try{var articles=await getPolygonNews([topMovers[ni].ticker],5);moverNews[topMovers[ni].ticker]=articles.map(function(a){return a.title||'';}).filter(function(t){return t.length>0;});}catch(e){moverNews[topMovers[ni].ticker]=[];}
     }
 
     // Also get general market news for broader context
     var generalNews=[];
     try{var gn=await getPolygonNews(null,15);generalNews=gn.map(function(a){return (a.title||'')+' ('+((a.tickers||[]).slice(0,3).join(', '))+')';}).filter(function(t){return t.length>2;});}catch(e){}
 
-    // Step 4: Build context for AI
-    var moverContext=topMovers.map(function(m){
-      var dir=m.pct>0?'UP':'DOWN';
-      var tickerNews=moverNews[m.ticker]||[];
-      var newsStr=tickerNews.length>0?'\n  Headlines: '+tickerNews.slice(0,3).join('; '):'\n  No specific headlines found.';
-      return m.ticker+' '+dir+' '+m.pct.toFixed(1)+'% ($'+m.price.toFixed(2)+')'+newsStr;
-    }).join('\n\n');
+    // Step 4: Build structured payload for ai-proxy edge function
+    var moverPayload=topMovers.map(function(m){
+      return {ticker:m.ticker,pct:m.pct,close:m.price,newsHeadlines:moverNews[m.ticker]||[]};
+    });
 
     // Get market context
     var marketCtx='';
@@ -1794,10 +1791,8 @@ async function generateThemes() {
 
     if(prog)prog.textContent='AI analyzing movers...';
 
-    // Step 5: Ask Claude to explain WHY each moved + industry breakdown
-    var prompt='You are a professional market analyst. Here are today\'s biggest stock movers with their associated headlines.\n\nMarket Indices: '+marketCtx+'\n\nBiggest Movers:\n'+moverContext+'\n\nGeneral Headlines:\n'+generalNews.slice(0,8).join('\n')+'\n\nYour task:\n1. For each significant mover, write a 1-2 sentence explanation of WHY it moved (the catalyst). Include its SECTOR and specific INDUSTRY.\n2. Group the day\'s action into 2-3 overarching themes (e.g., "AI Infrastructure Boom", "Earnings Season Winners", "Macro Fears").\n3. Write a 1-sentence market narrative summary.\n4. Create an industry heat check — which specific industries are hot/cold today.\n\nReturn JSON ONLY in this exact format:\n{\n  "narrative": "One sentence market summary",\n  "movers": [\n    {"ticker": "DELL", "pct": 21.8, "direction": "up", "reason": "Crushed Q4 earnings...", "sector": "Technology", "industry": "Hardware/Servers", "tags": ["Earnings", "AI"]},\n    {"ticker": "DUOL", "pct": -14.0, "direction": "down", "reason": "Weak forward guidance...", "sector": "Technology", "industry": "EdTech/SaaS", "tags": ["Earnings"]}\n  ],\n  "themes": [\n    {"title": "AI Infrastructure Spending Accelerates", "description": "DELL and... drove gains as AI capex surges."}\n  ],\n  "industries": [\n    {"name": "Semiconductors", "direction": "up", "tickers": ["NVDA","AMD","AVGO"], "note": "AI chip demand driving broad strength"},\n    {"name": "Cybersecurity", "direction": "down", "tickers": ["CRWD","ZS"], "note": "AI disruption fears weighing"}\n  ]\n}\n\nRules:\n- Only include movers that moved >2% and have a clear catalyst.\n- "direction" must be "up" or "down".\n- "pct" should be the actual percentage change (positive number for up, negative for down).\n- "sector" is the broad GICS sector (Technology, Healthcare, Financials, etc.).\n- "industry" is the specific sub-industry (Semiconductors, Cybersecurity, SaaS, E-commerce, Biotech, etc.).\n- "tags" are short category labels like "Earnings", "M&A", "Guidance", "Macro", "AI", etc.\n- "industries" array: group movers by their specific industry, show direction and brief note. Include 3-6 industries.\n- Keep everything concise and trader-focused. No fluff.\n- Return ONLY the JSON object, no other text.';
-
-    var data=await callAIProxy({model:'claude-sonnet-4-20250514',max_tokens:2048,messages:[{role:'user',content:prompt}]});
+    // Step 5: Send structured task to ai-proxy (prompt built server-side)
+    var data=await callAIProxy({task:'generate_themes',movers:moverPayload,marketContext:marketCtx,generalNews:generalNews.slice(0,8).join('\n')});
     var text=data.content&&data.content[0]?data.content[0].text:'';
     var jsonMatch=text.match(/\{[\s\S]*\}/);if(!jsonMatch)throw new Error('Parse failed');
     var result=JSON.parse(jsonMatch[0]);
