@@ -254,8 +254,8 @@ function calcUniverseScore(bars, currentPrice, spyReturn20) {
 
   var sma10 = sma(closes, 10), sma20 = sma(closes, 20), sma50 = sma(closes, 50);
 
-  // Must be above 20 SMA to be in universe (uptrend filter)
-  if (!sma20 || currentPrice < sma20 * 0.97) return { total: 0 };
+  // Must be above 50 SMA to be in universe (uptrend filter)
+  if (!sma50 || currentPrice < sma50) return { total: 0 };
 
   // ── 1. COMPRESSION / TIGHTNESS (0-30 pts) — PRIMARY factor ──
   // ATR-relative: normalize range by the stock's own ATR so high-ATR names
@@ -700,7 +700,10 @@ async function runSetupScan(statusFn) {
     }
 
     var sma10 = sma(closes, 10), sma20 = sma(closes, 20), sma50 = sma(closes, 50);
-    if (!sma20 || !sma10) return;
+    if (!sma20 || !sma10 || !sma50) return;
+
+    // Must be above 10, 20, AND 50 SMA — confirmed uptrend only
+    if (curPrice < sma10 || curPrice < sma20 || curPrice < sma50) return;
 
     var spread = Math.abs(sma10 - sma20) / curPrice * 100;
     if (spread > 5) return;
