@@ -326,7 +326,7 @@ async function refreshRegimeAndBreadth() {
         var neither = !idx.a10 && !idx.a20;
         var smaColor = both ? 'var(--green)' : neither ? 'var(--red)' : 'var(--amber)';
         var smaLabel = both ? 'Above Both' : neither ? 'Below Both' : 'Mixed';
-        rHtml += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+smaColor+'15;color:'+smaColor+';font-family:\'JetBrains Mono\',monospace;">'+idx.name+' '+smaLabel+'</span>';
+        rHtml += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+smaColor+'15;color:'+smaColor+';font-family:var(--font-mono);">'+idx.name+' '+smaLabel+'</span>';
       });
       rHtml += '</div>';
       // Updated timestamp
@@ -364,7 +364,7 @@ async function refreshRegimeAndBreadth() {
         if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';bg=d.pct<=0?'rgba(16,185,129,0.04)':'rgba(239,68,68,0.04)';borderC=d.pct<=0?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)';}
         sHtml += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:12px;padding:12px 14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);">';
         sHtml += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">'+idx.label+'</div>';
-        sHtml += '<div style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">'+(d.price?'$'+price(d.price):'\u2014')+'</div>';
+        sHtml += '<div style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">'+(d.price?'$'+price(d.price):'\u2014')+'</div>';
         sHtml += '<div style="font-size:14px;font-weight:700;color:'+color+';margin-top:2px;">'+pct(d.pct)+'</div>';
         sHtml += '</div>';
       });
@@ -672,7 +672,7 @@ async function renderOverview() {
   mindsetRules.forEach(function(rule,i) {
     var isToday = i===todayIdx;
     html += '<div style="break-inside:avoid;padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:flex-start;'+(isToday?'background:var(--amber-bg);margin:0 -4px;padding:4px;border-radius:4px;':'')+'">';
-    html += '<span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;min-width:18px;">'+(i+1)+'.</span>';
+    html += '<span style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);min-width:18px;">'+(i+1)+'.</span>';
     html += '<span style="font-size:14px;color:'+(isToday?'var(--amber)':'var(--text-primary)')+';line-height:1.4;font-weight:'+(isToday?'700':'500')+';">'+rule+'</span>';
     html += '</div>';
   });
@@ -781,7 +781,7 @@ async function renderOverview() {
       var neither = !idx.a10 && !idx.a20;
       var smaColor = both ? 'var(--green)' : neither ? 'var(--red)' : 'var(--amber)';
       var smaLabel = both ? 'Above Both' : neither ? 'Below Both' : 'Mixed';
-      html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+smaColor+'15;color:'+smaColor+';font-family:\'JetBrains Mono\',monospace;">'+idx.name+' '+smaLabel+'</span>';
+      html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+smaColor+'15;color:'+smaColor+';font-family:var(--font-mono);">'+idx.name+' '+smaLabel+'</span>';
     });
     html += '</div>';
   }
@@ -797,7 +797,7 @@ async function renderOverview() {
   html += '<div onclick="toggleCard(\'snapshot\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
   html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Market Snapshot</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">How the major indexes are moving right now</div></div>';
-  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="snapshot-arrow" style="font-size:12px;color:var(--text-muted);">'+(snapshotCollapsed?'\u25b6':'\u25bc')+'</span></div>';
+  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">'+dataFreshness+'</span><span id="snapshot-arrow" style="font-size:12px;color:var(--text-muted);">'+(snapshotCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="snapshot-body" style="'+(snapshotCollapsed?'display:none;':'')+'padding:12px 16px;">';
   html += '<div class="ov-snap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">';
@@ -817,7 +817,7 @@ async function renderOverview() {
     if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';bg=d.pct<=0?'rgba(16,185,129,0.04)':'rgba(239,68,68,0.04)';borderC=d.pct<=0?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)';}
     html += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:12px;padding:12px 14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);">';
     html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">'+idx.label+'</div>';
-    html += '<div style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">'+(d.price?'$'+price(d.price):'—')+'</div>';
+    html += '<div style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">'+(d.price?'$'+price(d.price):'—')+'</div>';
     html += '<div style="font-size:14px;font-weight:700;color:'+color+';margin-top:2px;">'+pct(d.pct)+'</div>';
     html += '</div>';
   });
@@ -849,7 +849,7 @@ async function renderOverview() {
   html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
   html += '<div style="flex:1;"></div>';
   html += '<div style="flex:none;text-align:center;"><div class="card-header-bar">Sector Heatmap</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Which sectors are hot and which to avoid</div></div>';
-  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span></div>';
+  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span></div>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
   // Store maps globally for the expand function
@@ -870,7 +870,7 @@ async function renderOverview() {
     html += '<div style="background:'+chgBg+';border-radius:6px;padding:10px;text-align:center;">';
     html += '<div style="font-size:12px;font-weight:800;color:'+chgColor+';">'+sec.etf+'</div>';
     html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.8;">'+sec.name+'</div>';
-    html += '<div style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:'+chgColor+';margin-top:3px;">'+pct(sec.dayChg)+'</div>';
+    html += '<div style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:'+chgColor+';margin-top:3px;">'+pct(sec.dayChg)+'</div>';
     html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.7;margin-top:1px;">Wk: '+pct(sec.weekPerf)+'</div>';
     if(hasSubsectors) html += '<div style="font-size:12px;color:'+chgColor+';opacity:0.5;margin-top:3px;">tap to expand</div>';
     html += '</div>';
@@ -902,8 +902,8 @@ async function renderOverview() {
       html += '<div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px;text-align:center;">\u25b2 Accelerating</div>';
       rotatingIn.forEach(function(s){
         html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:2px;background:rgba(16,185,129,0.06);border-radius:4px;">';
-        html += '<span style="font-size:12px;"><span style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + s.etf + '</span> <span style="font-weight:600;color:var(--text-muted);">' + s.name + '</span></span>';
-        html += '<span style="font-size:12px;color:var(--green);font-weight:700;font-family:\'JetBrains Mono\',monospace;">+' + s.rotation.toFixed(1) + '</span>';
+        html += '<span style="font-size:12px;"><span style="font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">' + s.etf + '</span> <span style="font-weight:600;color:var(--text-muted);">' + s.name + '</span></span>';
+        html += '<span style="font-size:12px;color:var(--green);font-weight:700;font-family:var(--font-mono);">+' + s.rotation.toFixed(1) + '</span>';
         html += '</div>';
       });
       html += '</div>';
@@ -914,8 +914,8 @@ async function renderOverview() {
       html += '<div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:4px;text-align:center;">\u25bc Decelerating</div>';
       rotatingOut.forEach(function(s){
         html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:2px;background:rgba(239,68,68,0.06);border-radius:4px;">';
-        html += '<span style="font-size:12px;"><span style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + s.etf + '</span> <span style="font-weight:600;color:var(--text-muted);">' + s.name + '</span></span>';
-        html += '<span style="font-size:12px;color:var(--red);font-weight:700;font-family:\'JetBrains Mono\',monospace;">' + s.rotation.toFixed(1) + '</span>';
+        html += '<span style="font-size:12px;"><span style="font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">' + s.etf + '</span> <span style="font-weight:600;color:var(--text-muted);">' + s.name + '</span></span>';
+        html += '<span style="font-size:12px;color:var(--red);font-weight:700;font-family:var(--font-mono);">' + s.rotation.toFixed(1) + '</span>';
         html += '</div>';
       });
       html += '</div>';
@@ -1022,7 +1022,7 @@ async function renderOverview() {
   html += '<div id="watchlist-body" style="'+(watchlistCollapsed?'display:none;':'')+'">';
   // Add form
   html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-wrap:wrap;">';
-  html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
+  html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--text-primary);text-transform:uppercase;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
   html += '<select id="wl-bias-select" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:14px;font-weight:600;color:var(--text-primary);">';
   html += '<option value="long">\u25b2 Long</option><option value="short">\u25bc Short</option><option value="watch">\u25cf Watch</option></select>';
   html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="flex:1;min-width:120px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:14px;color:var(--text-primary);" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
@@ -1040,9 +1040,9 @@ async function renderOverview() {
       html += '<div class="wl-card-'+item.ticker+'" style="box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px;border-left:3px solid '+biasColor+';position:relative;">';
       html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');refreshWatchlistUI();" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">\u00d7</button>';
       html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
-      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+item.ticker+'\');">'+item.ticker+'</span>';
+      html += '<span style="font-size:14px;font-weight:800;font-family:var(--font-mono);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+item.ticker+'\');">'+item.ticker+'</span>';
       html += '<span style="font-size:12px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
-      html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);">Loading...</span>';
+      html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-muted);">Loading...</span>';
       html += '</div>';
       if(item.note) html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.3;font-style:italic;">'+item.note.replace(/</g,'&lt;')+'</div>';
       html += '</div>';
@@ -1087,9 +1087,9 @@ function refreshWatchlistUI() {
         html += '<div class="wl-card-'+item.ticker+'" style="box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px;border-left:3px solid '+biasColor+';position:relative;">';
         html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');refreshWatchlistUI();" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">×</button>';
         html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
-        html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+item.ticker+'\');">'+item.ticker+'</span>';
+        html += '<span style="font-size:14px;font-weight:800;font-family:var(--font-mono);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+item.ticker+'\');">'+item.ticker+'</span>';
         html += '<span style="font-size:12px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+biasColor+'15;color:'+biasColor+';">'+biasIcon+' '+item.bias.toUpperCase()+'</span>';
-        html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);">Loading...</span>';
+        html += '<span class="wl-price-'+item.ticker+'" style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-muted);">Loading...</span>';
         html += '</div>';
         if(item.note) html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.3;font-style:italic;">'+item.note.replace(/</g,'&lt;')+'</div>';
         html += '</div>';
@@ -1186,8 +1186,8 @@ async function toggleSubsectors(sectorEtf) {
         var color = r.pct >= 0 ? 'var(--green)' : 'var(--red)';
         var bg = r.pct >= 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;background:' + bg + ';">';
-        html += '<div style="font-size:12px;"><span style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + r.etf + '</span> <span style="color:var(--text-muted);">' + r.name + '</span></div>';
-        html += '<span style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:' + color + ';">' + (r.pct >= 0 ? '+' : '') + r.pct.toFixed(1) + '%</span>';
+        html += '<div style="font-size:12px;"><span style="font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">' + r.etf + '</span> <span style="color:var(--text-muted);">' + r.name + '</span></div>';
+        html += '<span style="font-size:12px;font-weight:800;font-family:var(--font-mono);color:' + color + ';">' + (r.pct >= 0 ? '+' : '') + r.pct.toFixed(1) + '%</span>';
         html += '</div>';
       });
       html += '</div></div>';
@@ -1236,10 +1236,10 @@ async function toggleSubsectors(sectorEtf) {
           var volStr = l.vol >= 1000000 ? (l.vol / 1000000).toFixed(1) + 'M' : l.vol >= 1000 ? (l.vol / 1000).toFixed(0) + 'K' : l.vol.toString();
           var volColor = l.volVsAvg >= 1.5 ? 'var(--blue)' : 'var(--text-muted)';
           html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:2px 8px;padding:4px 8px;border-radius:4px;background:' + bg + ';align-items:center;">';
-          html += '<span style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + l.ticker + '</span>';
-          html += '<span style="font-size:12px;font-family:\'JetBrains Mono\',monospace;color:var(--text-secondary);text-align:right;">$' + l.price.toFixed(2) + '</span>';
-          html += '<span style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:' + c + ';text-align:right;">' + (l.dayPct >= 0 ? '+' : '') + l.dayPct.toFixed(1) + '%</span>';
-          html += '<span style="font-size:12px;font-family:\'JetBrains Mono\',monospace;color:' + volColor + ';text-align:right;">' + volStr + '</span>';
+          html += '<span style="font-size:12px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">' + l.ticker + '</span>';
+          html += '<span style="font-size:12px;font-family:var(--font-mono);color:var(--text-secondary);text-align:right;">$' + l.price.toFixed(2) + '</span>';
+          html += '<span style="font-size:12px;font-weight:800;font-family:var(--font-mono);color:' + c + ';text-align:right;">' + (l.dayPct >= 0 ? '+' : '') + l.dayPct.toFixed(1) + '%</span>';
+          html += '<span style="font-size:12px;font-family:var(--font-mono);color:' + volColor + ';text-align:right;">' + volStr + '</span>';
           html += '</div>';
         });
         html += '</div>';
@@ -1285,7 +1285,7 @@ function renderThemesHTML(data, cacheTs) {
       html += '</div>';
       if(ind.tickers && ind.tickers.length>0){
         html += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:3px;">';
-        ind.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:1px 4px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;cursor:pointer;" title="Click for chart" onclick="openTVChart(\''+escapeHtml(t)+'\');">'+escapeHtml(t)+'</span>';});
+        ind.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:1px 4px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);font-family:var(--font-mono);cursor:pointer;" title="Click for chart" onclick="openTVChart(\''+escapeHtml(t)+'\');">'+escapeHtml(t)+'</span>';});
         html += '</div>';
       }
       if(ind.note) html += '<div style="font-size:14px;color:var(--text-muted);line-height:1.3;">'+escapeHtml(ind.note||'')+'</div>';
@@ -1313,8 +1313,8 @@ function renderThemesHTML(data, cacheTs) {
     winners.forEach(function(m){
       html += '<div style="background:rgba(16,185,129,0.04);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);border-radius:12px;padding:12px 14px;">';
       html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
-      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + escapeHtml(m.ticker) + '</span>';
-      html += '<span style="font-size:14px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">+' + Math.abs(m.pct).toFixed(1) + '%</span>';
+      html += '<span style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">' + escapeHtml(m.ticker) + '</span>';
+      html += '<span style="font-size:14px;font-weight:800;color:var(--green);font-family:var(--font-mono);">+' + Math.abs(m.pct).toFixed(1) + '%</span>';
       html += sectorBadge(m);
       html += '</div>';
       html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;">' + escapeHtml(m.reason||'') + '</div>';
@@ -1335,8 +1335,8 @@ function renderThemesHTML(data, cacheTs) {
     losers.forEach(function(m){
       html += '<div style="background:rgba(239,68,68,0.04);box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);border-radius:12px;padding:12px 14px;">';
       html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
-      html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + escapeHtml(m.ticker) + '</span>';
-      html += '<span style="font-size:14px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + (m.pct<0?'':'-') + Math.abs(m.pct).toFixed(1) + '%</span>';
+      html += '<span style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">' + escapeHtml(m.ticker) + '</span>';
+      html += '<span style="font-size:14px;font-weight:800;color:var(--red);font-family:var(--font-mono);">' + (m.pct<0?'':'-') + Math.abs(m.pct).toFixed(1) + '%</span>';
       html += sectorBadge(m);
       html += '</div>';
       html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;">' + escapeHtml(m.reason||'') + '</div>';
@@ -1380,7 +1380,7 @@ function renderLegacyThemesHTML(themes, cacheTs) {
     html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:5px;">'+escapeHtml(theme.description||'')+'</div>';
     if(theme.tickers&&theme.tickers.length>0){
       html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
-      theme.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+c+'15;color:'+c+';font-family:\'JetBrains Mono\',monospace;cursor:pointer;" title="Click for chart" onclick="openTVChart(\''+escapeHtml(t)+'\');">'+escapeHtml(t)+'</span>';});
+      theme.tickers.forEach(function(t){html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+c+'15;color:'+c+';font-family:var(--font-mono);cursor:pointer;" title="Click for chart" onclick="openTVChart(\''+escapeHtml(t)+'\');">'+escapeHtml(t)+'</span>';});
       html += '</div>';
     }
     html += '</div>';
@@ -1399,15 +1399,15 @@ function renderTopIdeasHTML(ideas, cacheTs) {
     html += '<div style="background:'+sbg+';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px 16px;border-left:3px solid '+sc+'">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
     html += '<div style="display:flex;align-items:center;gap:6px;">';
-    html += '<span style="font-size:14px;font-weight:800;font-family:\'JetBrains Mono\',monospace;cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+idea.ticker+'\');">'+idea.ticker+'</span>';
-    html += '<span style="font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-secondary);">$'+(idea.price?idea.price.toFixed(2):'—')+'</span>';
+    html += '<span style="font-size:14px;font-weight:800;font-family:var(--font-mono);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+idea.ticker+'\');">'+idea.ticker+'</span>';
+    html += '<span style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);">$'+(idea.price?idea.price.toFixed(2):'—')+'</span>';
     html += '</div>';
-    html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid '+sc+';font-size:12px;font-weight:900;color:'+sc+';font-family:\'JetBrains Mono\',monospace;">'+idea.score+'</div>';
+    html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid '+sc+';font-size:12px;font-weight:900;color:'+sc+';font-family:var(--font-mono);">'+idea.score+'</div>';
     html += '</div>';
     if(idea.source) html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">via '+idea.source+'</div>';
     if(idea.thesis) html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.4;margin-bottom:6px;">'+idea.thesis.replace(/</g,'&lt;')+'</div>';
     if(idea.entry||idea.stop||idea.target){
-      html += '<div style="display:flex;gap:8px;font-size:12px;font-family:\'JetBrains Mono\',monospace;padding:4px 6px;background:var(--bg-secondary);border-radius:3px;">';
+      html += '<div style="display:flex;gap:8px;font-size:12px;font-family:var(--font-mono);padding:4px 6px;background:var(--bg-secondary);border-radius:3px;">';
       if(idea.entry) html += '<span style="color:var(--blue);">Entry $'+idea.entry+'</span>';
       if(idea.stop) html += '<span style="color:var(--red);">Stop $'+idea.stop+'</span>';
       if(idea.target) html += '<span style="color:var(--green);">Target $'+idea.target+'</span>';
@@ -1611,13 +1611,13 @@ function renderAutoEconCal(el, grouped, ts) {
       html += '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:'+dot+';flex-shrink:0;"></span>';
       html += '<div style="color:var(--text-primary);font-weight:600;font-size:14px;line-height:1.3;">'+((ev.title||'').replace(/</g,'&lt;'))+'</div>';
       html += '</div>';
-      if(time) html += '<div style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:12px;margin-top:2px;">'+time+' ET</div>';
+      if(time) html += '<div style="color:var(--text-muted);font-family:var(--font-mono);font-size:12px;margin-top:2px;">'+time+' ET</div>';
 
       // Forecast / Previous
       var details=[];
       if(ev.forecast!==undefined&&ev.forecast!==null&&ev.forecast!=='') details.push('F: '+ev.forecast);
       if(ev.previous!==undefined&&ev.previous!==null&&ev.previous!=='') details.push('P: '+ev.previous);
-      if(details.length>0) html += '<div style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:12px;margin-top:1px;">'+details.join(' \xb7 ')+'</div>';
+      if(details.length>0) html += '<div style="color:var(--text-muted);font-family:var(--font-mono);font-size:12px;margin-top:1px;">'+details.join(' \xb7 ')+'</div>';
 
       html += '</div>';
     });

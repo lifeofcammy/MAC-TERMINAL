@@ -35,7 +35,7 @@
       <div class="header-sub">Market Action Center</div>
     </div>
   </div>
-  <div class="header-tagline" style="position:absolute;left:50%;transform:translateX(-50%);font-family:'DM Serif Display',Georgia,serif;font-size:20px;font-weight:400;letter-spacing:0.02em;color:var(--blue);">
+  <div class="header-tagline" style="position:absolute;left:50%;transform:translateX(-50%);font-family:var(--font-display);font-size:20px;font-weight:400;letter-spacing:0.02em;color:var(--blue);">
     Simplify Your Trading
   </div>
   <div class="header-right">
@@ -136,7 +136,7 @@
           <!-- Paste area -->
           <div style="margin-bottom:12px;">
             <div style="font-size:12px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;">— OR PASTE —</div>
-            <textarea id="recap-paste" rows="8" placeholder="Paste trade data here..." style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-secondary);resize:vertical;line-height:1.5;"></textarea>
+            <textarea id="recap-paste" rows="8" placeholder="Paste trade data here..." style="width:100%;font-family:var(--font-mono);font-size:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-secondary);resize:vertical;line-height:1.5;"></textarea>
           </div>
 
           <button onclick="recapAnalyze()" class="refresh-btn" style="width:100%;padding:12px;font-size:14px;">ANALYZE TRADES</button>
@@ -181,9 +181,7 @@
 <script src="js/auth.js?v=20260303r"></script>
 <script src="js/config.js?v=20260303r"></script>
 <script src="js/db.js?v=20260303r"></script>
-<script src="js/tickers.js?v=20260303r"></script>
 <script src="js/utils.js?v=20260303r"></script>
-<script src="js/account.js?v=20260303r"></script>
 <script src="js/chart.js?v=20260303r"></script>
 <script src="js/api.js?v=20260303r"></script>
 <script src="js/overview.js?v=20260303r"></script>

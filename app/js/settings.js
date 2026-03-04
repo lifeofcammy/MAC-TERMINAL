@@ -52,6 +52,3 @@ function toggleSettings() {
   overlay.style.display = isHidden ? 'flex' : 'none';
 }
 
-// ==================== FIRST-RUN SETUP CHECK ====================
-// No-op \u2014 all keys are server-side now. Users only need to log in.
-function checkFirstRun() { /* no-op */ }

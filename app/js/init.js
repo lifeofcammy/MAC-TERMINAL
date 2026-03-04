@@ -13,7 +13,6 @@
       clearInterval(interval);
       // Only load Overview on startup — other tabs lazy-load on click
       refreshAll();
-      checkFirstRun();
       // Pre-warm scanner cache from server in the background (non-blocking)
       _preWarmScannerCache();
     }

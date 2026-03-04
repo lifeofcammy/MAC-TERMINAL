@@ -20,13 +20,13 @@ function openFeedbackModal() {
 
   modal.innerHTML = '' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
-      '<div style="font-family:\'DM Serif Display\',Georgia,serif;font-size:20px;color:var(--text-primary);">Send Feedback</div>' +
+      '<div style="font-family:var(--font-display);font-size:20px;color:var(--text-primary);">Send Feedback</div>' +
       '<button onclick="closeFeedbackModal()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px;">&times;</button>' +
     '</div>' +
     '<div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Help us improve MAC Terminal. Bug reports, feature requests, or general thoughts — all welcome.</div>' +
     '<div style="margin-bottom:12px;">' +
       '<label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Category</label>' +
-      '<select id="fb-category" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;color:var(--text-primary);font-family:Inter,sans-serif;">' +
+      '<select id="fb-category" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;color:var(--text-primary);font-family:var(--font-body);">' +
         '<option value="bug">Bug Report</option>' +
         '<option value="feature">Feature Request</option>' +
         '<option value="general" selected>General Feedback</option>' +
@@ -34,7 +34,7 @@ function openFeedbackModal() {
     '</div>' +
     '<div style="margin-bottom:16px;">' +
       '<label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Message</label>' +
-      '<textarea id="fb-message" rows="5" placeholder="Tell us what\'s on your mind..." style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;color:var(--text-primary);font-family:Inter,sans-serif;resize:vertical;line-height:1.5;"></textarea>' +
+      '<textarea id="fb-message" rows="5" placeholder="Tell us what\'s on your mind..." style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;color:var(--text-primary);font-family:var(--font-body);resize:vertical;line-height:1.5;"></textarea>' +
     '</div>' +
     '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
       '<button onclick="closeFeedbackModal()" class="refresh-btn" style="padding:8px 16px;font-size:14px;">Cancel</button>' +

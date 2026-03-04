@@ -1,6 +1,6 @@
 // ==================== utils.js ====================
 // Utility functions: formatting helpers, timestamps, market hours check,
-// scan abort system, srcBadge, tsLabel.
+// scan abort system, tsLabel.
 
 // ==================== UTILITIES ====================
 function getTimestamp() {
@@ -12,7 +12,7 @@ function pct(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
 function price(v) { return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
 function tsLabel(timestamp) {
-  return `<span style="font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">${timestamp}</span>`;
+  return `<span style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">${timestamp}</span>`;
 }
 
 function isMarketOpen() {

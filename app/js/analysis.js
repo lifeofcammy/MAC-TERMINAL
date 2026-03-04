@@ -148,8 +148,8 @@ function renderSnapshotData(data) {
     data.indices.forEach(function(idx) {
       var c = idx.pct >= 0 ? 'var(--green)' : 'var(--red)';
       ih += '<div class="card" style="padding:14px;text-align:center;background:var(--bg-secondary);">';
-      ih += '<div style="font-size:12px;font-weight:800;color:var(--text-muted);margin-bottom:4px;font-family:\'JetBrains Mono\',monospace;">' + idx.ticker + '</div>';
-      ih += '<div style="font-size:18px;font-weight:900;color:' + c + ';font-family:\'JetBrains Mono\',monospace;">' + (idx.pct >= 0 ? '+' : '') + idx.pct.toFixed(2) + '%</div>';
+      ih += '<div style="font-size:12px;font-weight:800;color:var(--text-muted);margin-bottom:4px;font-family:var(--font-mono);">' + idx.ticker + '</div>';
+      ih += '<div style="font-size:18px;font-weight:900;color:' + c + ';font-family:var(--font-mono);">' + (idx.pct >= 0 ? '+' : '') + idx.pct.toFixed(2) + '%</div>';
       ih += '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">$' + idx.close.toFixed(2) + '</div>';
       ih += '</div>';
     });
@@ -164,9 +164,9 @@ function renderSnapshotData(data) {
       var c = s.pct >= 0 ? 'var(--green)' : 'var(--red)';
       var bg = s.pct >= 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)';
       sh += '<div style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:6px;background:' + bg + ';font-size:12px;">';
-      sh += '<span style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + s.etf + '</span>';
+      sh += '<span style="font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">' + s.etf + '</span>';
       sh += '<span style="color:var(--text-muted);">' + s.name + '</span>';
-      sh += '<span style="font-weight:800;color:' + c + ';font-family:\'JetBrains Mono\',monospace;">' + (s.pct >= 0 ? '+' : '') + s.pct.toFixed(1) + '%</span>';
+      sh += '<span style="font-weight:800;color:' + c + ';font-family:var(--font-mono);">' + (s.pct >= 0 ? '+' : '') + s.pct.toFixed(1) + '%</span>';
       sh += '</div>';
     });
     secEl.innerHTML = sh;
@@ -181,10 +181,10 @@ function renderSnapshotData(data) {
       var arrow = m.pct >= 0 ? '\u25B2' : '\u25BC';
       mh += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg-secondary);border-radius:6px;">';
       mh += '<div style="display:flex;align-items:center;gap:8px;">';
-      mh += '<span style="font-weight:900;font-size:14px;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + m.ticker + '</span>';
+      mh += '<span style="font-weight:900;font-size:14px;font-family:var(--font-mono);color:var(--text-primary);">' + m.ticker + '</span>';
       mh += '<span style="font-size:12px;color:var(--text-muted);">$' + m.close.toFixed(2) + '</span>';
       mh += '</div>';
-      mh += '<span style="font-weight:800;color:' + c + ';font-size:14px;font-family:\'JetBrains Mono\',monospace;">' + arrow + ' ' + (m.pct >= 0 ? '+' : '') + m.pct.toFixed(1) + '%</span>';
+      mh += '<span style="font-weight:800;color:' + c + ';font-size:14px;font-family:var(--font-mono);">' + arrow + ' ' + (m.pct >= 0 ? '+' : '') + m.pct.toFixed(1) + '%</span>';
       mh += '</div>';
     });
     movEl.innerHTML = mh;
@@ -259,7 +259,7 @@ function buildRollingInsights() {
       html += '</div>';
       html += '<div style="display:flex;flex-wrap:wrap;gap:3px;">';
       t.tickers.slice(0, 5).forEach(function(tk) {
-        html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--bg-secondary);color:var(--text-secondary);font-family:\'JetBrains Mono\',monospace;">' + tk + '</span>';
+        html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--bg-secondary);color:var(--text-secondary);font-family:var(--font-mono);">' + tk + '</span>';
       });
       html += '</div>';
       html += '</div>';
@@ -387,8 +387,8 @@ function renderAnalysis() {
     html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">';
     html += '<div class="card" style="padding:14px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Movers</div><div style="font-size:18px;font-weight:800;color:var(--text-primary);">' + analysis.movers.length + '</div></div>';
     html += '<div class="card" style="padding:14px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Catchable</div><div style="font-size:18px;font-weight:800;color:var(--green);">' + catchableCount + '</div></div>';
-    html += '<div class="card" style="padding:14px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Gainer</div><div style="font-size:14px;font-weight:800;color:var(--green);font-family:\'JetBrains Mono\',monospace;">' + topGainer.ticker + ' +' + topGainer.changePct.toFixed(1) + '%</div></div>';
-    html += '<div class="card" style="padding:14px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Loser</div><div style="font-size:14px;font-weight:800;color:var(--red);font-family:\'JetBrains Mono\',monospace;">' + topLoser.ticker + ' ' + topLoser.changePct.toFixed(1) + '%</div></div>';
+    html += '<div class="card" style="padding:14px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Gainer</div><div style="font-size:14px;font-weight:800;color:var(--green);font-family:var(--font-mono);">' + topGainer.ticker + ' +' + topGainer.changePct.toFixed(1) + '%</div></div>';
+    html += '<div class="card" style="padding:14px;text-align:center;"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Top Loser</div><div style="font-size:14px;font-weight:800;color:var(--red);font-family:var(--font-mono);">' + topLoser.ticker + ' ' + topLoser.changePct.toFixed(1) + '%</div></div>';
     html += '</div>';
   }
 
@@ -436,14 +436,14 @@ function renderAnalysis() {
       html += '<div class="card" style="padding:14px;position:relative;overflow:hidden;">';
       html += '<div style="position:absolute;bottom:0;left:0;height:3px;width:' + p.probability + '%;background:' + pc + ';border-radius:0 2px 0 0;"></div>';
       html += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;flex-wrap:wrap;">';
-      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + p.ticker + '</span>';
-      html += '<span style="font-weight:800;color:' + pc + ';font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + p.probability + '%</span>';
+      html += '<span style="font-weight:900;font-family:var(--font-mono);font-size:14px;">' + p.ticker + '</span>';
+      html += '<span style="font-weight:800;color:' + pc + ';font-family:var(--font-mono);font-size:14px;">' + p.probability + '%</span>';
       html += '<span style="color:' + dc + ';font-size:14px;font-weight:900;">' + di + '</span>';
       html += tb;
       if (p.catalyst) html += '<span style="font-size:12px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + p.catalyst + '</span>';
       html += '</div>';
       html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:5px;">' + p.thesis + '</div>';
-      if (p.keyLevels) html += '<div style="font-size:12px;color:var(--purple);font-weight:600;font-family:\'JetBrains Mono\',monospace;margin-bottom:3px;">' + p.keyLevels + '</div>';
+      if (p.keyLevels) html += '<div style="font-size:12px;color:var(--purple);font-weight:600;font-family:var(--font-mono);margin-bottom:3px;">' + p.keyLevels + '</div>';
       if (p.optionsPlay) html += '<div style="font-size:14px;color:var(--blue);font-weight:600;">' + p.optionsPlay + '</div>';
       html += '</div>';
     });
@@ -461,8 +461,8 @@ function renderAnalysis() {
         : '<span style="font-size:12px;font-weight:700;padding:2px 5px;border-radius:3px;background:rgba(100,100,100,0.12);color:var(--text-muted);">NEWS</span>';
       html += '<div class="card" style="padding:14px;">';
       html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">';
-      html += '<span style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + m.ticker + '</span>';
-      html += '<span style="font-weight:800;color:' + mc + ';font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + (m.changePct >= 0 ? '+' : '') + m.changePct.toFixed(1) + '%</span>';
+      html += '<span style="font-weight:900;font-family:var(--font-mono);font-size:14px;">' + m.ticker + '</span>';
+      html += '<span style="font-weight:800;color:' + mc + ';font-family:var(--font-mono);font-size:14px;">' + (m.changePct >= 0 ? '+' : '') + m.changePct.toFixed(1) + '%</span>';
       html += cb;
       if (m.sector) html += '<span style="font-size:12px;padding:2px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-muted);margin-left:auto;">' + m.sector + '</span>';
       html += '</div>';
@@ -487,7 +487,7 @@ function renderAnalysis() {
       html += '</div>';
       html += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;">';
       w.tickers.forEach(function(t) {
-        html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--bg-secondary);color:var(--text-secondary);font-family:\'JetBrains Mono\',monospace;">' + t + '</span>';
+        html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--bg-secondary);color:var(--text-secondary);font-family:var(--font-mono);">' + t + '</span>';
       });
       html += '</div>';
       html += '<div style="font-size:14px;color:var(--text-muted);line-height:1.4;">' + w.note + '</div>';
@@ -594,7 +594,7 @@ function toggleAnalysisDateDropdown() {
       html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:14px;gap:8px;' + (isActive ? 'background:var(--blue-bg);' : '') + '" onclick="analysisCurrentDate=\'' + date + '\';document.getElementById(\'analysis-date-dropdown\').style.display=\'none\';renderAnalysis();" onmouseover="if(!' + isActive + ')this.style.background=\'var(--bg-secondary)\'" onmouseout="if(!' + isActive + ')this.style.background=\'transparent\'">';
       html += '<span style="color:var(--text-secondary);font-weight:' + (isActive ? '700' : '500') + ';white-space:nowrap;">' + dayName + '</span>';
       html += '<span style="font-size:12px;color:var(--text-muted);">' + moverCount + ' movers</span>';
-      if (topMover) html += '<span style="font-weight:700;color:' + topColor + ';font-family:\'JetBrains Mono\',monospace;font-size:12px;white-space:nowrap;">' + topMover + '</span>';
+      if (topMover) html += '<span style="font-weight:700;color:' + topColor + ';font-family:var(--font-mono);font-size:12px;white-space:nowrap;">' + topMover + '</span>';
       html += '</div>';
     });
   }
@@ -829,64 +829,6 @@ async function autoGenerateAnalysisSilent(dateStr) {
   var result=JSON.parse(jsonMatch[0]);
   saveAnalysis(dateStr, result);
 }
-
-// ==================== BACKFILL MULTIPLE DATES ====================
-async function backfillAnalysis(lookbackDays) {
-  lookbackDays = lookbackDays || 7;
-  var statusEl = document.getElementById('backfill-status');
-  var btn7 = document.getElementById('backfill-btn');
-  var btn14 = document.getElementById('backfill-2wk-btn');
-  function setStatus(msg) { if(statusEl) statusEl.innerHTML = msg; }
-
-  // Find all weekdays in the lookback window that are missing
-  var today = new Date();
-  var missing = [];
-  var d = new Date(today);
-  // Go back lookbackDays calendar days (to cover enough weekdays)
-  d.setDate(d.getDate() - Math.ceil(lookbackDays * 1.5));
-  while(d <= today) {
-    if(d.getDay() >= 1 && d.getDay() <= 5) {
-      var ds = d.toISOString().split('T')[0];
-      if(!getAnalysis(ds)) missing.push(ds);
-    }
-    d.setDate(d.getDate() + 1);
-  }
-
-  if(missing.length === 0) {
-    setStatus('<span style="color:var(--green);">All trading days in the last ' + lookbackDays + ' days have analysis entries.</span>');
-    return;
-  }
-
-  var ok = window.confirm('Generate analysis for ' + missing.length + ' missing day(s)?\n\n' + missing.join(', ') + '\n\nThis uses your Anthropic API key and may take a few minutes.');
-  if(!ok) return;
-
-  // Disable buttons during backfill
-  if(btn7) { btn7.disabled = true; btn7.textContent = 'Working...'; }
-  if(btn14) { btn14.disabled = true; btn14.textContent = 'Working...'; }
-
-  for(var i = 0; i < missing.length; i++) {
-    setStatus('Generating ' + (i+1) + '/' + missing.length + ': ' + missing[i] + '...');
-    try {
-      await autoGenerateAnalysisSilent(missing[i]);
-    } catch(e) {
-      setStatus('<span style="color:var(--red);">Error on ' + escapeHtml(missing[i]) + ': ' + escapeHtml(e.message) + '</span>');
-      // Stop on credit/auth errors — no point retrying
-      if(e.message.indexOf('credit') >= 0 || e.message.indexOf('401') >= 0 || e.message.indexOf('authentication') >= 0) {
-        if(btn7) { btn7.disabled = false; btn7.textContent = 'Fill Missing (' + missing.length + ')'; }
-        if(btn14) { btn14.disabled = false; btn14.textContent = 'Look Back 2 Weeks'; }
-        return;
-      }
-    }
-    // Wait between generations to avoid rate limits
-    if(i < missing.length - 1) await new Promise(function(r) { setTimeout(r, 3000); });
-  }
-
-  setStatus('<span style="color:var(--green);">Done! Generated ' + missing.length + ' entries.</span>');
-  // Refresh the analysis view to show new entries
-  setTimeout(function() { renderAnalysis(); }, 500);
-}
-
-// ==================== SHAKEOUT RECLAIM SCANNER ====================
 
 // ==================== ANALYSIS CHAT ENGINE ====================
 var analysisChatHistory = [];

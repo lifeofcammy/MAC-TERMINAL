@@ -13,7 +13,7 @@
     var hint = document.createElement('div');
     hint.id = 'chart-hint-banner';
     hint.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--bg-card);border:1px solid var(--blue);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);max-width:400px;';
-    hint.innerHTML = '<span style="font-size:14px;color:var(--text-primary);line-height:1.4;">Tip: Click any <strong style="font-family:\'JetBrains Mono\',monospace;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px;">ticker symbol</strong> to view its daily chart.</span>'
+    hint.innerHTML = '<span style="font-size:14px;color:var(--text-primary);line-height:1.4;">Tip: Click any <strong style="font-family:var(--font-mono);text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px;">ticker symbol</strong> to view its daily chart.</span>'
       + '<button onclick="this.parentElement.remove();localStorage.setItem(\'mac_chart_hint_seen\',\'1\');" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;line-height:1;padding:0 2px;flex-shrink:0;">&times;</button>';
     target.appendChild(hint);
 
@@ -66,7 +66,7 @@ function openTVChart(ticker) {
   var header = document.createElement('div');
   header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;';
   header.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">'
-    + '<span style="font-size:16px;font-weight:800;font-family:\'JetBrains Mono\',monospace;">' + escapeHtml(ticker) + '</span>'
+    + '<span style="font-size:16px;font-weight:800;font-family:var(--font-mono);">' + escapeHtml(ticker) + '</span>'
     + '<span style="font-size:12px;color:var(--text-muted);">Daily Chart</span>'
     + '</div>'
     + '<div style="display:flex;align-items:center;gap:12px;">'

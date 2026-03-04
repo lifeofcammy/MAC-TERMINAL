@@ -1,6 +1,6 @@
 // ==================== api.js ====================
 // Polygon.io API wrapper functions.
-// getOptionsSnapshot is also here (uses polyGet).
+// Polygon.io API wrapper functions.
 
 // ==================== POLYGON CACHE ====================
 // Cache Polygon responses in sessionStorage with TTL per endpoint type.
@@ -146,14 +146,4 @@ async function getPolygonNews(tickers, limit) {
   // Filter out non-English articles (CJK characters, etc.)
   const isEnglish = (text) => !/[\u3000-\u9FFF\uAC00-\uD7AF\u3040-\u30FF]/.test(text || '');
   return (d.results || []).filter(a => isEnglish(a.title) && isEnglish(a.description)).slice(0, limit);
-}
-
-
-// ==================== OPTIONS SNAPSHOT ====================
-async function getOptionsSnapshot(ticker) {
-  try {
-    const path = '/v3/snapshot/options/' + ticker + '?limit=250';
-    const d = await polyGet(path);
-    return d.results || [];
-  } catch (e) { return []; }
 }

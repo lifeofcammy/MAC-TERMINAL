@@ -755,7 +755,7 @@ function renderScanner() {
   html += '<div id="scanner-progress-wrap" style="display:none;margin-bottom:14px;">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">';
   html += '<span id="scanner-status" style="font-size:14px;color:var(--text-muted);">Starting scan...</span>';
-  html += '<span id="scanner-pct" style="font-size:12px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;">0%</span>';
+  html += '<span id="scanner-pct" style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">0%</span>';
   html += '</div>';
   html += '<div style="height:4px;background:var(--bg-secondary);border-radius:2px;overflow:hidden;">';
   html += '<div id="scanner-progress-bar" style="width:0%;height:100%;background:var(--blue);border-radius:2px;transition:width 0.3s ease;"></div>';
@@ -872,9 +872,9 @@ function renderSetupCard(s, detailIdPrefix) {
   // Header
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
   html += '<div style="display:flex;align-items:center;gap:8px;">';
-  html += '<span style="font-size:18px;font-weight:900;font-family:\'JetBrains Mono\',monospace;cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\'' + s.ticker + '\')">' + s.ticker + '</span>';
-  html += '<span style="font-size:14px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
-  html += '<span style="font-size:14px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:' + changePctColor + ';">' + (s.changePct >= 0 ? '+' : '') + s.changePct.toFixed(2) + '%</span>';
+  html += '<span style="font-size:18px;font-weight:900;font-family:var(--font-mono);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\'' + s.ticker + '\')">' + s.ticker + '</span>';
+  html += '<span style="font-size:14px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
+  html += '<span style="font-size:14px;font-weight:700;font-family:var(--font-mono);color:' + changePctColor + ';">' + (s.changePct >= 0 ? '+' : '') + s.changePct.toFixed(2) + '%</span>';
   html += '</div>';
   html += '<div style="display:flex;align-items:center;gap:8px;">';
 
@@ -883,7 +883,7 @@ function renderSetupCard(s, detailIdPrefix) {
   html += '<span style="font-size:12px;font-weight:700;color:' + accentColor + ';text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border:1px solid ' + accentColor + ';border-radius:4px;">' + badgeLabel + '</span>';
 
   // Score circle
-  html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:2.5px solid ' + scoreColor + ';font-size:14px;font-weight:900;color:' + scoreColor + ';font-family:\'JetBrains Mono\',monospace;">' + s.score + '</div>';
+  html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:2.5px solid ' + scoreColor + ';font-size:14px;font-weight:900;color:' + scoreColor + ';font-family:var(--font-mono);">' + s.score + '</div>';
   html += '</div></div>';
 
   // Signal description
@@ -909,7 +909,7 @@ function renderSetupCard(s, detailIdPrefix) {
   html += '</div>';
 
   // Quick stats
-  html += '<div style="display:flex;gap:8px;margin-top:8px;font-size:12px;font-family:\'JetBrains Mono\',monospace;color:var(--text-muted);flex-wrap:wrap;">';
+  html += '<div style="display:flex;gap:8px;margin-top:8px;font-size:12px;font-family:var(--font-mono);color:var(--text-muted);flex-wrap:wrap;">';
   if (isBreakout) {
     html += '<span>5d: ' + s.range5 + '%</span>';
     html += '<span>Ext: ' + (s.extFromSma20 >= 0 ? '+' : '') + s.extFromSma20 + '%</span>';
@@ -929,9 +929,9 @@ function renderSetupCard(s, detailIdPrefix) {
   // Trade levels
   html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Trade Levels</div>';
   html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px;">';
-  html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Entry</div><div style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--blue);font-size:14px;">$' + (s.entryPrice ? s.entryPrice.toFixed(2) : '—') + '</div></div>';
-  html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Stop</div><div style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--red);font-size:14px;">$' + (s.stopPrice ? s.stopPrice.toFixed(2) : '—') + '</div></div>';
-  html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Target (2:1)</div><div style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--green);font-size:14px;">$' + (s.targetPrice ? s.targetPrice.toFixed(2) : '—') + '</div></div>';
+  html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Entry</div><div style="font-weight:800;font-family:var(--font-mono);color:var(--blue);font-size:14px;">$' + (s.entryPrice ? s.entryPrice.toFixed(2) : '—') + '</div></div>';
+  html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Stop</div><div style="font-weight:800;font-family:var(--font-mono);color:var(--red);font-size:14px;">$' + (s.stopPrice ? s.stopPrice.toFixed(2) : '—') + '</div></div>';
+  html += '<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:6px;text-align:center;"><div style="color:var(--text-muted);font-size:12px;">Target (2:1)</div><div style="font-weight:800;font-family:var(--font-mono);color:var(--green);font-size:14px;">$' + (s.targetPrice ? s.targetPrice.toFixed(2) : '—') + '</div></div>';
   html += '</div>';
 
   // Extra stats
@@ -958,7 +958,7 @@ function renderComponentBar(label, value, max, color) {
   return '<div style="padding:3px 0;">' +
     '<div style="display:flex;justify-content:space-between;margin-bottom:2px;">' +
     '<span style="color:var(--text-muted);">' + label + '</span>' +
-    '<span style="color:var(--text-secondary);font-family:\'JetBrains Mono\',monospace;">' + value + '/' + max + '</span>' +
+    '<span style="color:var(--text-secondary);font-family:var(--font-mono);">' + value + '/' + max + '</span>' +
     '</div>' +
     '<div style="height:4px;background:var(--bg-secondary);border-radius:2px;overflow:hidden;">' +
     '<div style="width:' + pct + '%;height:100%;background:' + color + ';border-radius:2px;"></div>' +
@@ -982,8 +982,8 @@ function renderUniverseList(tickers) {
 
     html += '<div class="sc-table-row" style="display:grid;grid-template-columns:40px 70px 80px 60px 60px 60px 55px 55px;gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:14px;' + bg + 'align-items:center;">';
     html += '<span style="color:var(--text-muted);font-size:14px;">' + (idx + 1) + '</span>';
-    html += '<span style="font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--text-primary);">' + t.ticker + '</span>';
-    html += '<span style="font-family:\'JetBrains Mono\',monospace;color:var(--text-secondary);">$' + t.price.toFixed(2) + '</span>';
+    html += '<span style="font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">' + t.ticker + '</span>';
+    html += '<span style="font-family:var(--font-mono);color:var(--text-secondary);">$' + t.price.toFixed(2) + '</span>';
     html += '<span style="font-size:14px;color:var(--text-muted);">' + (t.range5 || '—') + '%</span>';
     html += '<span style="font-size:14px;color:' + extColor + ';">' + (t.extFromSma20 != null ? (t.extFromSma20 >= 0 ? '+' : '') + t.extFromSma20 + '%' : '—') + '</span>';
     html += '<span style="font-size:14px;color:var(--text-muted);">' + (t.volDryUp != null ? t.volDryUp + '%' : '—') + '</span>';
@@ -1014,7 +1014,7 @@ function renderLiveScanResults(data) {
   setups.forEach(function(s, idx) {
     var scoreColor = s.score >= 70 ? 'var(--green)' : 'var(--text-muted)';
     html += '<div class="card" style="padding:14px;border-left:3px solid ' + scoreColor + ';">';
-    html += '<div style="font-weight:900;font-family:\'JetBrains Mono\',monospace;font-size:14px;">' + s.ticker + ' <span style="color:var(--text-secondary);font-size:14px;">$' + s.price.toFixed(2) + '</span> <span style="font-size:14px;color:' + scoreColor + ';">' + s.score + '</span></div>';
+    html += '<div style="font-weight:900;font-family:var(--font-mono);font-size:14px;">' + s.ticker + ' <span style="color:var(--text-secondary);font-size:14px;">$' + s.price.toFixed(2) + '</span> <span style="font-size:14px;color:' + scoreColor + ';">' + s.score + '</span></div>';
     if (s.description) html += '<div style="font-size:14px;color:var(--text-secondary);margin-top:4px;">' + s.description + '</div>';
     html += '</div>';
   });

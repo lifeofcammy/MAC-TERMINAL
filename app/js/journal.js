@@ -392,7 +392,7 @@ function renderRecapCalendar() {
       rowHTML += '<div style="font-weight:700;font-size:14px;color:var(--text-primary);">' + day + '</div>';
       if (isToday) rowHTML += '<div style="width:6px;height:6px;border-radius:50%;background:var(--blue);"></div>';
       rowHTML += '</div>';
-      rowHTML += '<div style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:' + (hasTrades ? '13' : '18') + 'px;color:' + pnlColor + ';text-align:right;line-height:1;">';
+      rowHTML += '<div style="font-family:var(--font-mono);font-weight:700;font-size:' + (hasTrades ? '13' : '18') + 'px;color:' + pnlColor + ';text-align:right;line-height:1;">';
       rowHTML += hasTrades ? fmtD(pnl) : '<span style="color:var(--border);font-size:18px;">+</span>';
       rowHTML += '</div></div>';
     });
@@ -402,7 +402,7 @@ function renderRecapCalendar() {
     var wb = !weekHasTrades ? 'var(--bg-card)' : weekPnL >= 0 ? 'rgba(0,135,90,0.07)' : 'rgba(217,48,37,0.07)';
     rowHTML += '<div style="background:' + wb + ';border:1px solid var(--border);border-radius:10px;min-height:80px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);">';
     rowHTML += '<div style="font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--text-muted);text-transform:uppercase;">Week</div>';
-    rowHTML += '<div style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:14px;color:' + wc + ';">' + (weekHasTrades ? fmtD(weekPnL) : '—') + '</div>';
+    rowHTML += '<div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:' + wc + ';">' + (weekHasTrades ? fmtD(weekPnL) : '—') + '</div>';
     rowHTML += '</div></div>';
     gridHTML += rowHTML;
   });
@@ -412,11 +412,11 @@ function renderRecapCalendar() {
   var mc = monthPnL >= 0 ? 'var(--green)' : 'var(--red)';
   if (tradingDays > 0) {
     document.getElementById('cal-month-stats').innerHTML =
-      '<div style="text-align:right;"><div style="font-size:12px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;">Month P&L</div><div style="font-family:\'JetBrains Mono\',monospace;font-weight:800;font-size:18px;color:' + mc + ';line-height:1;">' + fmtD(monthPnL) + '</div></div>' +
+      '<div style="text-align:right;"><div style="font-size:12px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;">Month P&L</div><div style="font-family:var(--font-mono);font-weight:800;font-size:18px;color:' + mc + ';line-height:1;">' + fmtD(monthPnL) + '</div></div>' +
       '<div style="width:1px;height:30px;background:var(--border);"></div>' +
-      '<div style="text-align:center;"><div style="font-size:12px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;">Days</div><div style="font-family:\'JetBrains Mono\',monospace;font-weight:800;font-size:18px;color:var(--text-primary);line-height:1;">' + tradingDays + '</div></div>' +
+      '<div style="text-align:center;"><div style="font-size:12px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;">Days</div><div style="font-family:var(--font-mono);font-weight:800;font-size:18px;color:var(--text-primary);line-height:1;">' + tradingDays + '</div></div>' +
       '<div style="width:1px;height:30px;background:var(--border);"></div>' +
-      '<div style="text-align:center;"><div style="font-size:12px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;">Green / Red</div><div style="font-family:\'JetBrains Mono\',monospace;font-weight:800;font-size:18px;line-height:1;"><span style="color:var(--green);">' + greenDays + '</span><span style="color:var(--text-muted);font-size:14px;"> / </span><span style="color:var(--red);">' + redDays + '</span></div></div>';
+      '<div style="text-align:center;"><div style="font-size:12px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;">Green / Red</div><div style="font-family:var(--font-mono);font-weight:800;font-size:18px;line-height:1;"><span style="color:var(--green);">' + greenDays + '</span><span style="color:var(--text-muted);font-size:14px;"> / </span><span style="color:var(--red);">' + redDays + '</span></div></div>';
   } else {
     document.getElementById('cal-month-stats').innerHTML = '<div style="font-size:14px;color:var(--text-muted);">No trades logged — click any day and drop a TOS CSV to begin</div>';
   }
@@ -464,7 +464,7 @@ function renderRecapSummary(tradingDays, monthPnL, greenDays, redDays, weeklyPnL
       var wrColor = wr >= 60 ? 'var(--green)' : wr >= 45 ? 'var(--amber)' : 'var(--red)';
       html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);">';
       html += '<div style="font-weight:700;font-size:14px;">' + s + '</div>';
-      html += '<div style="display:flex;gap:20px;align-items:center;font-family:\'JetBrains Mono\',monospace;">';
+      html += '<div style="display:flex;gap:20px;align-items:center;font-family:var(--font-mono);">';
       html += '<span style="font-size:14px;color:var(--text-muted);">' + st.trades + ' trades</span>';
       html += '<span style="font-size:14px;color:' + wrColor + ';font-weight:700;">' + wr + '% WR</span>';
       html += '<span style="font-size:14px;font-weight:800;color:' + plColor + ';">' + fmtD(st.pl) + '</span>';
@@ -495,7 +495,7 @@ function renderRecapSummary(tradingDays, monthPnL, greenDays, redDays, weeklyPnL
           var bg = s.pl >= 0 ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
           html += '<div style="flex:1;text-align:center;padding:8px;border-radius:6px;background:' + bg + ';">';
           html += '<div style="font-size:14px;color:var(--text-muted);">' + bucket + '</div>';
-          html += '<div style="font-size:14px;font-weight:800;color:' + c + ';font-family:\'JetBrains Mono\',monospace;">' + fmtD(s.pl) + '</div>';
+          html += '<div style="font-size:14px;font-weight:800;color:' + c + ';font-family:var(--font-mono);">' + fmtD(s.pl) + '</div>';
           html += '<div style="font-size:14px;color:var(--text-muted);">' + s.t + ' trades · ' + (s.t > 0 ? (s.w/s.t*100).toFixed(0) : 0) + '% WR</div></div>';
         }
       });
@@ -513,7 +513,7 @@ function renderRecapSummary(tradingDays, monthPnL, greenDays, redDays, weeklyPnL
       var h = Math.max(8, Math.abs(wpl) / maxAbs * 50);
       var c = wpl >= 0 ? 'var(--green)' : 'var(--red)';
       html += '<div style="flex:1;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;">';
-      html += '<div style="font-size:12px;font-weight:700;color:' + c + ';font-family:\'JetBrains Mono\',monospace;margin-bottom:2px;">' + fmtD(wpl) + '</div>';
+      html += '<div style="font-size:12px;font-weight:700;color:' + c + ';font-family:var(--font-mono);margin-bottom:2px;">' + fmtD(wpl) + '</div>';
       html += '<div style="width:100%;height:' + h + 'px;background:' + c + ';border-radius:4px 4px 0 0;opacity:0.7;"></div>';
       html += '<div style="font-size:14px;color:var(--text-muted);margin-top:2px;">Wk ' + (idx+1) + '</div></div>';
     });
@@ -853,7 +853,7 @@ function recapAnalyze() {
           <div style="font-size:14px;color:var(--text-muted);margin-top:3px;">${totalTrades} completed trade${totalTrades !== 1 ? 's' : ''} · ${parsed.filled.length} total executions${open.length ? ` · ${open.length} still open` : ''}</div>
         </div>
         <div style="margin-left:auto;text-align:right;">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:800;color:${pnlColor};line-height:1;">${fmtDR(grossPnL)}</div>
+          <div style="font-family:var(--font-mono);font-size:18px;font-weight:800;color:${pnlColor};line-height:1;">${fmtDR(grossPnL)}</div>
           <div style="font-size:14px;color:var(--text-muted);">NET P&L</div>
         </div>
       </div>
@@ -884,7 +884,7 @@ function recapAnalyze() {
               ['Best: ' + bestTrade.sym, bestTrade.pnlDollar, 'var(--green)'], ['Worst: ' + worstTrade.sym, worstTrade.pnlDollar, 'var(--red)'],
             ].map(([l, v, c]) => `<div style="background:var(--bg-primary);border-radius:8px;padding:10px 12px;">
               <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">${l}</div>
-              <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:${c};">${typeof v === 'number' ? fmtDR(v) : v}</div>
+              <div style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:${c};">${typeof v === 'number' ? fmtDR(v) : v}</div>
             </div>`).join('')}
           </div>
         </div>
@@ -902,7 +902,7 @@ function recapAnalyze() {
                     <span style="font-weight:700;font-size:14px;color:var(--text-primary);min-width:50px;">${sym}</span>
                     <span style="font-size:14px;color:var(--text-muted);">${d.count} trades · ${wr}% WR</span>
                   </div>
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${c};">${fmtDR(d.pnl)}</span>
+                  <span style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:${c};">${fmtDR(d.pnl)}</span>
                 </div>
                 <div style="height:3px;background:var(--bg-primary);border-radius:2px;">
                   <div style="height:3px;width:${barW}%;background:${c};border-radius:2px;"></div>
@@ -939,7 +939,7 @@ function recapAnalyze() {
                     <span style="font-size:14px;font-weight:700;color:var(--text-secondary);width:65px;">${label}</span>
                     <span style="font-size:14px;color:var(--text-muted);">${d.count} trades · ${wr}% WR</span>
                   </div>
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${c};">${fmtDR(d.pnl)}</span>
+                  <span style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:${c};">${fmtDR(d.pnl)}</span>
                 </div>
                 <div style="height:3px;background:var(--bg-primary);border-radius:2px;">
                   <div style="height:3px;width:${barW}%;background:${c};border-radius:2px;"></div>
