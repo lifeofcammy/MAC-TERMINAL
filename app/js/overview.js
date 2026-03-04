@@ -19,11 +19,13 @@ var _breadthLastUpdate = null;
 // Global regime label for position sizing (read by chart.js)
 window._currentRegime = 'Neutral';
 
-// Restore breadth history from sessionStorage (survives page refreshes, clears on tab close)
+// Restore breadth history from localStorage (persists across tab closes)
 (function restoreBreadthHistory() {
   try {
     var key = 'mac_breadth_history_' + new Date().toISOString().split('T')[0];
-    var raw = sessionStorage.getItem(key);
+    var raw = localStorage.getItem(key);
+    // Also try sessionStorage for migration
+    if (!raw) raw = sessionStorage.getItem(key);
     if (raw) {
       var parsed = JSON.parse(raw);
       if (parsed && parsed.length > 0) {
@@ -34,32 +36,46 @@ window._currentRegime = 'Neutral';
         _breadthLastUpdate = _breadthHistory[_breadthHistory.length - 1].time;
       }
     }
+    // Clean up old days from localStorage
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf('mac_breadth_history_') === 0 && k !== key) {
+        localStorage.removeItem(k);
+      }
+    }
   } catch(e) {}
 })();
 
 function saveBreadthHistory() {
   try {
     var key = 'mac_breadth_history_' + new Date().toISOString().split('T')[0];
-    sessionStorage.setItem(key, JSON.stringify(_breadthHistory));
+    localStorage.setItem(key, JSON.stringify(_breadthHistory));
   } catch(e) {}
 }
 
 // Fetch breadth data only (lightweight — just the snapshot)
 async function fetchBreadthData() {
   var up=0, down=0, flat=0;
-  try {
-    var allSnap = await polyGet('/v2/snapshot/locale/us/markets/stocks/tickers?include_otc=false');
-    (allSnap.tickers || []).forEach(function(s) {
-      if(!s || !s.prevDay || !s.prevDay.c) return;
-      var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : s.prevDay.c;
-      var prev = s.prevDay.c;
-      if(!p || !prev || prev < 1 || (s.day&&s.day.v&&s.day.v < 10000)) return;
-      var adPct = ((p-prev)/prev)*100;
-      if(adPct > 0.01) up++;
-      else if(adPct < -0.01) down++;
-      else flat++;
-    });
-  } catch(e) { console.warn('Breadth refresh failed:', e); return null; }
+  for (var attempt = 0; attempt < 2; attempt++) {
+    try {
+      var allSnap = await polyGet('/v2/snapshot/locale/us/markets/stocks/tickers?include_otc=false');
+      (allSnap.tickers || []).forEach(function(s) {
+        if(!s || !s.prevDay || !s.prevDay.c) return;
+        var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : s.prevDay.c;
+        var prev = s.prevDay.c;
+        if(!p || !prev || prev < 1 || (s.day&&s.day.v&&s.day.v < 10000)) return;
+        var adPct = ((p-prev)/prev)*100;
+        if(adPct > 0.01) up++;
+        else if(adPct < -0.01) down++;
+        else flat++;
+      });
+      break;
+    } catch(e) {
+      console.warn('Breadth refresh attempt ' + (attempt+1) + ' failed:', e);
+      if (attempt === 0) await new Promise(function(r) { setTimeout(r, 2000); });
+      else return null;
+    }
+  }
   var total = up + down + flat;
   if(total === 0) return null;
   return { up: up, down: down, flat: flat, total: total, pct: Math.round((up/total)*100) };
