@@ -213,6 +213,8 @@ async function buildMomentumUniverse(statusFn) {
     date: localDateStr(),
     ts: Date.now(),
     count: topN.length,
+    totalScanned: allStocks.length,
+    filteredCount: filtered.length,
     tickers: topN
   };
   saveMomentumCache(cacheData);
@@ -607,18 +609,20 @@ function renderScanner() {
   html += '<div style="text-align:center;"><div class="card-header-bar">Setup Scanner</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Find compression setups with momentum across the market</div></div>';
   html += '</div>';
 
-  // Mode indicator
+  // Scan button + progress bar
   var scanMode = isScannerMarketHours() && isMomentumCacheFresh() ? 'live' : 'eod';
-  var modeLabel = scanMode === 'live'
-    ? '<span style="display:inline-flex;align-items:center;gap:4px;color:var(--green);font-weight:700;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;"></span> Live Mode</span>'
-    : '<span style="color:var(--text-muted);">End-of-Day Mode</span>';
 
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">';
-  html += '<div style="font-size:12px;color:var(--text-muted);">' + dataFreshness + ' · ' + modeLabel + '</div>';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">';
+  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  if (scanMode === 'live') {
+    html += '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;"></span> Live</span>';
+  }
+  html += '<span style="font-size:12px;color:var(--text-muted);">' + dataFreshness + '</span>';
+  html += '</div>';
   html += '<button onclick="runFullScanUI()" id="scan-btn" class="refresh-btn" style="padding:8px 20px;font-weight:700;">Scan</button>';
   html += '</div>';
 
-  // Progress bar (hidden)
+  // Progress bar (hidden during idle)
   html += '<div id="scanner-progress-wrap" style="display:none;margin-bottom:14px;">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">';
   html += '<span id="scanner-status" style="font-size:14px;color:var(--text-muted);">Starting scan...</span>';
@@ -628,10 +632,26 @@ function renderScanner() {
   html += '<div id="scanner-progress-bar" style="width:0%;height:100%;background:var(--blue);border-radius:2px;transition:width 0.3s ease;"></div>';
   html += '</div></div>';
 
-  // Status idle
-  html += '<div id="scanner-status-idle" style="font-size:14px;color:var(--text-muted);margin-bottom:12px;min-height:16px;">';
-  if (cache) html += 'Last scanned ' + cacheDate + ' · ' + cache.count + ' candidates';
-  else html += 'No scan data yet. Click Scan to find setups.';
+  // Screening funnel (idle status)
+  html += '<div id="scanner-status-idle" style="margin-bottom:14px;min-height:16px;">';
+  if (cache) {
+    var totalStr = cache.totalScanned ? cache.totalScanned.toLocaleString() : '?';
+    var filteredStr = cache.filteredCount ? cache.filteredCount.toLocaleString() : '?';
+    var setupCount = (scanResults && scanResults.setups) ? scanResults.setups.length : 0;
+    html += '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);flex-wrap:wrap;">';
+    html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + totalStr + '</span> stocks scanned';
+    html += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+    html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + filteredStr + '</span> passed filters';
+    html += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+    html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.count + '</span> candidates';
+    if (setupCount > 0) {
+      html += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+      html += '<span style="font-family:var(--font-mono);font-weight:700;color:var(--blue);">' + setupCount + '</span> <span style="font-weight:600;color:var(--blue);">setups</span>';
+    }
+    html += '</div>';
+  } else {
+    html += '<div style="font-size:13px;color:var(--text-muted);">No scan data yet. Click Scan to find setups.</div>';
+  }
   html += '</div>';
 
   // Results
@@ -641,19 +661,25 @@ function renderScanner() {
   }
   html += '</div>';
 
-  // Universe list (collapsible)
-  html += '<div style="margin-top:16px;">';
-  var listCollapsed = localStorage.getItem('mac_universe_collapsed') === 'true';
-  html += '<div onclick="toggleUniverse()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;margin-bottom:8px;">';
-  html += '<div style="flex:1;"></div>';
-  html += '<div class="card-header-bar" style="flex:none;">Universe</div>';
-  html += '<div style="flex:1;display:flex;justify-content:flex-end;"><span id="universe-arrow" style="font-size:12px;color:var(--text-muted);">' + (listCollapsed ? '▶' : '▼') + '</span></div>';
+  // Universe list (collapsible card)
+  var universeCount = (cache && cache.tickers) ? cache.tickers.length : 0;
+  var listCollapsed = localStorage.getItem('mac_universe_collapsed') !== 'false';
+  html += '<div class="card" style="margin-top:16px;padding:0;overflow:hidden;">';
+  html += '<div onclick="toggleUniverse()" style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;">';
+  html += '<div style="display:flex;align-items:center;gap:10px;">';
+  html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Full Universe</span>';
+  if (universeCount > 0) html += '<span style="background:var(--blue);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;">' + universeCount + '</span>';
+  html += '</div>';
+  html += '<div style="display:flex;align-items:center;gap:10px;">';
+  html += '<span style="font-size:12px;color:var(--text-muted);">All candidates ranked by compression score</span>';
+  html += '<span id="universe-arrow" style="font-size:12px;color:var(--text-muted);">' + (listCollapsed ? '▶' : '▼') + '</span>';
+  html += '</div>';
   html += '</div>';
   html += '<div id="universe-body" style="' + (listCollapsed ? 'display:none;' : '') + '">';
-  if (cache && cache.tickers && cache.tickers.length > 0) {
+  if (universeCount > 0) {
     html += renderUniverseList(cache.tickers);
   } else {
-    html += '<div class="card" style="padding:20px;text-align:center;color:var(--text-muted);font-size:14px;">No data yet. Click Scan above.</div>';
+    html += '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:14px;">No data yet. Click Scan above.</div>';
   }
   html += '</div></div>';
 
@@ -665,15 +691,7 @@ function renderScanner() {
 
 function renderSetupResults(data) {
   var setups = data.setups || [];
-  var etTime = data.etTime || '';
-  var isLive = data.mode === 'live';
   var html = '';
-
-  // Summary bar
-  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">';
-  if (isLive) html += '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;"></span> Live</span>';
-  html += '<span style="font-size:12px;color:var(--text-muted);">' + etTime + ' ET · ' + setups.length + ' setups</span>';
-  html += '</div>';
 
   if (setups.length === 0) {
     html += '<div class="card" style="padding:20px;text-align:center;color:var(--text-muted);font-size:14px;">No compression setups found right now. Check back later.</div>';
@@ -790,7 +808,7 @@ function renderUniverseList(tickers) {
 
     html += '<div class="sc-table-row" style="display:grid;grid-template-columns:40px 70px 80px 60px 60px 60px 55px 55px;gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:14px;' + bg + 'align-items:center;">';
     html += '<span style="color:var(--text-muted);font-size:14px;">' + (idx + 1) + '</span>';
-    html += '<span style="font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">' + t.ticker + '</span>';
+    html += '<span onclick="event.stopPropagation();openTVChart(\'' + t.ticker + '\')" title="Click for chart" style="font-weight:800;font-family:var(--font-mono);color:var(--blue);cursor:pointer;">' + t.ticker + '</span>';
     html += '<span style="font-family:var(--font-mono);color:var(--text-secondary);">$' + t.price.toFixed(2) + '</span>';
     html += '<span style="font-size:14px;color:var(--text-muted);">' + (t.range5 || '—') + '%</span>';
     html += '<span style="font-size:14px;color:' + extColor + ';">' + (t.extFromSma20 != null ? (t.extFromSma20 >= 0 ? '+' : '') + t.extFromSma20 + '%' : '—') + '</span>';
@@ -881,8 +899,20 @@ async function runFullScanUI() {
     setTimeout(function() {
       if (progressWrap) progressWrap.style.display = 'none';
       if (idleStatus) {
-        var totalSetups = (results.setups || []).length;
-        idleStatus.textContent = (results.mode === 'live' ? 'Live scan' : 'Scan') + ' · ' + results.etTime + ' ET · ' + totalSetups + ' setups from ' + (cache.count || cache.tickers.length) + ' candidates';
+        // Rebuild the funnel display with fresh data
+        var totalStr = cache.totalScanned ? cache.totalScanned.toLocaleString() : '?';
+        var filteredStr = cache.filteredCount ? cache.filteredCount.toLocaleString() : '?';
+        var setupCount = (results.setups || []).length;
+        var funnelHtml = '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);flex-wrap:wrap;">';
+        funnelHtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + totalStr + '</span> stocks scanned';
+        funnelHtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+        funnelHtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + filteredStr + '</span> passed filters';
+        funnelHtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+        funnelHtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.count + '</span> candidates';
+        funnelHtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+        funnelHtml += '<span style="font-family:var(--font-mono);font-weight:700;color:var(--blue);">' + setupCount + '</span> <span style="font-weight:600;color:var(--blue);">setups</span>';
+        funnelHtml += '</div>';
+        idleStatus.innerHTML = funnelHtml;
         idleStatus.style.display = 'block';
       }
     }, 1500);
@@ -978,7 +1008,17 @@ function scannerAutoBuild() {
       console.log('[scanner] Auto-build complete.');
       if (idleStatus) {
         var cache = getMomentumCache();
-        idleStatus.textContent = 'Universe ready · ' + (cache ? cache.count : 0) + ' candidates · Click Scan for setups';
+        if (cache) {
+          var totalStr = cache.totalScanned ? cache.totalScanned.toLocaleString() : '?';
+          var filteredStr = cache.filteredCount ? cache.filteredCount.toLocaleString() : '?';
+          idleStatus.innerHTML = '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);flex-wrap:wrap;">'
+            + '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + totalStr + '</span> stocks scanned'
+            + '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>'
+            + '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + filteredStr + '</span> passed filters'
+            + '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>'
+            + '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.count + '</span> candidates'
+            + ' · <span style="color:var(--blue);font-weight:600;">Click Scan for setups</span></div>';
+        }
       }
       var cache = getMomentumCache();
       var universeBody = document.getElementById('universe-body');

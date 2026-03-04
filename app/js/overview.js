@@ -254,8 +254,8 @@ function renderRRGCanvas(canvasId) {
   if (!canvas || !window._rrgData || window._rrgData.length === 0) return;
   var data = window._rrgData;
   var dpr = window.devicePixelRatio || 1;
-  var w = canvas.parentElement.offsetWidth || 400;
-  var h = 380;
+  var w = canvas.parentElement.offsetWidth || 600;
+  var h = Math.max(400, Math.round(w * 0.55));
   canvas.width = w * dpr;
   canvas.height = h * dpr;
   canvas.style.width = w + 'px';
@@ -366,15 +366,16 @@ function renderRRGCanvas(canvasId) {
   var sectorColor = isDark ? '#60a5fa' : '#2563eb';
   var assetColor = isDark ? '#f59e0b' : '#d97706';
 
-  // Draw trailing paths + dots for each asset
+  // Draw trailing paths + arrow pointers for each asset
+  var placedLabels = []; // For collision avoidance
   data.forEach(function(d) {
     var color = d.isAssetClass ? assetColor : sectorColor;
     // Trail line
     if (d.trail.length > 1) {
       ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.5;
       ctx.lineCap = 'round';
-      ctx.globalAlpha = 0.35;
+      ctx.globalAlpha = 0.3;
       ctx.beginPath();
       for (var i = 0; i < d.trail.length; i++) {
         var px = xPos(d.trail[i].ratio), py = yPos(d.trail[i].momentum);
@@ -386,34 +387,81 @@ function renderRRGCanvas(canvasId) {
       for (var i = 0; i < d.trail.length - 1; i++) {
         var px = xPos(d.trail[i].ratio), py = yPos(d.trail[i].momentum);
         ctx.fillStyle = color;
-        ctx.globalAlpha = 0.2 + (i / d.trail.length) * 0.4;
-        ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.15 + (i / d.trail.length) * 0.35;
+        ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI * 2); ctx.fill();
       }
       ctx.globalAlpha = 1;
     }
-    // Latest dot (bigger)
+    // Latest point — directional arrow pointer
     var last = d.trail[d.trail.length - 1];
     var lx = xPos(last.ratio), ly = yPos(last.momentum);
     d._canvasXY = { x: lx, y: ly }; // Store for click detection
+    // Calculate direction angle from previous point
+    var angle = 0;
+    if (d.trail.length >= 2) {
+      var prev = d.trail[d.trail.length - 2];
+      var dx = xPos(last.ratio) - xPos(prev.ratio);
+      var dy = yPos(last.momentum) - yPos(prev.momentum);
+      angle = Math.atan2(dy, dx);
+    }
+    // Draw arrow pointer (triangle pointing in direction of movement)
+    var arrowLen = 9, arrowW = 5;
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.rotate(angle);
     ctx.fillStyle = color;
-    ctx.beginPath(); ctx.arc(lx, ly, 6, 0, Math.PI * 2); ctx.fill();
-    // White ring
+    ctx.beginPath();
+    ctx.moveTo(arrowLen, 0); // tip
+    ctx.lineTo(-arrowLen * 0.5, -arrowW);
+    ctx.lineTo(-arrowLen * 0.3, 0);
+    ctx.lineTo(-arrowLen * 0.5, arrowW);
+    ctx.closePath();
+    ctx.fill();
+    // Outline
     ctx.strokeStyle = isDark ? '#1a1a2e' : '#fff';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(lx, ly, 6, 0, Math.PI * 2); ctx.stroke();
-    // Label
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  });
+  // Draw labels in a second pass with collision avoidance
+  ctx.font = '600 10px Inter, sans-serif';
+  data.forEach(function(d) {
+    if (!d._canvasXY) return;
+    var lx = d._canvasXY.x, ly = d._canvasXY.y;
+    var color = d.isAssetClass ? assetColor : sectorColor;
     var label = d.short || d.name || d.etf;
-    ctx.font = '600 11px Inter, sans-serif';
+    var tw = ctx.measureText(label).width + 6;
+    var lh = 13;
+    // Try positions: right, left, above, below
+    var candidates = [
+      { x: lx + 11, y: ly - 6 },
+      { x: lx - tw - 8, y: ly - 6 },
+      { x: lx - tw / 2 + 3, y: ly - 14 },
+      { x: lx - tw / 2 + 3, y: ly + 16 }
+    ];
+    var best = candidates[0];
+    for (var c = 0; c < candidates.length; c++) {
+      var cand = candidates[c];
+      // Clamp to canvas bounds
+      if (cand.x < pad.left) cand.x = pad.left;
+      if (cand.x + tw > w - pad.right) cand.x = w - pad.right - tw;
+      if (cand.y - lh < pad.top) cand.y = pad.top + lh;
+      if (cand.y + 2 > h - pad.bottom) cand.y = h - pad.bottom - 2;
+      var overlap = false;
+      for (var p = 0; p < placedLabels.length; p++) {
+        var pl = placedLabels[p];
+        if (cand.x < pl.x + pl.w && cand.x + tw > pl.x && cand.y - lh < pl.y && cand.y > pl.y - pl.h) {
+          overlap = true; break;
+        }
+      }
+      if (!overlap) { best = cand; break; }
+    }
+    placedLabels.push({ x: best.x, y: best.y, w: tw, h: lh });
     ctx.fillStyle = labelBg;
-    var tw = ctx.measureText(label).width + 8;
-    var lbx = lx + 8, lby = ly - 8;
-    // Prevent label going off-screen
-    if (lbx + tw > w - pad.right) lbx = lx - tw - 4;
-    if (lby - 12 < pad.top) lby = ly + 16;
-    ctx.fillRect(lbx - 3, lby - 12, tw, 15);
+    ctx.fillRect(best.x - 2, best.y - lh, tw, lh + 2);
     ctx.fillStyle = color;
     ctx.textAlign = 'left';
-    ctx.fillText(label, lbx + 1, lby);
+    ctx.fillText(label, best.x + 1, best.y - 1);
   });
 }
 
@@ -1141,7 +1189,7 @@ async function renderOverview() {
   var rrgData = calcRRGData(allRRGAssets, spyBars, _barsByTicker);
   window._rrgData = rrgData;
 
-  html += '<div style="padding:10px 14px;">';
+  html += '<div style="padding:10px 8px;">';
   if(rrgData.length > 0) {
     html += '<div style="position:relative;"><canvas id="rrg-canvas" style="width:100%;border-radius:8px;"></canvas></div>';
     // Legend
@@ -1359,7 +1407,14 @@ function toggleCard(name) {
   if(arrow)arrow.textContent=h?'▼':'▶';
   try{localStorage.setItem('mac_'+name+'_collapsed',h?'false':'true');}catch(e){}
 }
-function toggleHeatmap(){toggleCard('heatmap');}
+function toggleHeatmap(){
+  toggleCard('heatmap');
+  // Re-render RRG canvas after expanding so it picks up the correct width
+  var body = document.getElementById('heatmap-body');
+  if(body && body.style.display !== 'none' && window._rrgData && window._rrgData.length > 0) {
+    setTimeout(function(){ renderRRGCanvas('rrg-canvas'); }, 50);
+  }
+}
 
 // ==================== RRG SECTOR DETAIL (click dot → show subsectors + leaders) ====================
 var _rrgDetailEtf = null;
