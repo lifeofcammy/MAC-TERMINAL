@@ -248,6 +248,8 @@ function calcUniverseScore(bars, currentPrice) {
   if (!sma20 || currentPrice < sma20 * 0.97) return { total: 0 };
 
   // ── 1. COMPRESSION / TIGHTNESS (0-30 pts) — PRIMARY factor ──
+  // ATR-relative: normalize range by the stock's own ATR so high-ATR names
+  // that compress recently still score well
   var recent5H = Math.max.apply(null, highs.slice(-5));
   var recent5L = Math.min.apply(null, lows.slice(-5));
   var range5 = ((recent5H - recent5L) / currentPrice) * 100;
@@ -256,13 +258,30 @@ function calcUniverseScore(bars, currentPrice) {
   var recent10L = Math.min.apply(null, lows.slice(-10));
   var range10 = ((recent10H - recent10L) / currentPrice) * 100;
 
+  // Compute ATR14 for normalization
+  var _atr14 = 0;
+  if (len >= 15) {
+    var _trS = 0;
+    for (var _ai = len - 14; _ai < len; _ai++) {
+      var _tr = highs[_ai] - lows[_ai];
+      if (_ai > 0) _tr = Math.max(_tr, Math.abs(highs[_ai] - closes[_ai - 1]), Math.abs(lows[_ai] - closes[_ai - 1]));
+      _trS += _tr;
+    }
+    _atr14 = _trS / 14;
+  }
+
+  // ATR-relative range: how many ATRs does the 5d/10d range span?
+  var atrRatio5 = (_atr14 > 0) ? (recent5H - recent5L) / _atr14 : range5;
+  var atrRatio10 = (_atr14 > 0) ? (recent10H - recent10L) / _atr14 : range10;
+
   var ptsTight = 0;
-  if (range5 <= 3) ptsTight = 30;
-  else if (range5 <= 5) ptsTight = 25;
-  else if (range5 <= 7) ptsTight = 20;
-  else if (range5 <= 10) ptsTight = 14;
-  else if (range10 <= 10) ptsTight = 10;
-  else if (range10 <= 15) ptsTight = 5;
+  // Score on ATR-relative compression (5d range as multiple of ATR)
+  if (atrRatio5 <= 2) ptsTight = 30;       // 5d range ≤ 2x ATR — very tight
+  else if (atrRatio5 <= 3) ptsTight = 25;
+  else if (atrRatio5 <= 4) ptsTight = 20;
+  else if (atrRatio5 <= 5.5) ptsTight = 14;
+  else if (atrRatio10 <= 6) ptsTight = 10;
+  else if (atrRatio10 <= 8) ptsTight = 5;
   else ptsTight = 0;
 
   // ── 2. EXTENSION PENALTY (0 to -20 pts) — how far above 20 SMA ──
@@ -346,19 +365,8 @@ function calcUniverseScore(bars, currentPrice) {
 
   var total = Math.round(Math.max(0, ptsTight + ptsExt + ptsVolDry + ptsBreakout + ptsTrend + ptsPullback));
 
-  // ATR (14-period Average True Range)
-  var atr14 = null;
-  if (len >= 15) {
-    var trSum = 0;
-    for (var ai = len - 14; ai < len; ai++) {
-      var tr = highs[ai] - lows[ai];
-      if (ai > 0) {
-        tr = Math.max(tr, Math.abs(highs[ai] - closes[ai - 1]), Math.abs(lows[ai] - closes[ai - 1]));
-      }
-      trSum += tr;
-    }
-    atr14 = trSum / 14;
-  }
+  // ATR already computed above as _atr14
+  var atr14 = _atr14 > 0 ? _atr14 : null;
 
   return {
     total: total,
@@ -512,8 +520,23 @@ async function runSetupScan(statusFn) {
     var avgVol20 = sma(volumes, 20);
     if (avgVol20 > 0 && curVol > 0) rvol = curVol / avgVol20;
 
-    // Score (same formula for everyone)
-    var ptsCompress = spread <= 1 ? 30 : spread <= 2 ? 22 : spread <= 3 ? 15 : spread <= 5 ? 8 : 0;
+    // ATR14 for normalization
+    var _len2 = bars.length;
+    var _atr2 = 0;
+    if (_len2 >= 15) {
+      var _ts2 = 0;
+      for (var _j = _len2 - 14; _j < _len2; _j++) {
+        var _t2 = highs[_j] - lows[_j];
+        if (_j > 0) _t2 = Math.max(_t2, Math.abs(highs[_j] - closes[_j - 1]), Math.abs(lows[_j] - closes[_j - 1]));
+        _ts2 += _t2;
+      }
+      _atr2 = _ts2 / 14;
+    }
+    // ATR-relative SMA spread: how many ATRs apart are the 10/20 SMAs?
+    var spreadATR = (_atr2 > 0) ? Math.abs(sma10 - sma20) / _atr2 : spread;
+
+    // Score: use ATR-relative spread so high-ATR names with converging SMAs score well
+    var ptsCompress = spreadATR <= 0.5 ? 30 : spreadATR <= 1 ? 22 : spreadATR <= 1.5 ? 15 : spreadATR <= 2.5 ? 8 : 0;
     var ptsAlign = 0;
     if (curPrice > sma10 && curPrice > sma20) ptsAlign += 15;
     if (sma50 && curPrice > sma50) ptsAlign += 10;
