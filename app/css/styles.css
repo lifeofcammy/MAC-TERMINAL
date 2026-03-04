@@ -175,7 +175,7 @@ body {
 #tab-overview.active { display: flex; gap: 16px; }
 #overview-main { flex: 1; min-width: 0; }
 #watchlist-sidebar {
-  width: 280px;
+  width: 220px;
   flex-shrink: 0;
   position: sticky;
   top: 80px;
@@ -514,5 +514,5 @@ input:focus, textarea:focus, select:focus {
   padding: 10px 20px;
   display: inline-block;
   position: relative;
-  left: 148px; /* offset half of sidebar(280)+gap(16) to center under tagline */
+  left: 118px; /* offset half of sidebar(220)+gap(16) to center under tagline */
 }
