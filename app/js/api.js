@@ -15,8 +15,8 @@ function _polyCacheTTL(path) {
   if (path.indexOf('/v2/aggs/') === 0) return 15 * 60 * 1000;
   // News — cache 10 min
   if (path.indexOf('/v2/reference/news') === 0) return 10 * 60 * 1000;
-  // Snapshots — cache 2 min (prices move but not every second)
-  if (path.indexOf('/v2/snapshot/') === 0 || path.indexOf('/v3/snapshot/') === 0) return 2 * 60 * 1000;
+  // Snapshots — cache 5 min (breadth uses 15-min bars, 5-min staleness is fine)
+  if (path.indexOf('/v2/snapshot/') === 0 || path.indexOf('/v3/snapshot/') === 0) return 5 * 60 * 1000;
   // Reference data — cache 30 min
   if (path.indexOf('/v2/reference/') === 0 || path.indexOf('/v3/reference/') === 0) return 30 * 60 * 1000;
   // Default — 2 min
@@ -75,33 +75,47 @@ function clearPolyCache() {
 // All Polygon calls route through the server-side proxy.
 // The Polygon key is stored as a Supabase secret — never exposed to the client.
 // Responses are cached client-side to reduce redundant calls.
+// In-flight dedup: if the same path is already being fetched, reuse that promise.
+var _polyInflight = {};
+
 async function polyGet(path) {
   // Check cache first
   var cached = _polyCacheGet(path);
   if (cached) return cached;
 
-  var session = window._currentSession;
-  if (!session || !session.access_token) {
-    throw new Error('Please log in to use market data.');
-  }
-  var resp = await fetch(EDGE_FN_BASE + '/polygon-proxy', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + session.access_token,
-      'apikey': typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : ''
-    },
-    body: JSON.stringify({ path: path })
-  });
-  var data = await resp.json();
-  if (!resp.ok) {
-    var errMsg = (data && data.error) ? data.error : ('Polygon proxy error ' + resp.status);
-    throw new Error(errMsg);
-  }
+  // Dedup: if this exact request is already in-flight, piggyback on it
+  if (_polyInflight[path]) return _polyInflight[path];
 
-  // Cache the successful response
-  _polyCacheSet(path, data);
-  return data;
+  _polyInflight[path] = (async function() {
+    var session = window._currentSession;
+    if (!session || !session.access_token) {
+      throw new Error('Please log in to use market data.');
+    }
+    var resp = await fetch(EDGE_FN_BASE + '/polygon-proxy', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token,
+        'apikey': typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : ''
+      },
+      body: JSON.stringify({ path: path })
+    });
+    var data = await resp.json();
+    if (!resp.ok) {
+      var errMsg = (data && data.error) ? data.error : ('Polygon proxy error ' + resp.status);
+      throw new Error(errMsg);
+    }
+
+    // Cache the successful response
+    _polyCacheSet(path, data);
+    return data;
+  })();
+
+  try {
+    return await _polyInflight[path];
+  } finally {
+    delete _polyInflight[path];
+  }
 }
 
 async function getSnapshots(tickers) {

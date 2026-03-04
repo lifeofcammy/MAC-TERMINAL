@@ -178,8 +178,21 @@ function renderBreadthTimeline() {
 async function refreshRegimeAndBreadth() {
   console.log('[Auto-Refresh] Updating regime + breadth...');
   try {
-    // 1. Fetch index snapshots (live prices)
-    var snap = await getSnapshots(['SPY','QQQ','IWM','DIA','VIXY','UUP']);
+    // 1. Fetch all data in parallel — snapshots, bars, sectors, breadth
+    var refreshResults = await Promise.all([
+      getSnapshots(['SPY','QQQ','IWM','DIA','VIXY','UUP']),
+      getDailyBars('SPY', 30).catch(function(){return [];}),
+      getDailyBars('QQQ', 30).catch(function(){return [];}),
+      getDailyBars('IWM', 30).catch(function(){return [];}),
+      getDailyBars('DIA', 30).catch(function(){return [];}),
+      getSnapshots(['XLK','SMH','XLF','XLE','XLV','XLY','XLI','XLRE','XLU','XLB','XLC','XLP']),
+      fetchBreadthData()
+    ]);
+    var snap = refreshResults[0];
+    var spyBars = refreshResults[1], qqqBars = refreshResults[2], iwmBars = refreshResults[3], diaBars = refreshResults[4];
+    var sectorSnap = refreshResults[5];
+    var breadthDataResult = refreshResults[6];
+
     function livePrice(ticker) {
       var s = snap[ticker];
       if(!s) return { price:0, pct:0 };
@@ -188,13 +201,6 @@ async function refreshRegimeAndBreadth() {
       return { price: p, pct: prev>0 ? ((p-prev)/prev)*100 : 0 };
     }
     var spyLive=livePrice('SPY'), qqqLive=livePrice('QQQ'), iwmLive=livePrice('IWM'), diaLive=livePrice('DIA'), vixyLive=livePrice('VIXY');
-
-    // 2. Fetch daily bars for SMAs (these don't change intraday but we need them)
-    var spyBars=[],qqqBars=[],iwmBars=[],diaBars=[];
-    try{spyBars=await getDailyBars('SPY',30);}catch(e){}
-    try{qqqBars=await getDailyBars('QQQ',30);}catch(e){}
-    try{iwmBars=await getDailyBars('IWM',30);}catch(e){}
-    try{diaBars=await getDailyBars('DIA',30);}catch(e){}
 
     function calcSMA(bars, period) {
       if(!bars||bars.length<period) return null;
@@ -224,9 +230,8 @@ async function refreshRegimeAndBreadth() {
 
     var avgPct = (spyLive.pct+qqqLive.pct+iwmLive.pct+diaLive.pct)/4;
 
-    // 4. Fetch sector data for sector breadth
+    // 4. Sector breadth (sectorSnap already fetched in parallel above)
     var sectorETFs = ['XLK','SMH','XLF','XLE','XLV','XLY','XLI','XLRE','XLU','XLB','XLC','XLP'];
-    var sectorSnap = await getSnapshots(sectorETFs);
     var sectorsUp=0, sectorsDown=0;
     sectorETFs.forEach(function(etf) {
       var s = sectorSnap[etf]; if(!s) return;
@@ -334,11 +339,10 @@ async function refreshRegimeAndBreadth() {
       if(rLbl) { rLbl.style.color='var(--blue)'; setTimeout(function(){ if(rLbl) rLbl.style.color='var(--text-muted)'; }, 1500); }
     }
 
-    // 10. Also refresh breadth (uses the same snapshot call we already made)
-    var breadthData = await fetchBreadthData();
-    if(breadthData) {
-      recordBreadthReading(breadthData);
-      renderBreadthBody(breadthData);
+    // 10. Also refresh breadth (already fetched in parallel above)
+    if(breadthDataResult) {
+      recordBreadthReading(breadthDataResult);
+      renderBreadthBody(breadthDataResult);
     }
 
     // 11. Update the Market Snapshot card prices too
@@ -463,41 +467,55 @@ async function renderOverview() {
 
   var snap = {}, sectorSnap = {}, sectorBars = {}, spyBars = [], newsArticles = [];
   var dataFreshness = getDataFreshnessLabel();
+  var sectorTickers = sectorETFs.map(function(s){return s.etf;});
 
+  // ── TIER 1: Fire all independent fetches in parallel ──
   try {
-    // Index + VIX proxy snapshots
-    snap = await getSnapshots(indexTickers.concat(extraTickers));
-    // SPY daily bars for 10/20 SMA
-    try { spyBars = await getDailyBars('SPY', 30); } catch(e) { spyBars = []; }
-    // Sector snapshots + bars
-    var sectorTickers = sectorETFs.map(function(s){return s.etf;});
-    sectorSnap = await getSnapshots(sectorTickers);
-    for (var si=0; si<sectorTickers.length; si++) {
-      try { sectorBars[sectorTickers[si]] = await getDailyBars(sectorTickers[si], 25); } catch(e) { sectorBars[sectorTickers[si]] = []; }
-    }
-    // News
-    try { newsArticles = await getPolygonNews(null, 25); } catch(e) {}
+    var tier1 = await Promise.all([
+      getSnapshots(indexTickers.concat(extraTickers)),
+      getDailyBars('SPY', 30).catch(function(e) { return []; }),
+      getSnapshots(sectorTickers),
+      getPolygonNews(null, 25).catch(function(e) { return []; }),
+      polyGet('/v2/snapshot/locale/us/markets/stocks/tickers?include_otc=false').catch(function(e) { return { tickers: [] }; })
+    ]);
+    snap = tier1[0];
+    spyBars = tier1[1];
+    sectorSnap = tier1[2];
+    newsArticles = tier1[3];
+    var allSnap = tier1[4];
   } catch(e) {
     container.innerHTML = '<div class="card" style="text-align:center;color:var(--red);padding:30px;">Failed to load data: '+e.message+'<br><span style="font-size:14px;color:var(--text-muted);">Check your Polygon API key (gear icon).</span></div>';
     return;
   }
 
-  // ── ADVANCERS / DECLINERS (true market breadth — all US stocks) ──
+  // ── TIER 2: Sector bars + index bars (for SMA + weekend fix) in parallel ──
+  var barPromises = sectorTickers.map(function(t) {
+    return getDailyBars(t, 10).then(function(bars) { return { ticker: t, bars: bars }; }).catch(function() { return { ticker: t, bars: [] }; });
+  });
+  // Also fetch QQQ/IWM/DIA bars for SMA calculation + weekend price fix
+  ['QQQ','IWM','DIA'].forEach(function(t) {
+    barPromises.push(getDailyBars(t, 30).then(function(bars) { return { ticker: t, bars: bars }; }).catch(function() { return { ticker: t, bars: [] }; }));
+  });
+  var allBarResults = await Promise.all(barPromises);
+  var _barsByTicker = {};
+  allBarResults.forEach(function(r) {
+    if (sectorTickers.indexOf(r.ticker) >= 0) sectorBars[r.ticker] = r.bars;
+    _barsByTicker[r.ticker] = r.bars;
+  });
+
+  // ── ADVANCERS / DECLINERS (from tier 1 breadth snapshot) ──
   var adStocksUp=0, adStocksDown=0, adStocksFlat=0;
-  try {
-    var allSnap = await polyGet('/v2/snapshot/locale/us/markets/stocks/tickers?include_otc=false');
-    (allSnap.tickers || []).forEach(function(s) {
-      // Filter: common stocks only, price > $1, volume > 10000
-      if(!s || !s.prevDay || !s.prevDay.c) return;
-      var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : s.prevDay.c;
-      var prev = s.prevDay.c;
-      if(!p || !prev || prev < 1 || (s.day&&s.day.v&&s.day.v < 10000)) return;
-      var adPct = ((p-prev)/prev)*100;
-      if(adPct > 0.01) adStocksUp++;
-      else if(adPct < -0.01) adStocksDown++;
-      else adStocksFlat++;
-    });
-  } catch(e) { console.warn('Breadth fetch failed:', e); }
+  (allSnap.tickers || []).forEach(function(s) {
+    // Filter: common stocks only, price > $1, volume > 10000
+    if(!s || !s.prevDay || !s.prevDay.c) return;
+    var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : s.prevDay.c;
+    var prev = s.prevDay.c;
+    if(!p || !prev || prev < 1 || (s.day&&s.day.v&&s.day.v < 10000)) return;
+    var adPct = ((p-prev)/prev)*100;
+    if(adPct > 0.01) adStocksUp++;
+    else if(adPct < -0.01) adStocksDown++;
+    else adStocksFlat++;
+  });
   var adTotal = adStocksUp + adStocksDown + adStocksFlat;
   var adBreadthPct = adTotal>0 ? Math.round((adStocksUp/adTotal)*100) : 0;
 
@@ -517,28 +535,23 @@ async function renderOverview() {
     var pctVal = prev>0 ? (chg/prev)*100 : 0;
     return {price:p, change:chg, pct:pctVal, vol:s.day?s.day.v:0, prevClose:prev, high:s.day?s.day.h:0, low:s.day?s.day.l:0, vwap:s.day?s.day.vw:0};
   }
-  // For non-SPY indexes on weekends, also fix using bars
-  async function getSnapWithBars(ticker) {
+  var spyData = getSnap('SPY');
+  // Use pre-fetched bars for weekend price fix (no extra API calls)
+  function fixSnapWithBars(ticker) {
     var base = getSnap(ticker);
-    if(!live && base.pct===0){
-      try{
-        var bars = await getDailyBars(ticker, 5);
-        if(bars.length>=2){
-          base.price = bars[bars.length-1].c;
-          base.prevClose = bars[bars.length-2].c;
-          base.change = base.price - base.prevClose;
-          base.pct = base.prevClose>0 ? (base.change/base.prevClose)*100 : 0;
-        }
-      }catch(e){}
+    if(!live && base.pct===0 && _barsByTicker[ticker] && _barsByTicker[ticker].length>=2){
+      var bars = _barsByTicker[ticker];
+      base.price = bars[bars.length-1].c;
+      base.prevClose = bars[bars.length-2].c;
+      base.change = base.price - base.prevClose;
+      base.pct = base.prevClose>0 ? (base.change/base.prevClose)*100 : 0;
     }
     return base;
   }
-
-  var spyData = getSnap('SPY');
-  var qqqData = await getSnapWithBars('QQQ');
-  var iwmData = await getSnapWithBars('IWM');
-  var diaData = await getSnapWithBars('DIA');
-  var vixyData = await getSnapWithBars('VIXY');
+  var qqqData = fixSnapWithBars('QQQ');
+  var iwmData = fixSnapWithBars('IWM');
+  var diaData = fixSnapWithBars('DIA');
+  var vixyData = getSnap('VIXY');
 
   // ── INDEX 10 & 20 SMAs (SPY, QQQ, IWM, DIA) ──
   function calcSMA(bars, period) {
@@ -552,11 +565,10 @@ async function renderOverview() {
   var spyBelow10 = spySma10!==null && spyData.price<spySma10;
   var spyBelow20 = spySma20!==null && spyData.price<spySma20;
 
-  // Fetch bars for QQQ, IWM, DIA for their SMAs
-  var qqqBars=[],iwmBars=[],diaBars=[];
-  try{qqqBars=await getDailyBars('QQQ',30);}catch(e){}
-  try{iwmBars=await getDailyBars('IWM',30);}catch(e){}
-  try{diaBars=await getDailyBars('DIA',30);}catch(e){}
+  // Use pre-fetched bars for QQQ, IWM, DIA SMAs (already in _barsByTicker from tier 2)
+  var qqqBars = _barsByTicker['QQQ'] || [];
+  var iwmBars = _barsByTicker['IWM'] || [];
+  var diaBars = _barsByTicker['DIA'] || [];
 
   var qqqSma10=calcSMA(qqqBars,10),qqqSma20=calcSMA(qqqBars,20);
   var iwmSma10=calcSMA(iwmBars,10),iwmSma20=calcSMA(iwmBars,20);

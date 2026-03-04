@@ -1,5 +1,19 @@
 // ==================== tabs.js ====================
-// Tab switching logic and refresh orchestration.
+// Tab switching logic, lazy script loading, and refresh orchestration.
+
+// ==================== LAZY SCRIPT LOADER ====================
+var _scriptLoaded = {};
+function loadScript(src) {
+  if (_scriptLoaded[src]) return _scriptLoaded[src];
+  _scriptLoaded[src] = new Promise(function(resolve, reject) {
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.body.appendChild(s);
+  });
+  return _scriptLoaded[src];
+}
 
 // ==================== TAB SWITCHING ====================
 // Track whether overview has been loaded at least once
@@ -26,15 +40,28 @@ document.querySelectorAll('.tabs > .tab').forEach(tab => {
       stopBreadthAutoRefresh();
     }
 
-    // Trigger per-tab renders
-    if (tab.dataset.tab === 'analysis') renderAnalysis();
+    // Trigger per-tab renders (lazy-load scripts on first click)
     if (tab.dataset.tab === 'scanner') {
-      if (!window._scannerLoaded) { renderScanner(); window._scannerLoaded = true; }
-      // Trigger auto-build on first Scanner tab click (lazy load)
-      if (!_scannerAutoBuildDone && typeof scannerAutoBuild === 'function') {
-        _scannerAutoBuildDone = true;
-        scannerAutoBuild();
-      }
+      loadScript('js/scanner.js?v=20260303p').then(function() {
+        if (!window._scannerLoaded) { renderScanner(); window._scannerLoaded = true; }
+        if (!_scannerAutoBuildDone && typeof scannerAutoBuild === 'function') {
+          _scannerAutoBuildDone = true;
+          scannerAutoBuild();
+        }
+      });
+    }
+    if (tab.dataset.tab === 'recap') {
+      loadScript('js/journal.js?v=20260303p').then(function() {
+        if (typeof renderRecapCalendar === 'function') renderRecapCalendar();
+      });
+    }
+    if (tab.dataset.tab === 'analysis') {
+      Promise.all([
+        loadScript('js/analysis.js?v=20260303p'),
+        loadScript('js/analysis-seed.js?v=20260303p')
+      ]).then(function() {
+        if (typeof renderAnalysis === 'function') renderAnalysis();
+      });
     }
   });
 });
@@ -49,7 +76,8 @@ function refreshAll() {
   if (typeof clearPolyCache === 'function') clearPolyCache();
 
   renderOverview().then(function() { _overviewLoaded = true; }).catch(function() {});
-  renderRecapCalendar();
+  // Only refresh recap calendar if journal.js is loaded
+  if (typeof renderRecapCalendar === 'function') renderRecapCalendar();
 
   setTimeout(function() {
     btn.classList.remove('spinning');
