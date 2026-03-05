@@ -141,7 +141,7 @@ function renderBreadthTimeline() {
   var trendCollapsed = localStorage.getItem('mac_breadth_trend_collapsed') === 'true';
   var html = '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">';
 
-  // Summary line: net direction
+  // Summary line: net direction — arrow at far left matching card header pattern
   var first = _breadthHistory[0].pct;
   var last = _breadthHistory[_breadthHistory.length-1].pct;
   var delta = last - first;
@@ -149,16 +149,18 @@ function renderBreadthTimeline() {
   var dirColor = delta > 0 ? 'var(--green)' : delta < 0 ? 'var(--red)' : 'var(--text-muted)';
   var dirArrow = delta > 0 ? '\u25b2' : delta < 0 ? '\u25bc' : '\u25cf';
 
-  html += '<div onclick="toggleBreadthTrend()" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;cursor:pointer;user-select:none;">';
-  html += '<div style="display:flex;align-items:center;gap:8px;"><span id="breadth-trend-arrow" style="font-size:16px;color:var(--blue);">'+(trendCollapsed?'\u25b6':'\u25bc')+'</span><span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Intraday Trend</span></div>';
-  html += '<span style="font-size:13px;font-weight:800;color:'+dirColor+';">'+dirArrow+' '+dirLabel+' ('+(delta>0?'+':'')+delta+'%)</span>';
+  html += '<div onclick="toggleBreadthTrend()" style="display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;margin:0 -20px;padding:6px 20px;">';
+  html += '<span id="breadth-trend-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(trendCollapsed?'\u25b6':'\u25bc')+'</span>';
+  html += '<span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;flex:1;">Intraday Trend</span>';
+  html += '<span style="font-size:13px;font-weight:800;color:'+dirColor+';flex-shrink:0;">'+dirArrow+' '+dirLabel+' ('+(delta>0?'+':'')+delta+'%)</span>';
   html += '</div>';
   html += '<div id="breadth-trend-body" style="'+(trendCollapsed?'display:none;':'')+'">';
 
-  // SVG line chart
-  var W = 100; // viewBox percentage width
-  var H = 60; // viewBox height
-  var padL = 0, padR = 0, padT = 4, padB = 14; // padding for labels
+  // SVG line chart — wide viewBox (400:60) matches typical container aspect ratio
+  // so preserveAspectRatio="none" won't distort circles/text
+  var W = 400; // viewBox width (wide to match container)
+  var H = 60;  // viewBox height
+  var padL = 0, padR = 0, padT = 16, padB = 14; // padding for labels
   var chartW = W - padL - padR;
   var chartH = H - padT - padB;
 
@@ -192,28 +194,28 @@ function renderBreadthTimeline() {
   // 50% line (neutral)
   if(minPct <= 50 && maxPct >= 50) {
     var y50 = padT + (1 - (50 - minPct) / range) * chartH;
-    html += '<line x1="'+padL+'" y1="'+y50.toFixed(1)+'" x2="'+(padL+chartW)+'" y2="'+y50.toFixed(1)+'" stroke="var(--text-muted)" stroke-width="0.3" stroke-dasharray="2,2" opacity="0.5"/>';
-    html += '<text x="'+(padL+1)+'" y="'+(y50-1).toFixed(1)+'" fill="var(--text-muted)" font-size="3" font-family="var(--font-mono)">50%</text>';
+    html += '<line x1="'+padL+'" y1="'+y50.toFixed(1)+'" x2="'+(padL+chartW)+'" y2="'+y50.toFixed(1)+'" stroke="var(--text-muted)" stroke-width="0.5" stroke-dasharray="8,8" opacity="0.5"/>';
+    html += '<text x="'+(padL+4)+'" y="'+(y50-2).toFixed(1)+'" fill="var(--text-muted)" font-size="8" font-family="var(--font-mono)">50%</text>';
   }
   // Area fill
   html += '<path d="'+areaPath+'" fill="'+fillColor+'"/>';
   // Line
-  html += '<path d="'+linePath+'" fill="none" stroke="'+lineColor+'" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>';
+  html += '<path d="'+linePath+'" fill="none" stroke="'+lineColor+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
   // Data points
   points.forEach(function(p,i){
     var dotColor = i === points.length-1 ? lineColor : 'var(--text-muted)';
-    var dotR = i === points.length-1 ? '1.2' : '0.8';
+    var dotR = i === points.length-1 ? '3' : '2';
     html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+dotR+'" fill="'+dotColor+'"/>';
   });
-  // Time labels (first, last, and optionally middle)
+  // Time labels (first and last)
   var timeOpts = {hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'};
   var firstTime = points[0].time.toLocaleTimeString('en-US',timeOpts).replace(' ','');
   var lastTime = points[points.length-1].time.toLocaleTimeString('en-US',timeOpts).replace(' ','');
-  html += '<text x="'+padL+'" y="'+(H-1)+'" fill="var(--text-muted)" font-size="3" font-family="var(--font-mono)">'+firstTime+'</text>';
-  html += '<text x="'+(padL+chartW)+'" y="'+(H-1)+'" fill="var(--text-muted)" font-size="3" font-family="var(--font-mono)" text-anchor="end">'+lastTime+'</text>';
+  html += '<text x="'+padL+'" y="'+(H-1)+'" fill="var(--text-muted)" font-size="8" font-family="var(--font-mono)">'+firstTime+'</text>';
+  html += '<text x="'+(padL+chartW)+'" y="'+(H-1)+'" fill="var(--text-muted)" font-size="8" font-family="var(--font-mono)" text-anchor="end">'+lastTime+'</text>';
   // Pct labels (first and last reading values)
-  html += '<text x="'+(points[0].x+1).toFixed(1)+'" y="'+(points[0].y-1.5).toFixed(1)+'" fill="var(--text-muted)" font-size="3" font-family="var(--font-mono)">'+first+'%</text>';
-  html += '<text x="'+(points[points.length-1].x-1).toFixed(1)+'" y="'+(points[points.length-1].y-1.5).toFixed(1)+'" fill="'+lineColor+'" font-size="3.5" font-weight="700" font-family="var(--font-mono)" text-anchor="end">'+last+'%</text>';
+  html += '<text x="'+(points[0].x+4).toFixed(1)+'" y="'+(points[0].y-4).toFixed(1)+'" fill="var(--text-muted)" font-size="8" font-family="var(--font-mono)">'+first+'%</text>';
+  html += '<text x="'+(points[points.length-1].x-4).toFixed(1)+'" y="'+(points[points.length-1].y-4).toFixed(1)+'" fill="'+lineColor+'" font-size="9" font-weight="700" font-family="var(--font-mono)" text-anchor="end">'+last+'%</text>';
   html += '</svg>';
   html += '</div>';
 

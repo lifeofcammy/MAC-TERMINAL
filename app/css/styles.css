@@ -410,26 +410,27 @@ input:focus, textarea:focus, select:focus {
     padding: 0 12px;
     height: auto;
     min-height: 52px;
-    gap: 4px 8px;
+    gap: 0 8px;
     flex-wrap: wrap;
+    align-items: center;
   }
-  /* Re-show tagline on mobile — compact row below header icons */
+  .header-left { gap: 8px; order: 1; flex-shrink: 0; }
+  .header-right { gap: 6px; order: 2; flex-shrink: 0; margin-left: auto; }
+  /* Re-show tagline on mobile — full-width row below header icons */
   .header-tagline {
     display: block !important;
     position: static !important;
     left: auto !important;
     transform: none !important;
     width: 100%;
-    order: 99;
+    order: 3;
     text-align: center;
     font-size: 16px !important;
-    padding: 0 0 6px;
+    padding: 2px 0 6px;
     margin: 0;
   }
-  .header-left { gap: 8px; }
   .header-title { font-size: 16px; }
   .header-sub { display: none; } /* hide "Market Action Center" subtitle */
-  .header-right { gap: 6px; }
   .header-right .last-updated { display: none; }
   /* Hide text labels on header buttons, keep icons */
   .header-right .refresh-btn {
