@@ -5,11 +5,14 @@
 //
 // Layer 1: Universe builder — filters all US stocks to ~top 150 candidates
 // Layer 2: Unified scoring — Top Ideas style (compression, alignment, extension, RVol, day change)
+// Layer 3: Day Trade scanner — ORB (Opening Range Breakout) strategy
 
 // ==================== CONSTANTS ====================
 var SCANNER_CACHE_KEY = 'mac_scanner_universe';
 var SCANNER_CACHE_VERSION = 2;
 var SCANNER_RESULTS_KEY = 'mac_scan_results';
+var DAYTRADE_CACHE_KEY = 'mac_daytrade_results';
+var DAYTRADE_UNIVERSE_KEY = 'mac_daytrade_universe';
 
 // Known ETF tickers to exclude (common ones that sneak through)
 var KNOWN_ETFS = [
@@ -618,6 +621,645 @@ async function runSetupScan(statusFn) {
 }
 
 
+// ==================== LAYER 3: DAY TRADE SCANNER (ORB) ====================
+// Finds gappers, calculates 15-min opening range, scores for ORB setups.
+
+var _dayTradeAutoTimer = null;
+
+function getTodayDateStr() {
+  var d = new Date();
+  var et = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  return et.getFullYear() + '-' + String(et.getMonth()+1).padStart(2,'0') + '-' + String(et.getDate()).padStart(2,'0');
+}
+
+function getETNow() {
+  var d = new Date();
+  return new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+}
+
+function isAfterORB() {
+  var et = getETNow();
+  return et.getHours() > 9 || (et.getHours() === 9 && et.getMinutes() >= 45);
+}
+
+function isPreMarket() {
+  var et = getETNow();
+  var h = et.getHours(), m = et.getMinutes(), d = et.getDay();
+  return d > 0 && d < 6 && h >= 4 && (h < 9 || (h === 9 && m < 30));
+}
+
+// Build day trade universe — find today's gappers
+async function buildDayTradeUniverse(statusFn) {
+  if (!statusFn) statusFn = function(){};
+
+  statusFn('Fetching previous close data...');
+
+  // Get previous trading day closes
+  var prevDay = getLastTradingDay();
+  var groupedData;
+  try {
+    groupedData = await polyGetRetry('/v2/aggs/grouped/locale/us/market/stocks/' + prevDay + '?adjusted=true');
+  } catch(e) {
+    throw new Error('Failed to fetch grouped daily data: ' + e.message);
+  }
+
+  var allStocks = groupedData.results || [];
+  if (allStocks.length === 0) throw new Error('No market data for ' + prevDay);
+
+  // Build previous close map
+  var prevCloseMap = {};
+  var etfSet = {};
+  KNOWN_ETFS.forEach(function(t) { etfSet[t] = true; });
+
+  allStocks.forEach(function(s) {
+    if (!s.T || !s.c || !s.v) return;
+    if (s.c < 20) return;
+    if (s.v < 500000) return;
+    if (s.T.length > 5) return;
+    if (/[.-]/.test(s.T)) return;
+    if (etfSet[s.T]) return;
+    prevCloseMap[s.T] = { close: s.c, volume: s.v };
+  });
+
+  var tickers = Object.keys(prevCloseMap);
+  statusFn('Fetching live snapshots for ' + tickers.length + ' stocks...');
+
+  // Fetch live snapshots in batches
+  var allSnapshots = {};
+  var snapBatchSize = 50;
+  for (var si = 0; si < tickers.length; si += snapBatchSize) {
+    var snapBatch = tickers.slice(si, si + snapBatchSize);
+    try {
+      var snapMap = await getSnapshots(snapBatch);
+      for (var key in snapMap) {
+        if (snapMap.hasOwnProperty(key)) allSnapshots[key] = snapMap[key];
+      }
+    } catch(e) {}
+    if (si + snapBatchSize < tickers.length) {
+      await new Promise(function(r) { setTimeout(r, 50); });
+    }
+  }
+
+  statusFn('Calculating gaps...');
+
+  // Calculate gap % for each
+  var gappers = [];
+  tickers.forEach(function(ticker) {
+    var snap = allSnapshots[ticker];
+    var prev = prevCloseMap[ticker];
+    if (!snap || !prev) return;
+
+    var curPrice = 0;
+    if (snap.day && snap.day.c && snap.day.c > 0) {
+      curPrice = snap.day.c;
+    } else if (snap.lastTrade && snap.lastTrade.p) {
+      curPrice = snap.lastTrade.p;
+    } else if (snap.min && snap.min.c) {
+      curPrice = snap.min.c;
+    }
+    if (curPrice <= 0) return;
+
+    var gapPct = ((curPrice - prev.close) / prev.close) * 100;
+    if (Math.abs(gapPct) < 2) return; // Min 2% gap
+
+    var curVol = (snap.day && snap.day.v) ? snap.day.v : 0;
+    var rvol = prev.volume > 0 ? curVol / prev.volume : 0;
+
+    gappers.push({
+      ticker: ticker,
+      prevClose: prev.close,
+      curPrice: curPrice,
+      gapPct: Math.round(gapPct * 100) / 100,
+      direction: gapPct > 0 ? 'LONG' : 'SHORT',
+      volume: curVol,
+      prevVolume: prev.volume,
+      rvol: Math.round(rvol * 100) / 100,
+      absGap: Math.abs(gapPct)
+    });
+  });
+
+  // Sort by |gap%| × rvol (combined strength), keep top 20
+  gappers.sort(function(a, b) {
+    return (b.absGap * Math.max(b.rvol, 1)) - (a.absGap * Math.max(a.rvol, 1));
+  });
+  gappers = gappers.slice(0, 20);
+
+  var universeData = {
+    date: getTodayDateStr(),
+    ts: Date.now(),
+    gappers: gappers
+  };
+
+  try { localStorage.setItem(DAYTRADE_UNIVERSE_KEY, JSON.stringify(universeData)); } catch(e) {}
+
+  statusFn('Found ' + gappers.length + ' gappers.');
+  return universeData;
+}
+
+// Calculate ORB (Opening Range Breakout) for a ticker
+async function calcORBForTicker(ticker, today) {
+  try {
+    var data = await polyGetRetry('/v2/aggs/ticker/' + ticker + '/range/1/minute/' + today + '/' + today + '?adjusted=true&sort=asc&limit=500');
+    var bars = data.results || [];
+    if (bars.length === 0) return null;
+
+    // Find bars in opening range (9:30-9:45 ET = first 15 minutes)
+    // Polygon timestamps are in UTC ms
+    var orBars = [];
+    var postORBars = [];
+
+    bars.forEach(function(b) {
+      var d = new Date(b.t);
+      var etStr = d.toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: 'numeric', hour12: false });
+      var parts = etStr.split(':');
+      var h = parseInt(parts[0]), m = parseInt(parts[1]);
+      var mins = h * 60 + m;
+
+      if (mins >= 570 && mins < 585) { // 9:30-9:44
+        orBars.push(b);
+      } else if (mins >= 585) { // 9:45+
+        postORBars.push(b);
+      }
+    });
+
+    if (orBars.length === 0) return null;
+
+    // Opening range = high/low of first 15 minutes
+    var orHigh = -Infinity, orLow = Infinity, orVolume = 0;
+    orBars.forEach(function(b) {
+      if (b.h > orHigh) orHigh = b.h;
+      if (b.l < orLow) orLow = b.l;
+      orVolume += (b.v || 0);
+    });
+
+    var orRange = orHigh - orLow;
+    var orRangePct = orHigh > 0 ? (orRange / orHigh) * 100 : 0;
+
+    // Current price = last bar close
+    var lastBar = bars[bars.length - 1];
+    var curPrice = lastBar.c;
+
+    // Post-OR volume
+    var postORVol = 0;
+    postORBars.forEach(function(b) { postORVol += (b.v || 0); });
+
+    // Breakout detection
+    var breakoutType = 'none';
+    var breakoutStrength = 0;
+
+    if (curPrice > orHigh) {
+      breakoutType = 'long';
+      breakoutStrength = ((curPrice - orHigh) / orRange) * 100; // % of OR range above high
+    } else if (curPrice < orLow) {
+      breakoutType = 'short';
+      breakoutStrength = ((orLow - curPrice) / orRange) * 100;
+    }
+
+    return {
+      orHigh: Math.round(orHigh * 100) / 100,
+      orLow: Math.round(orLow * 100) / 100,
+      orRange: Math.round(orRange * 100) / 100,
+      orRangePct: Math.round(orRangePct * 100) / 100,
+      orVolume: orVolume,
+      postORVol: postORVol,
+      curPrice: Math.round(curPrice * 100) / 100,
+      breakoutType: breakoutType,
+      breakoutStrength: Math.round(breakoutStrength),
+      barCount: bars.length
+    };
+  } catch(e) {
+    return null;
+  }
+}
+
+// Score a day trade setup (max 100 pts)
+function scoreDayTrade(gapper, orb) {
+  var score = 0;
+  var components = {};
+
+  // 1. Gap Magnitude (0-25)
+  var absGap = Math.abs(gapper.gapPct);
+  var ptsGap = absGap >= 6 ? 25 : absGap >= 4 ? 18 : absGap >= 2 ? 10 : 0;
+  components.gap = ptsGap;
+  score += ptsGap;
+
+  // 2. Relative Volume (0-25)
+  var ptsRvol = gapper.rvol >= 3 ? 25 : gapper.rvol >= 2 ? 18 : gapper.rvol >= 1.5 ? 12 : gapper.rvol >= 1 ? 6 : 0;
+  components.rvol = ptsRvol;
+  score += ptsRvol;
+
+  // 3. ORB Breakout (0-20) — only if post-ORB
+  var ptsBreakout = 0;
+  if (orb) {
+    if (orb.breakoutType !== 'none') {
+      ptsBreakout = orb.breakoutStrength >= 50 ? 20 : orb.breakoutStrength >= 25 ? 15 : 10;
+    }
+  }
+  components.breakout = ptsBreakout;
+  score += ptsBreakout;
+
+  // 4. OR Tightness (0-15) — tight OR = cleaner breakout
+  var ptsTight = 0;
+  if (orb) {
+    ptsTight = orb.orRangePct < 1 ? 15 : orb.orRangePct < 2 ? 10 : orb.orRangePct < 3 ? 5 : 0;
+  }
+  components.tightness = ptsTight;
+  score += ptsTight;
+
+  // 5. News Catalyst placeholder (0-15) — will be set by AI
+  components.catalyst = 0;
+  // (AI will fill this in later)
+
+  score = Math.round(Math.min(100, Math.max(0, score)));
+
+  return {
+    score: score,
+    components: components
+  };
+}
+
+// Run the full day trade scan
+async function runDayTradeScan(statusFn) {
+  if (!statusFn) statusFn = function(){};
+
+  // Step 1: Get or build gapper universe
+  statusFn('Finding gappers...');
+  var universe;
+  try {
+    var cached = localStorage.getItem(DAYTRADE_UNIVERSE_KEY);
+    if (cached) {
+      var parsed = JSON.parse(cached);
+      var today = getTodayDateStr();
+      if (parsed.date === today && Date.now() - parsed.ts < 15 * 60 * 1000) {
+        universe = parsed;
+      }
+    }
+  } catch(e) {}
+
+  if (!universe) {
+    universe = await buildDayTradeUniverse(statusFn);
+  }
+
+  if (!universe.gappers || universe.gappers.length === 0) {
+    statusFn('No gappers found today.');
+    var emptyResult = { date: getTodayDateStr(), ts: Date.now(), phase: 'no_gappers', setups: [], gappers: [] };
+    try { localStorage.setItem(DAYTRADE_CACHE_KEY, JSON.stringify(emptyResult)); } catch(e) {}
+    return emptyResult;
+  }
+
+  var gappers = universe.gappers;
+  var today = getTodayDateStr();
+  var afterORB = isAfterORB();
+  var phase = afterORB ? 'post_orb' : 'pre_orb';
+
+  // Step 2: If post-ORB, calculate ORB levels for each gapper
+  var setups = [];
+
+  if (afterORB) {
+    statusFn('Calculating opening ranges...');
+    var orbBatchSize = 5;
+    for (var i = 0; i < gappers.length; i += orbBatchSize) {
+      var batch = gappers.slice(i, i + orbBatchSize);
+      var orbPromises = batch.map(function(g) {
+        return calcORBForTicker(g.ticker, today).then(function(orb) {
+          return { gapper: g, orb: orb };
+        });
+      });
+      var orbResults = await Promise.all(orbPromises);
+
+      orbResults.forEach(function(r) {
+        if (!r.orb) return;
+        var scored = scoreDayTrade(r.gapper, r.orb);
+        if (scored.score < 30) return;
+
+        // Direction based on breakout, fallback to gap direction
+        var direction = r.orb.breakoutType !== 'none' ? (r.orb.breakoutType === 'long' ? 'LONG' : 'SHORT') : r.gapper.direction;
+
+        // Trade levels
+        var entry = direction === 'LONG' ? r.orb.orHigh : r.orb.orLow;
+        var stop = direction === 'LONG' ? r.orb.orLow : r.orb.orHigh;
+        var risk = Math.abs(entry - stop);
+        var target = direction === 'LONG' ? entry + (risk * 1.5) : entry - (risk * 1.5);
+
+        setups.push({
+          ticker: r.gapper.ticker,
+          price: r.orb.curPrice,
+          prevClose: r.gapper.prevClose,
+          gapPct: r.gapper.gapPct,
+          direction: direction,
+          rvol: r.gapper.rvol,
+          volume: r.gapper.volume,
+          score: scored.score,
+          components: scored.components,
+          orHigh: r.orb.orHigh,
+          orLow: r.orb.orLow,
+          orRange: r.orb.orRange,
+          orRangePct: r.orb.orRangePct,
+          breakoutType: r.orb.breakoutType,
+          breakoutStrength: r.orb.breakoutStrength,
+          entryPrice: Math.round(entry * 100) / 100,
+          stopPrice: Math.round(stop * 100) / 100,
+          targetPrice: Math.round(target * 100) / 100,
+          thesis: ''
+        });
+      });
+
+      statusFn('Analyzing ORB... ' + Math.min(i + orbBatchSize, gappers.length) + '/' + gappers.length);
+    }
+
+    // Sort by score, keep top 5
+    setups.sort(function(a, b) { return b.score - a.score; });
+    setups = setups.slice(0, 5);
+
+    // Step 3: Get news + AI thesis for top picks
+    if (setups.length > 0) {
+      statusFn('Fetching news for top picks...');
+      var topTickers = setups.map(function(s) { return s.ticker; });
+
+      // Fetch news for top tickers
+      var newsMap = {};
+      try {
+        for (var ni = 0; ni < topTickers.length; ni++) {
+          var news = await getPolygonNews([topTickers[ni]], 3);
+          newsMap[topTickers[ni]] = news.map(function(n) { return n.title || ''; }).filter(function(t) { return t.length > 0; });
+        }
+      } catch(e) {}
+
+      // Call AI proxy for thesis
+      statusFn('Getting AI analysis...');
+      try {
+        var aiInput = setups.map(function(s) {
+          return {
+            ticker: s.ticker,
+            gapPct: s.gapPct,
+            direction: s.direction,
+            rvol: s.rvol,
+            orHigh: s.orHigh,
+            orLow: s.orLow,
+            orRangePct: s.orRangePct,
+            breakoutType: s.breakoutType,
+            price: s.price,
+            news: newsMap[s.ticker] || []
+          };
+        });
+
+        var session = window._currentSession;
+        if (session && session.access_token) {
+          var aiResp = await fetch(EDGE_FN_BASE + '/ai-proxy', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + session.access_token,
+              'apikey': typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : ''
+            },
+            body: JSON.stringify({
+              task: 'day_trade_scan',
+              stocks: aiInput
+            })
+          });
+
+          if (aiResp.ok) {
+            var aiData = await aiResp.json();
+            var aiText = '';
+            if (aiData.content && aiData.content[0]) aiText = aiData.content[0].text || '';
+
+            // Parse AI response
+            try {
+              var aiResult = JSON.parse(aiText);
+              if (aiResult.picks && Array.isArray(aiResult.picks)) {
+                aiResult.picks.forEach(function(pick) {
+                  var match = setups.find(function(s) { return s.ticker === pick.ticker; });
+                  if (match) {
+                    match.thesis = pick.thesis || '';
+                    if (pick.catalyst_score) {
+                      match.components.catalyst = Math.min(15, parseInt(pick.catalyst_score) || 0);
+                      match.score = Math.min(100, match.score + match.components.catalyst);
+                    }
+                  }
+                });
+                // Re-sort after AI scoring
+                setups.sort(function(a, b) { return b.score - a.score; });
+              }
+            } catch(parseErr) {
+              // AI didn't return valid JSON, just use what we have
+              console.warn('[day-trade] AI parse error:', parseErr);
+            }
+          }
+        }
+      } catch(aiErr) {
+        console.warn('[day-trade] AI analysis failed:', aiErr);
+      }
+    }
+  } else {
+    // Pre-ORB: show gappers as-is with basic scoring (no ORB data yet)
+    gappers.forEach(function(g) {
+      var scored = scoreDayTrade(g, null);
+      setups.push({
+        ticker: g.ticker,
+        price: g.curPrice,
+        prevClose: g.prevClose,
+        gapPct: g.gapPct,
+        direction: g.direction,
+        rvol: g.rvol,
+        volume: g.volume,
+        score: scored.score,
+        components: scored.components,
+        orHigh: null,
+        orLow: null,
+        orRange: null,
+        orRangePct: null,
+        breakoutType: null,
+        breakoutStrength: null,
+        entryPrice: null,
+        stopPrice: null,
+        targetPrice: null,
+        thesis: ''
+      });
+    });
+    setups.sort(function(a, b) { return b.score - a.score; });
+    setups = setups.slice(0, 5);
+  }
+
+  var resultData = {
+    date: getTodayDateStr(),
+    ts: Date.now(),
+    phase: phase,
+    setups: setups,
+    gapperCount: gappers.length
+  };
+
+  try { localStorage.setItem(DAYTRADE_CACHE_KEY, JSON.stringify(resultData)); } catch(e) {}
+
+  statusFn('Found ' + setups.length + ' day trade setups.');
+  return resultData;
+}
+
+// Render a day trade card
+function renderDayTradeCard(s, idx) {
+  var detailId = 'dt-detail-' + idx;
+  var sc = s.score >= 80 ? 'var(--green)' : s.score >= 60 ? 'var(--blue)' : s.score >= 40 ? 'var(--amber)' : 'var(--text-muted)';
+  var sbg = s.score >= 80 ? 'rgba(16,185,129,0.06)' : s.score >= 60 ? 'rgba(37,99,235,0.04)' : 'rgba(245,158,11,0.04)';
+  var dirColor = s.direction === 'LONG' ? 'var(--green)' : 'var(--red)';
+  var dirBg = s.direction === 'LONG' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)';
+
+  var html = '';
+  html += '<div style="background:' + sbg + ';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px 16px;border-left:3px solid ' + sc + ';">';
+
+  // Header: ticker, direction badge, price, score
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
+  html += '<div style="display:flex;align-items:center;gap:6px;">';
+  html += '<span class="ticker-link" style="font-size:14px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\'' + s.ticker + '\')">' + s.ticker + '</span>';
+  html += '<span style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;background:' + dirBg + ';color:' + dirColor + ';">' + s.direction + '</span>';
+  html += '<span style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
+  html += '</div>';
+  // Score circle
+  html += '<div onclick="event.stopPropagation();var d=document.getElementById(\'' + detailId + '\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid ' + sc + ';font-size:12px;font-weight:900;color:' + sc + ';font-family:var(--font-mono);cursor:pointer;" title="Click for score breakdown">' + s.score + '</div>';
+  html += '</div>';
+
+  // Gap + RVol row
+  var gapColor = s.gapPct >= 0 ? 'var(--green)' : 'var(--red)';
+  html += '<div style="display:flex;gap:10px;font-size:12px;margin-bottom:6px;">';
+  html += '<span style="color:' + gapColor + ';font-weight:700;font-family:var(--font-mono);">Gap ' + (s.gapPct >= 0 ? '+' : '') + s.gapPct.toFixed(1) + '%</span>';
+  html += '<span style="color:var(--text-muted);font-family:var(--font-mono);">RVol ' + (s.rvol ? s.rvol.toFixed(1) + 'x' : '\u2014') + '</span>';
+  if (s.orRangePct != null) {
+    html += '<span style="color:var(--text-muted);font-family:var(--font-mono);">OR ' + s.orRangePct.toFixed(1) + '%</span>';
+  }
+  html += '</div>';
+
+  // AI thesis
+  if (s.thesis) {
+    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.4;margin-bottom:6px;">' + s.thesis + '</div>';
+  }
+
+  // OR levels (if available)
+  if (s.orHigh != null) {
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px;padding:4px 6px;background:var(--bg-secondary);border-radius:3px;margin-bottom:4px;">';
+    html += '<span style="color:var(--text-muted);">OR High <span style="font-family:var(--font-mono);font-weight:700;color:var(--green);">$' + s.orHigh.toFixed(2) + '</span></span>';
+    html += '<span style="color:var(--text-muted);">OR Low <span style="font-family:var(--font-mono);font-weight:700;color:var(--red);">$' + s.orLow.toFixed(2) + '</span></span>';
+    html += '<span style="color:var(--text-muted);">Range <span style="font-family:var(--font-mono);font-weight:700;color:var(--text-secondary);">$' + s.orRange.toFixed(2) + '</span></span>';
+    html += '</div>';
+  }
+
+  // Expandable detail section
+  var comps = s.components || {};
+  html += '<div id="' + detailId + '" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">';
+
+  html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Score Breakdown</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:12px;margin-bottom:8px;">';
+  html += renderComponentBar('Gap', comps.gap || 0, 25, 'var(--blue)');
+  html += renderComponentBar('Rel Volume', comps.rvol || 0, 25, 'var(--blue)');
+  html += renderComponentBar('Breakout', comps.breakout || 0, 20, 'var(--blue)');
+  html += renderComponentBar('Tightness', comps.tightness || 0, 15, 'var(--blue)');
+  html += renderComponentBar('Catalyst', comps.catalyst || 0, 15, 'var(--blue)');
+  html += '</div>';
+
+  // Trade levels (if post-ORB)
+  if (s.entryPrice != null) {
+    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;font-family:var(--font-mono);margin-top:6px;">';
+    html += '<span style="color:var(--text-muted);">Entry <span style="color:var(--blue);font-weight:700;">$' + s.entryPrice.toFixed(2) + '</span></span>';
+    html += '<span style="color:var(--text-muted);">Stop <span style="color:var(--red);font-weight:700;">$' + s.stopPrice.toFixed(2) + '</span></span>';
+    html += '<span style="color:var(--text-muted);">Target <span style="color:var(--green);font-weight:700;">$' + s.targetPrice.toFixed(2) + '</span></span>';
+    html += '</div>';
+  }
+
+  html += '</div>'; // close detail
+  html += '</div>'; // close card
+  return html;
+}
+
+// Render day trade results section
+function renderDayTradeResults(data) {
+  var setups = data.setups || [];
+  var html = '';
+
+  if (setups.length === 0) {
+    if (data.phase === 'pre_orb') {
+      html += '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">Waiting for market open to detect gappers...</div>';
+    } else {
+      html += '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">No day trade setups found. Check back during market hours.</div>';
+    }
+    return html;
+  }
+
+  html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+  setups.forEach(function(s, idx) {
+    html += renderDayTradeCard(s, idx);
+  });
+  html += '</div>';
+
+  return html;
+}
+
+// Run day trade scan from UI
+async function runDayTradeScanUI() {
+  var statusEl = document.getElementById('dt-scanner-status');
+  var resultsEl = document.getElementById('dt-scan-results');
+
+  if (statusEl) statusEl.textContent = 'Scanning...';
+
+  try {
+    var results = await runDayTradeScan(function(msg) {
+      if (statusEl) statusEl.textContent = msg;
+    });
+
+    if (resultsEl) resultsEl.innerHTML = renderDayTradeResults(results);
+
+    // Update phase label
+    var phaseEl = document.getElementById('dt-phase-label');
+    if (phaseEl) {
+      if (results.phase === 'pre_orb') {
+        phaseEl.innerHTML = '<span style="color:var(--amber);font-weight:700;">PRE-ORB</span> · Showing gappers';
+      } else if (results.phase === 'post_orb') {
+        phaseEl.innerHTML = '<span style="color:var(--green);font-weight:700;">POST-ORB</span> · Breakout analysis active';
+      } else {
+        phaseEl.innerHTML = '';
+      }
+    }
+
+    if (statusEl) {
+      var et = getETNow();
+      statusEl.textContent = 'Updated ' + et.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) + ' ET';
+    }
+  } catch(e) {
+    if (statusEl) statusEl.textContent = 'Error: ' + e.message;
+  }
+}
+
+// Auto-refresh day trade scanner every 15 min during market hours
+function startDayTradeAutoRefresh() {
+  if (_dayTradeAutoTimer) return;
+  // Initial scan
+  var cached = null;
+  try {
+    var raw = localStorage.getItem(DAYTRADE_CACHE_KEY);
+    if (raw) cached = JSON.parse(raw);
+  } catch(e) {}
+  var needsScan = !cached || cached.date !== getTodayDateStr() || Date.now() - cached.ts > 15 * 60 * 1000;
+  if (needsScan) {
+    setTimeout(function() { runDayTradeScanUI(); }, 3000);
+  } else {
+    // Render cached results
+    var resultsEl = document.getElementById('dt-scan-results');
+    if (resultsEl) resultsEl.innerHTML = renderDayTradeResults(cached);
+    var phaseEl = document.getElementById('dt-phase-label');
+    if (phaseEl) {
+      if (cached.phase === 'pre_orb') phaseEl.innerHTML = '<span style="color:var(--amber);font-weight:700;">PRE-ORB</span> · Showing gappers';
+      else if (cached.phase === 'post_orb') phaseEl.innerHTML = '<span style="color:var(--green);font-weight:700;">POST-ORB</span> · Breakout analysis active';
+    }
+    var statusEl = document.getElementById('dt-scanner-status');
+    if (statusEl) statusEl.textContent = 'Cached · ' + new Date(cached.ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+
+  _dayTradeAutoTimer = setInterval(function() {
+    var et = getETNow();
+    var h = et.getHours(), m = et.getMinutes(), d = et.getDay();
+    if (d > 0 && d < 6 && h >= 4 && h < 17) {
+      runDayTradeScanUI();
+    }
+  }, 15 * 60 * 1000);
+}
+
+
 // ==================== UI: RENDER SCANNER TAB ====================
 
 function renderScanner() {
@@ -627,31 +1269,19 @@ function renderScanner() {
   var cache = getMomentumCache();
   var scanResults = null;
   try { var sr = localStorage.getItem(SCANNER_RESULTS_KEY); if (sr) scanResults = JSON.parse(sr); } catch(e) {}
+  var dtResults = null;
+  try { var dr = localStorage.getItem(DAYTRADE_CACHE_KEY); if (dr) dtResults = JSON.parse(dr); } catch(e) {}
 
   var dataFreshness = getDataFreshnessLabel();
-  var cacheDate = cache ? new Date(cache.ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : 'Never';
 
   var html = '';
 
   // Header
   html += '<div style="display:flex;align-items:center;justify-content:center;margin-bottom:8px;">';
-  html += '<div style="text-align:center;"><div class="card-header-bar">Setup Scanner</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Find compression setups with momentum across the market</div></div>';
+  html += '<div style="text-align:center;"><div class="card-header-bar">Setup Scanner</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Find the best swing and day trade setups across the market</div></div>';
   html += '</div>';
 
-  // Scan button + progress bar
-  var scanMode = isScannerMarketHours() && isMomentumCacheFresh() ? 'live' : 'eod';
-
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">';
-  html += '<div style="display:flex;align-items:center;gap:8px;">';
-  if (scanMode === 'live') {
-    html += '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;"></span> Live</span>';
-  }
-  html += '<span style="font-size:12px;color:var(--text-muted);">' + dataFreshness + '</span>';
-  html += '</div>';
-  html += '<button onclick="runFullScanUI()" id="scan-btn" class="refresh-btn" style="padding:8px 20px;font-weight:700;">Scan</button>';
-  html += '</div>';
-
-  // Progress bar (hidden during idle)
+  // Progress bar (shared, hidden during idle)
   html += '<div id="scanner-progress-wrap" style="display:none;margin-bottom:14px;">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">';
   html += '<span id="scanner-status" style="font-size:14px;color:var(--text-muted);">Starting scan...</span>';
@@ -661,36 +1291,79 @@ function renderScanner() {
   html += '<div id="scanner-progress-bar" style="width:0%;height:100%;background:var(--blue);border-radius:2px;transition:width 0.3s ease;"></div>';
   html += '</div></div>';
 
-  // Screening funnel (idle status)
-  html += '<div id="scanner-status-idle" style="margin-bottom:14px;min-height:16px;">';
+  // ═══ TWO-COLUMN GRID ═══
+  html += '<div class="scanner-dual-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">';
+
+  // ── LEFT COLUMN: Day Trade Scanner ──
+  html += '<div class="card" style="padding:0;overflow:hidden;">';
+  html += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Day Trade</span>';
+  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:var(--red);text-transform:uppercase;letter-spacing:.04em;">ORB</span>';
+  html += '</div>';
+  html += '<button onclick="runDayTradeScanUI()" class="refresh-btn" style="padding:5px 12px;font-size:12px;">Scan</button>';
+  html += '</div>';
+  html += '<div id="dt-phase-label" style="font-size:11px;margin-top:4px;"></div>';
+  html += '<div id="dt-scanner-status" style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + (dtResults ? 'Cached' : 'Click Scan or wait for auto-scan') + '</div>';
+  html += '</div>';
+  html += '<div id="dt-scan-results" style="padding:12px;">';
+  if (dtResults && dtResults.setups && dtResults.setups.length > 0) {
+    html += renderDayTradeResults(dtResults);
+  } else {
+    html += '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">15-min ORB strategy. Finds gappers with volume + news catalysts, then tracks opening range breakouts.</div>';
+  }
+  html += '</div>';
+  html += '</div>';
+
+  // ── RIGHT COLUMN: Swing Scanner ──
+  html += '<div class="card" style="padding:0;overflow:hidden;">';
+  html += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Swing Setups</span>';
+  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(37,99,235,0.1);color:var(--blue);text-transform:uppercase;letter-spacing:.04em;">Compression</span>';
+  html += '</div>';
+  html += '<button onclick="runFullScanUI()" id="scan-btn" class="refresh-btn" style="padding:5px 12px;font-size:12px;">Scan</button>';
+  html += '</div>';
+  var scanMode = isScannerMarketHours() && isMomentumCacheFresh() ? 'live' : 'eod';
+  html += '<div style="display:flex;align-items:center;gap:6px;margin-top:4px;">';
+  if (scanMode === 'live') {
+    html += '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;"></span>Live</span>';
+  }
+  html += '<span style="font-size:11px;color:var(--text-muted);">' + dataFreshness + '</span>';
+  html += '</div>';
+  html += '</div>';
+
+  // Screening funnel
+  html += '<div id="scanner-status-idle" style="padding:6px 16px;min-height:16px;">';
   if (cache) {
     var setupCount = (scanResults && scanResults.setups) ? scanResults.setups.length : 0;
-    html += '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);flex-wrap:wrap;">';
+    html += '<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);flex-wrap:wrap;">';
     if (cache.totalScanned) {
-      html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.totalScanned.toLocaleString() + '</span> stocks scanned';
-      html += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
-    }
-    if (cache.filteredCount) {
-      html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.filteredCount.toLocaleString() + '</span> passed filters';
-      html += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+      html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.totalScanned.toLocaleString() + '</span> scanned';
+      html += '<span style="font-size:10px;">\u2192</span>';
     }
     html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.count + '</span> candidates';
     if (setupCount > 0) {
-      html += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+      html += '<span style="font-size:10px;">\u2192</span>';
       html += '<span style="font-family:var(--font-mono);font-weight:700;color:var(--blue);">' + setupCount + '</span> <span style="font-weight:600;color:var(--blue);">setups</span>';
     }
     html += '</div>';
   } else {
-    html += '<div style="font-size:13px;color:var(--text-muted);">No scan data yet. Click Scan to find setups.</div>';
+    html += '<div style="font-size:11px;color:var(--text-muted);">Click Scan to find setups.</div>';
   }
   html += '</div>';
 
-  // Results
-  html += '<div id="scan-results">';
+  // Swing results (top 5)
+  html += '<div id="scan-results" style="padding:0 12px 12px;">';
   if (scanResults && scanResults.setups && scanResults.setups.length > 0) {
-    html += renderSetupResults(scanResults);
+    html += renderSetupResults(scanResults, 5);
   }
   html += '</div>';
+  html += '</div>';
+
+  html += '</div>'; // close scanner-dual-grid
 
   // Universe list (collapsible card)
   var universeCount = (cache && cache.tickers) ? cache.tickers.length : 0;
@@ -720,22 +1393,39 @@ function renderScanner() {
 
 // ==================== RENDER: SETUP RESULTS ====================
 
-function renderSetupResults(data) {
+function renderSetupResults(data, limit) {
   var setups = data.setups || [];
   var html = '';
 
   if (setups.length === 0) {
-    html += '<div class="card" style="padding:20px;text-align:center;color:var(--text-muted);font-size:14px;">No compression setups found right now. Check back later.</div>';
+    html += '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">No compression setups found right now. Check back later.</div>';
     return html;
   }
 
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">';
-  setups.forEach(function(s, idx) {
+  var displaySetups = limit ? setups.slice(0, limit) : setups;
+  var hasMore = limit && setups.length > limit;
+
+  html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+  displaySetups.forEach(function(s, idx) {
     html += renderSetupCard(s, idx, data);
   });
   html += '</div>';
 
+  if (hasMore) {
+    html += '<div id="swing-view-all-wrap" style="text-align:center;margin-top:8px;">';
+    html += '<button onclick="expandSwingResults()" class="refresh-btn" style="padding:6px 16px;font-size:12px;">View All ' + setups.length + ' Setups</button>';
+    html += '</div>';
+  }
+
   return html;
+}
+
+function expandSwingResults() {
+  var scanResults = null;
+  try { var sr = localStorage.getItem(SCANNER_RESULTS_KEY); if (sr) scanResults = JSON.parse(sr); } catch(e) {}
+  if (!scanResults) return;
+  var resultsEl = document.getElementById('scan-results');
+  if (resultsEl) resultsEl.innerHTML = renderSetupResults(scanResults);
 }
 
 
@@ -1055,24 +1745,19 @@ async function runFullScanUI() {
     });
 
     updateProgress('Done!', 100);
-    if (resultsEl) resultsEl.innerHTML = renderSetupResults(results);
+    if (resultsEl) resultsEl.innerHTML = renderSetupResults(results, 5);
 
     setTimeout(function() {
       if (progressWrap) progressWrap.style.display = 'none';
       if (idleStatus) {
-        // Rebuild the funnel display with fresh data
         var setupCount = (results.setups || []).length;
-        var funnelHtml = '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);flex-wrap:wrap;">';
+        var funnelHtml = '<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);flex-wrap:wrap;">';
         if (cache.totalScanned) {
-          funnelHtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.totalScanned.toLocaleString() + '</span> stocks scanned';
-          funnelHtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
-        }
-        if (cache.filteredCount) {
-          funnelHtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.filteredCount.toLocaleString() + '</span> passed filters';
-          funnelHtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+          funnelHtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.totalScanned.toLocaleString() + '</span> scanned';
+          funnelHtml += '<span style="font-size:10px;">\u2192</span>';
         }
         funnelHtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.count + '</span> candidates';
-        funnelHtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+        funnelHtml += '<span style="font-size:10px;">\u2192</span>';
         funnelHtml += '<span style="font-family:var(--font-mono);font-weight:700;color:var(--blue);">' + setupCount + '</span> <span style="font-weight:600;color:var(--blue);">setups</span>';
         funnelHtml += '</div>';
         idleStatus.innerHTML = funnelHtml;
@@ -1172,14 +1857,10 @@ function scannerAutoBuild() {
       if (idleStatus) {
         var cache = getMomentumCache();
         if (cache) {
-          var _fhtml = '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);flex-wrap:wrap;">';
+          var _fhtml = '<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);flex-wrap:wrap;">';
           if (cache.totalScanned) {
-            _fhtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.totalScanned.toLocaleString() + '</span> stocks scanned';
-            _fhtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
-          }
-          if (cache.filteredCount) {
-            _fhtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.filteredCount.toLocaleString() + '</span> passed filters';
-            _fhtml += '<span style="color:var(--text-muted);font-size:11px;">\u2192</span>';
+            _fhtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.totalScanned.toLocaleString() + '</span> scanned';
+            _fhtml += '<span style="font-size:10px;">\u2192</span>';
           }
           _fhtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.count + '</span> candidates'
             + ' · <span style="color:var(--blue);font-weight:600;">Click Scan for setups</span></div>';

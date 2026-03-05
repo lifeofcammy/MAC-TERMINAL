@@ -2,7 +2,7 @@
 
 > This file gives AI assistants full context on the MAC Terminal project.
 > Read this COMPLETELY before making any changes.
-> **Last updated: March 4, 2026**
+> **Last updated: March 5, 2026**
 
 ---
 
@@ -29,7 +29,7 @@ MAC Terminal (Market Action Center) is a **trading tools dashboard** — NOT a t
 |---------|---------|
 | **Vercel** | Hosts the website. Auto-deploys from GitHub `main` branch. |
 | **Supabase** | Auth (email + Google sign-in), cloud database (watchlist, journal, analysis). |
-| **Supabase Edge Functions** | `ai-proxy` (routes AI calls to Anthropic securely), `daily-scanner` (background scan). Auto-deployed via GitHub Actions. |
+| **Supabase Edge Functions** | `ai-proxy` (routes AI calls to Anthropic — tasks: generate_analysis, analysis_chat, generate_themes, day_trade_scan), `daily-scanner` (background scan). Auto-deployed via GitHub Actions. |
 | **Polygon API** | Stock market data (prices, candles, snapshots, grouped daily). PAID plan. Key stored in localStorage (client-side). |
 | **Anthropic API (Claude)** | AI features — themes, trade analysis, journal coaching. Key is server-side only (via ai-proxy Edge Function). |
 | **TradingView** | Free embeddable chart widget (15-min delayed). Loaded on-demand when user clicks a ticker. |
@@ -156,21 +156,30 @@ The Overview tab is the main dashboard. Cards render top-to-bottom in this order
 
 ---
 
-## Setup Scanner (scanner.js — 1200 lines)
+## Setup Scanner (scanner.js — ~1900 lines)
 
 ### Architecture
-Two-layer system using **Top Ideas-style scoring** across the broader US market:
+Three-layer system with **side-by-side Swing + Day Trade scanners**:
 1. **Layer 1: Universe Builder** — Fetches Polygon grouped daily data for ALL US stocks, pre-filters, takes top 100 by dollar volume, scores each, keeps top 150 candidates
-2. **Layer 2: Setup Analysis** — Deep-scores each candidate using the same 5-factor system as Top Ideas, returns top 20 setups
+2. **Layer 2: Swing Setup Analysis** — Deep-scores each candidate using 5-factor system, returns top setups (displayed as top 5 in side-by-side view, expandable to all)
+3. **Layer 3: Day Trade Scanner (ORB)** — Finds gappers, calculates 15-min opening range, scores for ORB breakouts, gets AI thesis
 
-### Universe Pre-Filters (Layer 1)
+### Scanner Tab Layout
+- **Two-column grid** (side by side on desktop, stacked on mobile)
+- **Left column:** Day Trade scanner (ORB strategy, top 5 results)
+- **Right column:** Swing setups (compression strategy, top 5 with "View All" button)
+- CSS class: `.scanner-dual-grid` — stacks at 768px breakpoint
+
+### Swing Scanner (Layer 1+2)
+
+#### Universe Pre-Filters (Layer 1)
 - Price ≥ $20
 - Volume ≥ 1M shares/day
 - Ticker length ≤ 5 characters, no dots/dashes
 - **ETF filter**: 100+ known ETF tickers excluded (SPY, QQQ, EWY, etc. — see `KNOWN_ETFS` array)
 - **Top 100 by dollar volume** (price × volume) — ensures only liquid, well-known names
 
-### Scoring (Both Layers — Top Ideas Style, max ~100 pts)
+#### Scoring (max ~100 pts)
 | Factor | Max Points | What It Measures |
 |--------|-----------|-----------------|
 | SMA Compression | 30 | Spread between 10 and 20 SMA as % of price — tighter = better |
@@ -181,23 +190,41 @@ Two-layer system using **Top Ideas-style scoring** across the broader US market:
 
 - Minimum score: **30** to appear in results
 - Maximum spread: **5%** (SMA10 vs SMA20) — wider = skip
-- Cap results at **20** setups
 
-### Scanner UI
-- Single list of cards (blue accent for all — no categories)
-- Cards show: ticker (clickable → TradingView chart), price, % change, score circle
-- Component bars: Compression, Alignment, Extension, RVol, Momentum
-- Quick stats: Spread %, Extension %, RVol, Day Change
-- Thesis text: "Tight compression (X%). Above 10/20 SMA. Near base (X%). Xx volume."
-- Trade levels: Entry = price, Stop = SMA20 × 0.98, Target = price + 2× risk
-- Expandable detail section
+### Day Trade Scanner (Layer 3 — ORB Strategy)
+
+#### How It Works
+1. **Pre-ORB (before 9:45 AM ET):** Finds gappers (≥2% gap) with high relative volume
+2. **Post-ORB (after 9:45 AM ET):** Calculates 15-min opening range (9:30-9:45), detects breakouts, scores and ranks
+3. **AI Analysis:** Top picks sent to `ai-proxy` (`day_trade_scan` task) for thesis + catalyst scoring
+
+#### Day Trade Scoring (max ~100 pts)
+| Factor | Max Points | What It Measures |
+|--------|-----------|-----------------|
+| Gap Magnitude | 25 | 2-4%=10, 4-6%=18, 6%+=25 |
+| Relative Volume | 25 | ≥3x=25, ≥2x=18, ≥1.5x=12, ≥1x=6 |
+| ORB Breakout | 20 | Clean break above/below OR with volume |
+| OR Tightness | 15 | <1% range=15, <2%=10, <3%=5 |
+| News Catalyst | 15 | AI-scored based on news quality |
+
+#### Day Trade Cards Show
+- Ticker (clickable → chart), price, direction badge (LONG/SHORT)
+- Gap %, RVol, OR range %
+- AI thesis (1-2 sentences)
+- OR levels: High, Low, Range
+- Trade levels: Entry (OR break), Stop (opposite OR level), Target (1.5× range)
 
 ### Scanner Caching
-- Universe cached in localStorage (`mac_scanner_universe`) with timestamp
-- Scan results cached in localStorage (`mac_scan_results`)
-- Auto-builds universe on page load when cache is stale
-- Legacy key `mac_momentum_top100` auto-cleaned on load
-- To force fresh scan: clear both localStorage keys
+| Key | Contents |
+|-----|----------|
+| `mac_scanner_universe` | Swing universe (150 candidates) |
+| `mac_scan_results` | Swing scan results (top setups) |
+| `mac_daytrade_universe` | Day trade gappers (top 20) |
+| `mac_daytrade_results` | Day trade scored setups (top 5) |
+
+- Auto-builds universe on tab open when cache is stale
+- Day trade scanner auto-refreshes every 15 min during market hours
+- To force fresh scan: clear localStorage keys
 
 ---
 
@@ -235,7 +262,7 @@ Two-layer system using **Top Ideas-style scoring** across the broader US market:
 - **When pushing JS updates, bump the `?v=` version** in `app/index.html` so browsers fetch fresh files
 - `app/index.html` also has `<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">` meta tags
 
-### Current version param: `?v=20260304o` (scanner), `?v=20260304m` (tabs)
+### Current version param: `?v=20260305c` (scanner, overview), `?v=20260305b` (tabs, styles)
 
 ---
 

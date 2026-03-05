@@ -46,12 +46,13 @@ document.querySelectorAll('.tabs > .tab').forEach(tab => {
 
     // Trigger per-tab renders (lazy-load scripts on first click)
     if (tab.dataset.tab === 'scanner') {
-      loadScript('js/scanner.js?v=20260304o').then(function() {
+      loadScript('js/scanner.js?v=20260305c').then(function() {
         if (!window._scannerLoaded) { renderScanner(); window._scannerLoaded = true; }
         if (!_scannerAutoBuildDone && typeof scannerAutoBuild === 'function') {
           _scannerAutoBuildDone = true;
           scannerAutoBuild();
         }
+        if (typeof startDayTradeAutoRefresh === 'function') startDayTradeAutoRefresh();
       });
     }
     if (tab.dataset.tab === 'recap') {

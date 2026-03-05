@@ -422,6 +422,8 @@ input:focus, textarea:focus, select:focus {
   .ov-heatmap-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .ov-heatmap-row { min-width: 400px; }
 
+  /* Scanner: Dual-column → stacked on mobile */
+  .scanner-dual-grid { grid-template-columns: 1fr !important; }
   /* Scanner: Top 100 table → horizontal scroll */
   .sc-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .sc-table-row { min-width: 560px; }

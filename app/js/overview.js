@@ -1003,7 +1003,7 @@ async function renderOverview() {
 
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;border-left:3px solid var(--amber);border-radius:14px;">';
   html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;padding:10px 16px;cursor:pointer;user-select:none;gap:12px;">';
-  html += '<span id="mindset-arrow" style="flex-shrink:0;font-size:12px;color:var(--text-muted);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
+  html += '<span id="mindset-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
   html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 1</div><div class="card-header-bar">Morning Mindset</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Set your mental game before the market opens</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
@@ -1111,7 +1111,7 @@ async function renderOverview() {
 
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'regime\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
-  html += '<span id="regime-arrow" style="flex-shrink:0;font-size:12px;color:var(--text-muted);">'+(regimeCollapsed?'▶':'▼')+'</span>';
+  html += '<span id="regime-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(regimeCollapsed?'▶':'▼')+'</span>';
   html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 2</div><div class="card-header-bar">Market Outlook</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
@@ -1201,7 +1201,7 @@ async function renderOverview() {
   var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')==='true';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
-  html += '<span id="heatmap-arrow" style="flex-shrink:0;font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span>';
+  html += '<span id="heatmap-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span>';
   html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 4</div><div class="card-header-bar">Sector Rotation</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Where is money flowing? Click a sector for details.</div></div></div>';
   html += '<span style="font-size:12px;color:var(--text-muted);font-family:var(--font-body);flex-shrink:0;">'+dataFreshness+'</span>';
   html += '</div>';
@@ -1299,7 +1299,7 @@ async function renderOverview() {
   var catalystsCollapsed = localStorage.getItem('mac_catalysts_collapsed')!=='false';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'catalysts\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
-  html += '<span id="catalysts-arrow" style="flex-shrink:0;font-size:12px;color:var(--text-muted);">'+(catalystsCollapsed?'\u25b6':'\u25bc')+'</span>';
+  html += '<span id="catalysts-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(catalystsCollapsed?'\u25b6':'\u25bc')+'</span>';
   html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 5</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">What events and narratives are driving today\'s price action?</div></div></div>';
   html += '<span style="font-size:12px;color:var(--text-muted);flex-shrink:0;">'+tsLabel(ts)+'</span>';
   html += '</div>';
@@ -1329,7 +1329,7 @@ async function renderOverview() {
   var ideasCollapsed = localStorage.getItem('mac_ideas_collapsed')!=='false';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'ideas\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
-  html += '<span id="ideas-arrow" style="flex-shrink:0;font-size:12px;color:var(--text-muted);">'+(ideasCollapsed?'\u25b6':'\u25bc')+'</span>';
+  html += '<span id="ideas-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(ideasCollapsed?'\u25b6':'\u25bc')+'</span>';
   html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 6</div><div class="card-header-bar">Top Ideas</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';

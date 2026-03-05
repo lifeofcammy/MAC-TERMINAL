@@ -335,8 +335,78 @@ Rules:
         messages: [{ role: 'user', content: prompt }],
       }
 
+    } else if (task === 'day_trade_scan') {
+      // Validate inputs: stocks array with gap/ORB data
+      const stocks = body.stocks
+      if (!Array.isArray(stocks) || stocks.length === 0) {
+        return new Response(JSON.stringify({ error: 'No stock data provided for day trade scan.' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Sanitize stock data
+      const cleanStocks = stocks.slice(0, 10).filter((s: any) =>
+        s && validateTicker(s.ticker) && typeof s.gapPct === 'number'
+      ).map((s: any) => ({
+        ticker: s.ticker,
+        gapPct: Number(s.gapPct),
+        direction: s.direction === 'LONG' || s.direction === 'SHORT' ? s.direction : 'LONG',
+        rvol: typeof s.rvol === 'number' ? s.rvol : 0,
+        orHigh: typeof s.orHigh === 'number' ? s.orHigh : null,
+        orLow: typeof s.orLow === 'number' ? s.orLow : null,
+        orRangePct: typeof s.orRangePct === 'number' ? s.orRangePct : null,
+        breakoutType: sanitizeString(s.breakoutType, 10),
+        price: typeof s.price === 'number' ? s.price : 0,
+        news: Array.isArray(s.news) ? s.news.slice(0, 3).map((n: any) => sanitizeString(n, 200)) : []
+      }))
+
+      if (cleanStocks.length === 0) {
+        return new Response(JSON.stringify({ error: 'No valid stock data after validation.' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const stockContext = cleanStocks.map((s: any) => {
+        const newsStr = s.news.length > 0 ? '\n  News: ' + s.news.join('; ') : '\n  No news found.'
+        const orbStr = s.orHigh ? `\n  OR High: $${s.orHigh} | OR Low: $${s.orLow} | OR Range: ${s.orRangePct}% | Breakout: ${s.breakoutType}` : '\n  No ORB data yet.'
+        return `${s.ticker} — Gap: ${s.gapPct >= 0 ? '+' : ''}${s.gapPct.toFixed(1)}% | Direction: ${s.direction} | RVol: ${s.rvol.toFixed(1)}x | Price: $${s.price.toFixed(2)}${orbStr}${newsStr}`
+      }).join('\n\n')
+
+      const prompt = `You are a day trading analyst specializing in Opening Range Breakout (ORB) strategies.
+
+Given these stocks that gapped today, rank the best day trade candidates.
+
+STOCKS:
+${stockContext}
+
+For each stock, provide:
+1. A 1-2 sentence thesis explaining why it's a good (or bad) day trade
+2. A catalyst_score from 0-15 based on news quality (15 = major catalyst like earnings/FDA, 10 = moderate catalyst, 5 = weak catalyst, 0 = no clear catalyst)
+
+Return JSON ONLY in this exact format:
+{
+  "picks": [
+    {"ticker": "AAPL", "thesis": "Strong gap up on earnings beat with massive volume. Clean ORB breakout above $185 with tight range.", "catalyst_score": 15}
+  ]
+}
+
+Rules:
+- Include ALL provided tickers in your response
+- Be specific about price levels and catalysts
+- Focus on actionable day trading insights
+- Keep thesis to 1-2 sentences max
+- Return ONLY the JSON object.`
+
+      anthropicBody = {
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
+      }
+
     } else {
-      return new Response(JSON.stringify({ error: `Unknown task: ${task}. Supported: generate_analysis, analysis_chat, generate_themes` }), {
+      return new Response(JSON.stringify({ error: `Unknown task: ${task}. Supported: generate_analysis, analysis_chat, generate_themes, day_trade_scan` }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
