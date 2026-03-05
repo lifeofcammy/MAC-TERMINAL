@@ -138,6 +138,7 @@ function renderBreadthBody(data) {
 // Render the breadth trend chart — SVG line chart showing breadth % over the day
 function renderBreadthTimeline() {
   if(_breadthHistory.length < 2) return '';
+  var trendCollapsed = localStorage.getItem('mac_breadth_trend_collapsed') === 'true';
   var html = '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">';
 
   // Summary line: net direction
@@ -148,10 +149,11 @@ function renderBreadthTimeline() {
   var dirColor = delta > 0 ? 'var(--green)' : delta < 0 ? 'var(--red)' : 'var(--text-muted)';
   var dirArrow = delta > 0 ? '\u25b2' : delta < 0 ? '\u25bc' : '\u25cf';
 
-  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
-  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Intraday Trend</div>';
+  html += '<div onclick="toggleBreadthTrend()" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;cursor:pointer;user-select:none;">';
+  html += '<div style="display:flex;align-items:center;gap:8px;"><span id="breadth-trend-arrow" style="font-size:16px;color:var(--blue);">'+(trendCollapsed?'\u25b6':'\u25bc')+'</span><span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Intraday Trend</span></div>';
   html += '<span style="font-size:13px;font-weight:800;color:'+dirColor+';">'+dirArrow+' '+dirLabel+' ('+(delta>0?'+':'')+delta+'%)</span>';
   html += '</div>';
+  html += '<div id="breadth-trend-body" style="'+(trendCollapsed?'display:none;':'')+'">';
 
   // SVG line chart
   var W = 100; // viewBox percentage width
@@ -185,7 +187,7 @@ function renderBreadthTimeline() {
   // Fill area under curve
   var areaPath = linePath + ' L'+points[points.length-1].x.toFixed(1)+','+(padT+chartH)+' L'+points[0].x.toFixed(1)+','+(padT+chartH)+' Z';
 
-  html += '<div style="position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg-secondary);padding:8px;height:120px;">';
+  html += '<div style="position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg-secondary);padding:8px;height:180px;">';
   html += '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:100%;display:block;" preserveAspectRatio="xMidYMid meet">';
   // 50% line (neutral)
   if(minPct <= 50 && maxPct >= 50) {
@@ -234,6 +236,7 @@ function renderBreadthTimeline() {
   });
   html += '</div>';
 
+  html += '</div>'; // close breadth-trend-body
   html += '</div>';
   return html;
 }
@@ -1545,6 +1548,15 @@ function toggleHeatmap(){
   if(body && body.style.display !== 'none' && window._rrgData && window._rrgData.length > 0) {
     setTimeout(function(){ renderRRGCanvas('rrg-canvas'); }, 50);
   }
+}
+
+function toggleBreadthTrend(){
+  var body=document.getElementById('breadth-trend-body'),arrow=document.getElementById('breadth-trend-arrow');
+  if(!body)return;
+  var hidden=body.style.display==='none';
+  body.style.display=hidden?'':'none';
+  if(arrow)arrow.textContent=hidden?'\u25bc':'\u25b6';
+  try{localStorage.setItem('mac_breadth_trend_collapsed',hidden?'false':'true');}catch(e){}
 }
 
 // Show sectors in a specific RRG quadrant
