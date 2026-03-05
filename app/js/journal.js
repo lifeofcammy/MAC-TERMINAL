@@ -873,7 +873,7 @@ function recapAnalyze() {
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="recap-cols" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
       <div>
         <div class="recap-section-card">
           <div class="recap-section-header">💰 P&L Breakdown</div>

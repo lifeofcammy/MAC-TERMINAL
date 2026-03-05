@@ -12,7 +12,7 @@
     var target = document.getElementById('app-content') || document.body;
     var hint = document.createElement('div');
     hint.id = 'chart-hint-banner';
-    hint.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--bg-card);border:1px solid var(--blue);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);max-width:400px;';
+    hint.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--bg-card);border:1px solid var(--blue);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);max-width:min(400px,90vw);';
     hint.innerHTML = '<span style="font-size:14px;color:var(--text-primary);line-height:1.4;">Tip: Click any <strong style="font-family:var(--font-mono);text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px;">ticker symbol</strong> to view its daily chart.</span>'
       + '<button onclick="this.parentElement.remove();localStorage.setItem(\'mac_chart_hint_seen\',\'1\');" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;line-height:1;padding:0 2px;flex-shrink:0;">&times;</button>';
     target.appendChild(hint);
@@ -325,7 +325,7 @@ function openTVChart(ticker) {
 
   // Modal container (wider + taller to fit data panel)
   var modal = document.createElement('div');
-  modal.style.cssText = 'position:relative;width:100%;max-width:1100px;height:85vh;max-height:750px;background:var(--bg-card);border-radius:14px;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.3);display:flex;flex-direction:column;';
+  modal.style.cssText = 'position:relative;width:100%;max-width:1100px;height:85vh;max-height:750px;background:var(--bg-card);border-radius:14px;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.3);display:flex;flex-direction:column;margin:8px;';
 
   // Header bar
   var header = document.createElement('div');

@@ -55,7 +55,7 @@ document.querySelectorAll('.tabs > .tab').forEach(tab => {
       });
     }
     if (tab.dataset.tab === 'recap') {
-      loadScript('js/journal.js?v=20260303r').then(function() {
+      loadScript('js/journal.js?v=20260305a').then(function() {
         if (typeof renderRecapCalendar === 'function') renderRecapCalendar();
       });
     }

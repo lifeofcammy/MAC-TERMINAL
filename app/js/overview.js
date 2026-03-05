@@ -1187,9 +1187,9 @@ async function renderOverview() {
     html += '<div style="position:relative;"><canvas id="rrg-canvas" style="width:100%;border-radius:8px;"></canvas></div>';
 
     // ── SECTOR ROTATION TABLE (primary readable view) ──
-    html += '<div style="margin-top:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden;">';
+    html += '<div style="margin-top:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch;">';
     // Table header
-    html += '<div style="display:grid;grid-template-columns:90px 1fr 56px 56px 50px;gap:0;padding:6px 12px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;">';
+    html += '<div style="display:grid;grid-template-columns:90px 1fr 56px 56px 50px;gap:0;padding:6px 12px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;min-width:360px;">';
     html += '<span>Quadrant</span><span>Sector</span><span>RS</span><span>Mom</span><span>Dir</span>';
     html += '</div>';
     // Sort by quadrant priority: Leading > Improving > Weakening > Lagging
@@ -1221,7 +1221,7 @@ async function renderOverview() {
       var clickAttr = d.isAssetClass ? 'onclick="openTVChart(\'' + d.etf + '\')"' : 'onclick="showRRGSectorDetail(\'' + d.etf + '\')"';
       var rsColor = row.rs >= 100 ? 'var(--green)' : 'var(--red)';
       var momColor = row.mom >= 100 ? 'var(--green)' : 'var(--red)';
-      html += '<div ' + clickAttr + ' style="display:grid;grid-template-columns:90px 1fr 56px 56px 50px;gap:0;padding:7px 12px;border-bottom:1px solid var(--border);font-size:12px;align-items:center;cursor:pointer;' + (idx % 2 === 1 ? 'background:var(--bg-secondary);' : '') + '" title="Click for details">';
+      html += '<div ' + clickAttr + ' style="display:grid;grid-template-columns:90px 1fr 56px 56px 50px;gap:0;padding:7px 12px;border-bottom:1px solid var(--border);font-size:12px;align-items:center;cursor:pointer;min-width:360px;' + (idx % 2 === 1 ? 'background:var(--bg-secondary);' : '') + '" title="Click for details">';
       // Quadrant badge
       html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:'+qc+'15;color:'+qc+';border:1px solid '+qc+'30;white-space:nowrap;">'+qLabels[row.q]+'</span>';
       // Sector name + ETF
@@ -1529,7 +1529,7 @@ function showRRGQuadrant(quadrant) {
   // Backdrop
   html += '<div onclick="closeRRGQuadrantPopup()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;"></div>';
   // Modal
-  html += '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:var(--bg-primary);border:2px solid ' + c + ';border-radius:14px;padding:24px 28px;min-width:340px;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">';
+  html += '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:var(--bg-primary);border:2px solid ' + c + ';border-radius:14px;padding:24px 28px;width:90vw;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">';
   // Close button
   html += '<button onclick="closeRRGQuadrantPopup()" style="position:absolute;top:10px;right:14px;background:none;border:none;font-size:20px;color:var(--text-muted);cursor:pointer;">&times;</button>';
   // Header
@@ -1597,7 +1597,7 @@ async function showRRGSectorPopup(d) {
   // Backdrop
   var bd = '<div onclick="document.getElementById(\'rrg-sector-popup\').remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;"></div>';
   // Modal
-  var m = '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:24px;min-width:420px;max-width:600px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">';
+  var m = '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:24px;width:90vw;max-width:600px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">';
   // Header
   m += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">';
   m += '<div style="display:flex;align-items:center;gap:10px;">';
@@ -2075,7 +2075,7 @@ function renderLegacyThemesHTML(themes, cacheTs) {
 function renderTopIdeasHTML(ideas, cacheTs) {
   var html='';var time=new Date(cacheTs).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
   html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Last scan: '+time+'</div>';
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:8px;">';
   ideas.forEach(function(idea){
     var sc=idea.score>=80?'var(--green)':idea.score>=60?'var(--blue)':idea.score>=40?'var(--amber)':'var(--text-muted)';
     var sbg=idea.score>=80?'rgba(16,185,129,0.06)':idea.score>=60?'rgba(37,99,235,0.04)':'rgba(245,158,11,0.04)';

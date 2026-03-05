@@ -394,21 +394,23 @@ input:focus, textarea:focus, select:focus {
   .header-right .last-updated { display: none; }
   /* Hide text labels on header buttons, keep icons */
   .header-right .refresh-btn {
-    padding: 7px 8px;
+    padding: 8px 10px;
     font-size: 0; /* hide text */
+    min-height: 36px;
   }
   .header-right .refresh-btn svg { font-size: initial; }
   /* Keep Sign Out visible */
-  .header-right .refresh-btn[onclick="logoutUser()"] { font-size: 12px; padding: 6px 10px; }
+  .header-right .refresh-btn[onclick="logoutUser()"] { font-size: 12px; padding: 8px 12px; }
   #user-email { display: none; }
 
-  /* Tabs */
-  .tabs { padding: 0 8px; }
-  .tab { padding: 10px 12px; font-size: 12px; }
+  /* Tabs — match header height */
+  .tabs { padding: 0 8px; top: 52px; }
+  .tab { padding: 10px 12px; font-size: 14px; }
 
   .main { padding: 14px 10px; }
 
   .card { border-radius: 12px; padding: 16px; }
+  .card-header-bar { font-size: 22px; white-space: normal; }
 
   /* Overview: Market Snapshot 3-col → 2-col */
   .ov-snap-grid { grid-template-columns: repeat(2, 1fr) !important; }
@@ -416,6 +418,9 @@ input:focus, textarea:focus, select:focus {
   .ov-econ-grid { grid-template-columns: 1fr !important; }
   /* Overview: Mindset rules 2-col → 1-col */
   .ov-mindset-cols { columns: 1 !important; }
+  /* Overview: Heatmap table — horizontal scroll */
+  .ov-heatmap-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .ov-heatmap-row { min-width: 400px; }
 
   /* Scanner: Top 100 table → horizontal scroll */
   .sc-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -423,8 +428,15 @@ input:focus, textarea:focus, select:focus {
 
   /* Trade Journal: 2-col → stacked */
   .tj-day-grid { grid-template-columns: 1fr !important; }
+  /* Trade Journal: Calendar grid → horizontal scroll */
+  #cal-grid { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  #cal-grid > div { min-width: 480px; }
   /* Trade Journal: Calendar stat cells */
   .rv-stat-grid { grid-template-columns: repeat(4, 1fr); }
+  /* Trade Journal: Recap results 2-col → stacked */
+  .recap-cols { grid-template-columns: 1fr !important; }
+  /* Trade Journal: recap tab spacing fix */
+  #tab-recap { margin: -10px; padding: 10px; }
 
   /* Analysis: stat grid → 2-col */
   .an-stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
@@ -437,12 +449,15 @@ input:focus, textarea:focus, select:focus {
     padding-bottom: 4px;
   }
 
-  /* Settings modal */
+  /* Settings & feedback modals */
   #settings-overlay > div {
     width: 95vw !important;
     padding: 20px !important;
     border-radius: 12px !important;
   }
+
+  /* Theme toggle */
+  .theme-toggle-btn { min-height: 36px; min-width: 36px; }
 }
 
 /* --- 480px: Mobile phones --- */
@@ -453,22 +468,24 @@ input:focus, textarea:focus, select:focus {
   }
   .header-title { font-size: 14px; }
 
-  /* Tabs: smaller, equal-width */
-  .tabs { padding: 0 4px; gap: 0; }
-  .tab { padding: 8px 8px; font-size: 12px; flex: 1; text-align: center; }
+  /* Tabs: smaller, equal-width — match header height */
+  .tabs { padding: 0 4px; gap: 0; top: 48px; }
+  .tab { padding: 10px 6px; font-size: 12px; flex: 1; text-align: center; }
 
   .main { padding: 10px 8px; }
 
   .card { border-radius: 10px; padding: 12px; }
+  .card-header-bar { font-size: 20px; }
 
-  /* Overview: Market Snapshot → 2-col (already set) */
-  /* Overview: Sector Heatmap → 2-col (already set) */
   /* Overview: Breadth stats */
   .ov-breadth-footer { flex-direction: column; align-items: flex-start; gap: 2px; }
+  /* Overview: Market Snapshot → 2-col (already set) */
 
   /* Scanner: results → single column */
   .sc-results-grid { grid-template-columns: 1fr !important; }
 
+  /* Trade Journal: recap tab spacing fix */
+  #tab-recap { margin: -8px; padding: 8px; }
   /* Trade Journal: stat grid → 2-col on smallest */
   .rv-stat-grid { grid-template-columns: repeat(2, 1fr); }
   .rv-stat-cell { padding: 8px 6px; }
@@ -481,6 +498,10 @@ input:focus, textarea:focus, select:focus {
 
   /* Analysis: sub-nav pills smaller */
   #analysis-subnav .an-pill { padding: 5px 10px !important; font-size: 12px !important; }
+
+  /* Buttons: touch-friendly minimum size */
+  .refresh-btn { min-height: 40px; }
+  .theme-toggle-btn { min-height: 40px; min-width: 40px; }
 }
 
 /* ── Dashboard Font Size Bump ── */
