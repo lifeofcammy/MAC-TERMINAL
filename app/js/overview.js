@@ -135,9 +135,7 @@ function renderBreadthBody(data) {
   if(lbl) { lbl.style.color='var(--blue)'; setTimeout(function(){ if(lbl) lbl.style.color='var(--text-muted)'; }, 1500); }
 }
 
-// Render the 15-min breadth direction timeline
-// Each bar = green if breadth improved vs prior reading, red if it dropped
-// Gives a quick visual: "is breadth expanding or contracting through the day?"
+// Render the breadth trend chart — SVG line chart showing breadth % over the day
 function renderBreadthTimeline() {
   if(_breadthHistory.length < 2) return '';
   var html = '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">';
@@ -151,42 +149,87 @@ function renderBreadthTimeline() {
   var dirArrow = delta > 0 ? '\u25b2' : delta < 0 ? '\u25bc' : '\u25cf';
 
   html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
-  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Intraday Direction (15-min)</div>';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Intraday Trend</div>';
   html += '<span style="font-size:13px;font-weight:800;color:'+dirColor+';">'+dirArrow+' '+dirLabel+' ('+(delta>0?'+':'')+delta+'%)</span>';
   html += '</div>';
 
-  // Histogram table — each row = one 15-min reading
-  html += '<div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;">';
-  // Header
-  html += '<div style="display:grid;grid-template-columns:70px 50px 50px 1fr;gap:0;padding:5px 10px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;">';
-  html += '<span>Time</span><span>Up %</span><span>Chg</span><span>Direction</span>';
+  // SVG line chart
+  var W = 100; // viewBox percentage width
+  var H = 60; // viewBox height
+  var padL = 0, padR = 0, padT = 4, padB = 14; // padding for labels
+  var chartW = W - padL - padR;
+  var chartH = H - padT - padB;
+
+  // Find range
+  var minPct = 100, maxPct = 0;
+  _breadthHistory.forEach(function(r){ if(r.pct<minPct)minPct=r.pct; if(r.pct>maxPct)maxPct=r.pct; });
+  // Ensure at least 10% range for visual clarity
+  if(maxPct - minPct < 10){ var mid = (maxPct+minPct)/2; minPct = Math.max(0, mid-5); maxPct = Math.min(100, mid+5); }
+  var range = maxPct - minPct || 1;
+
+  // Build points
+  var points = [];
+  var n = _breadthHistory.length;
+  _breadthHistory.forEach(function(r, i){
+    var x = padL + (i / (n-1)) * chartW;
+    var y = padT + (1 - (r.pct - minPct) / range) * chartH;
+    points.push({x:x, y:y, pct:r.pct, time:r.time});
+  });
+
+  // Determine line color based on trend
+  var lineColor = delta > 0 ? '#34D399' : delta < 0 ? '#FCA5A5' : '#94A3B8';
+  var fillColor = delta > 0 ? 'rgba(52,211,153,0.15)' : delta < 0 ? 'rgba(252,165,165,0.15)' : 'rgba(148,163,184,0.1)';
+
+  // Build SVG path
+  var linePath = points.map(function(p,i){return (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' ');
+  // Fill area under curve
+  var areaPath = linePath + ' L'+points[points.length-1].x.toFixed(1)+','+(padT+chartH)+' L'+points[0].x.toFixed(1)+','+(padT+chartH)+' Z';
+
+  html += '<div style="position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg-secondary);padding:8px;">';
+  html += '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;" preserveAspectRatio="none">';
+  // 50% line (neutral)
+  if(minPct <= 50 && maxPct >= 50) {
+    var y50 = padT + (1 - (50 - minPct) / range) * chartH;
+    html += '<line x1="'+padL+'" y1="'+y50.toFixed(1)+'" x2="'+(padL+chartW)+'" y2="'+y50.toFixed(1)+'" stroke="var(--text-muted)" stroke-width="0.3" stroke-dasharray="2,2" opacity="0.5"/>';
+    html += '<text x="'+(padL+1)+'" y="'+(y50-1).toFixed(1)+'" fill="var(--text-muted)" font-size="3" font-family="var(--font-mono)">50%</text>';
+  }
+  // Area fill
+  html += '<path d="'+areaPath+'" fill="'+fillColor+'"/>';
+  // Line
+  html += '<path d="'+linePath+'" fill="none" stroke="'+lineColor+'" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>';
+  // Data points
+  points.forEach(function(p,i){
+    var dotColor = i === points.length-1 ? lineColor : 'var(--text-muted)';
+    var dotR = i === points.length-1 ? '1.2' : '0.8';
+    html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+dotR+'" fill="'+dotColor+'"/>';
+  });
+  // Time labels (first, last, and optionally middle)
+  var timeOpts = {hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'};
+  var firstTime = points[0].time.toLocaleTimeString('en-US',timeOpts).replace(' ','');
+  var lastTime = points[points.length-1].time.toLocaleTimeString('en-US',timeOpts).replace(' ','');
+  html += '<text x="'+padL+'" y="'+(H-1)+'" fill="var(--text-muted)" font-size="3" font-family="var(--font-mono)">'+firstTime+'</text>';
+  html += '<text x="'+(padL+chartW)+'" y="'+(H-1)+'" fill="var(--text-muted)" font-size="3" font-family="var(--font-mono)" text-anchor="end">'+lastTime+'</text>';
+  // Pct labels (first and last reading values)
+  html += '<text x="'+(points[0].x+1).toFixed(1)+'" y="'+(points[0].y-1.5).toFixed(1)+'" fill="var(--text-muted)" font-size="3" font-family="var(--font-mono)">'+first+'%</text>';
+  html += '<text x="'+(points[points.length-1].x-1).toFixed(1)+'" y="'+(points[points.length-1].y-1.5).toFixed(1)+'" fill="'+lineColor+'" font-size="3.5" font-weight="700" font-family="var(--font-mono)" text-anchor="end">'+last+'%</text>';
+  html += '</svg>';
   html += '</div>';
 
-  _breadthHistory.forEach(function(r, i) {
-    var timeStr = r.time.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
-    var diff = 0;
-    var diffStr = '\u2014';
-    var barColor = 'var(--bg-secondary)';
-    var textColor = 'var(--text-muted)';
+  // Compact reading strip below chart
+  html += '<div style="display:flex;gap:4px;margin-top:6px;overflow-x:auto;padding-bottom:2px;">';
+  _breadthHistory.forEach(function(r, i){
+    var t = r.time.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
+    var chg = '';
     if(i > 0) {
-      diff = r.pct - _breadthHistory[i-1].pct;
-      diffStr = (diff > 0 ? '+' : '') + diff + '%';
-      if(diff > 0) { barColor = 'var(--green)'; textColor = 'var(--green)'; }
-      else if(diff < 0) { barColor = 'var(--red)'; textColor = 'var(--red)'; }
+      var d = r.pct - _breadthHistory[i-1].pct;
+      chg = d > 0 ? ' +'+d : d < 0 ? ' '+d : '';
     }
-    var isLast = i === _breadthHistory.length - 1;
-    var bg = isLast ? 'background:var(--bg-secondary);' : (i % 2 === 1 ? 'background:var(--bg-secondary);opacity:0.5;' : '');
-    // Bar width: breadth % mapped to visual width
-    var barW = Math.max(2, Math.min(100, r.pct));
-
-    html += '<div style="display:grid;grid-template-columns:70px 50px 50px 1fr;gap:0;padding:5px 10px;border-bottom:1px solid var(--border);font-size:12px;align-items:center;' + (isLast ? 'background:var(--bg-secondary);' : '') + '">';
-    html += '<span style="font-family:var(--font-mono);color:var(--text-muted);font-size:11px;">' + timeStr + '</span>';
-    html += '<span style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary);">' + r.pct + '%</span>';
-    html += '<span style="font-family:var(--font-mono);font-weight:800;color:' + textColor + ';">' + diffStr + '</span>';
-    // Visual bar
-    html += '<div style="height:14px;border-radius:3px;background:var(--bg-secondary);overflow:hidden;position:relative;">';
-    html += '<div style="height:100%;width:' + barW + '%;background:' + barColor + ';border-radius:3px;transition:width 0.3s;opacity:0.7;"></div>';
-    html += '</div>';
+    var bg = i === _breadthHistory.length-1 ? 'var(--blue-bg)' : 'var(--bg-card)';
+    var border = i === _breadthHistory.length-1 ? 'var(--blue)' : 'var(--border)';
+    html += '<div style="flex-shrink:0;padding:3px 6px;border-radius:4px;background:'+bg+';border:1px solid '+border+';font-size:10px;font-family:var(--font-mono);white-space:nowrap;">';
+    html += '<span style="color:var(--text-muted);">'+t+'</span> ';
+    html += '<span style="font-weight:700;color:var(--text-primary);">'+r.pct+'%</span>';
+    if(chg) html += '<span style="color:'+(chg.indexOf('+')>=0?'var(--green)':'var(--red)')+';font-weight:700;">'+chg+'</span>';
     html += '</div>';
   });
   html += '</div>';
@@ -959,10 +1002,10 @@ async function renderOverview() {
   var mindsetCollapsed = localStorage.getItem('mcc_mindset_collapsed')==='true';
 
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;border-left:3px solid var(--amber);border-radius:14px;">';
-  html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;user-select:none;">';
+  html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;padding:10px 16px;cursor:pointer;user-select:none;gap:12px;">';
+  html += '<span id="mindset-arrow" style="flex-shrink:0;font-size:12px;color:var(--text-muted);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 1</div><div class="card-header-bar">Morning Mindset</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Set your mental game before the market opens</div></div></div>';
   html += '<span style="width:20px;"></span>';
-  html += '<div style="text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 1</div><div class="card-header-bar">Morning Mindset</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Set your mental game before the market opens</div></div></div>';
-  html += '<span id="mindset-arrow" style="width:20px;text-align:right;font-size:12px;color:var(--text-muted);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
   html += '</div>';
   // Today's Focus — ALWAYS visible, centered under header
   html += '<div style="padding:0 16px 10px;text-align:center;"><div class="center-under-tagline" style="background:var(--bg-secondary);border:1px solid rgba(230,138,0,0.2);border-radius:6px;padding:10px 14px;display:inline-block;max-width:500px;">';
@@ -1035,42 +1078,42 @@ async function renderOverview() {
   }
   else if(avgPct>0.8&&breadthPct>=65&&idxAboveBoth>=3){
     regimeLabel='Bullish';regimeColor='var(--green)';
-    regimeAction='Full size. Breakouts and momentum plays. Be aggressive on A+ setups.';
+    regimeAction='Trending market — be aggressive. Full size on A+ breakouts and momentum plays. Let winners run.';
     regimeDetail=idxAboveBoth+'/4 indexes above 10 & 20 SMA. '+sectorsUp+'/'+sectorData.length+' sectors green. '+vixLine+'\n'+indexNotes;
   }
   else if(avgPct<-0.8&&breadthPct<=35&&idxBelowBoth>=3){
     regimeLabel='Bearish';regimeColor='var(--red)';
-    regimeAction='Reduce size or sit out. Cash is a position. Only short setups or hedges.';
+    regimeAction='Trending down — reduce size or sit out. Cash is a position. Only short setups or hedges.';
     regimeDetail=idxBelowBoth+'/4 indexes below 10 & 20 SMA. '+sectorsDown+'/'+sectorData.length+' sectors red. '+vixLine+'\n'+indexNotes;
   }
   else if(Math.abs(avgPct)<0.3&&idxMixed>=2){
     regimeLabel='Chop';regimeColor='var(--amber)';
-    regimeAction='Sit on hands. No clean direction. Wait for a trend to develop.';
+    regimeAction='Choppy — trade level to level. Use support and resistance, take profits at levels, and keep size small. No swings.';
     regimeDetail='Narrow range, mixed signals. '+idxAboveBoth+'/4 above both SMAs, '+idxBelowBoth+'/4 below both, '+idxMixed+'/4 mixed. '+vixLine+'\n'+indexNotes;
   }
   else if(avgPct>0.3||idxAboveBoth>=3){
     regimeLabel='Slightly Bullish';regimeColor='var(--green)';
-    regimeAction='Selective longs only. Half size. Stick to your best setups.';
+    regimeAction='Lean bullish — be selective with longs. Half size. Trade the trend but don\'t force it.';
     regimeDetail=idxAboveBoth+'/4 indexes above both SMAs. '+sectorsUp+'/'+sectorData.length+' sectors positive. '+vixLine+'\n'+indexNotes;
   }
   else if(avgPct<-0.3||idxBelowBoth>=3){
     regimeLabel='Slightly Bearish';regimeColor='var(--red)';
-    regimeAction='Reduce size. Be cautious. Take profits quickly on any longs.';
+    regimeAction='Lean bearish — reduce size. Take profits quickly on longs, trade level to level.';
     regimeDetail=idxBelowBoth+'/4 indexes below both SMAs. '+sectorsDown+'/'+sectorData.length+' sectors negative. '+vixLine+'\n'+indexNotes;
   }
   else{
     regimeLabel='Chop';regimeColor='var(--amber)';
-    regimeAction='Sit on hands. Mixed signals. A+ setups only, small size.';
+    regimeAction='Choppy — trade level to level. Support and resistance only, small size, quick profits. No swings.';
     regimeDetail='Mixed signals across indexes. '+idxAboveBoth+' above both SMAs, '+idxBelowBoth+' below both. '+vixLine+'\n'+indexNotes;
   }
   if(hasHighImpactEvent&&live) regimeAction+=' \u26a0 '+eventName+' today — expect volatility.';
   window._currentRegime = regimeLabel;
 
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div onclick="toggleCard(\'regime\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
-  html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 2</div><div class="card-header-bar">Market Outlook</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div></div>';
-  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;"><span id="regime-arrow" style="font-size:12px;color:var(--text-muted);">'+(regimeCollapsed?'▶':'▼')+'</span></div>';
+  html += '<div onclick="toggleCard(\'regime\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
+  html += '<span id="regime-arrow" style="flex-shrink:0;font-size:12px;color:var(--text-muted);">'+(regimeCollapsed?'▶':'▼')+'</span>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 2</div><div class="card-header-bar">Market Outlook</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div></div>';
+  html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Regime label — always visible, centered under header
   html += '<div style="text-align:center;padding:10px 20px;border-bottom:1px solid var(--border);">';
@@ -1100,6 +1143,30 @@ async function renderOverview() {
     });
     html += '</div>';
   }
+  // Index snapshot grid (merged from Market Analysis)
+  html += '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Index Snapshot</div>';
+  html += '<div class="ov-snap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;">';
+  var snapItems = [
+    {ticker:'SPY',label:'S&P 500',data:spyData},
+    {ticker:'QQQ',label:'Nasdaq',data:qqqData},
+    {ticker:'IWM',label:'Russell',data:iwmData},
+    {ticker:'DIA',label:'Dow',data:diaData},
+    {ticker:'VIXY',label:'VIX Proxy',data:vixyData},
+    {ticker:'UUP',label:'Dollar (DXY)',data:getSnap('UUP')}
+  ];
+  snapItems.forEach(function(idx){
+    var d=idx.data; var color=d.pct>=0?'var(--green)':'var(--red)';
+    var bg=d.pct>=0?'rgba(52,211,153,0.04)':'rgba(252,165,165,0.04)';
+    var borderC=d.pct>=0?'rgba(52,211,153,0.15)':'rgba(252,165,165,0.15)';
+    if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';bg=d.pct<=0?'rgba(52,211,153,0.04)':'rgba(252,165,165,0.04)';borderC=d.pct<=0?'rgba(52,211,153,0.15)':'rgba(252,165,165,0.15)';}
+    html += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:8px;padding:8px 6px;text-align:center;">';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:0.03em;">'+idx.label+'</div>';
+    html += '<div style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);margin-top:1px;">'+(d.price?'$'+price(d.price):'—')+'</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:'+color+';margin-top:1px;">'+pct(d.pct)+'</div>';
+    html += '</div>';
+  });
+  html += '</div></div>';
   // Updated timestamp for initial load
   var regimeInitTime = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
   html += '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;" id="regime-updated-label">Updated '+regimeInitTime+' ET</div>';
@@ -1130,46 +1197,13 @@ async function renderOverview() {
     html += '</div></div>';
   }
 
-  // ════ 4. MARKET ANALYSIS (renamed from Snapshot — smaller quotes) ════
-  var snapshotCollapsed = localStorage.getItem('mac_snapshot_collapsed')!=='false';
-  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div onclick="toggleCard(\'snapshot\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
-  html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 4</div><div class="card-header-bar">Market Analysis</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">How are the major indexes reacting? Now you know what to do.</div></div></div>';
-  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:var(--font-body);">'+dataFreshness+'</span><span id="snapshot-arrow" style="font-size:12px;color:var(--text-muted);">'+(snapshotCollapsed?'\u25b6':'\u25bc')+'</span></div>';
-  html += '</div>';
-  html += '<div id="snapshot-body" style="'+(snapshotCollapsed?'display:none;':'')+'padding:12px 16px;">';
-  html += '<div class="ov-snap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;">';
-  var snapItems = [
-    {ticker:'SPY',label:'S&P 500',data:spyData},
-    {ticker:'QQQ',label:'Nasdaq',data:qqqData},
-    {ticker:'IWM',label:'Russell',data:iwmData},
-    {ticker:'DIA',label:'Dow',data:diaData},
-    {ticker:'VIXY',label:'VIX Proxy',data:vixyData},
-    {ticker:'UUP',label:'Dollar (DXY)',data:getSnap('UUP')}
-  ];
-  snapItems.forEach(function(idx){
-    var d=idx.data; var color=d.pct>=0?'var(--green)':'var(--red)';
-    var bg=d.pct>=0?'rgba(52,211,153,0.04)':'rgba(252,165,165,0.04)';
-    var borderC=d.pct>=0?'rgba(52,211,153,0.15)':'rgba(252,165,165,0.15)';
-    if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';bg=d.pct<=0?'rgba(52,211,153,0.04)':'rgba(252,165,165,0.04)';borderC=d.pct<=0?'rgba(52,211,153,0.15)':'rgba(252,165,165,0.15)';}
-    html += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:8px;padding:8px 6px;text-align:center;">';
-    html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:0.03em;">'+idx.label+'</div>';
-    html += '<div style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);margin-top:1px;">'+(d.price?'$'+price(d.price):'—')+'</div>';
-    html += '<div style="font-size:12px;font-weight:700;color:'+color+';margin-top:1px;">'+pct(d.pct)+'</div>';
-    html += '</div>';
-  });
-  html += '</div>';
-  html += '</div>';
-  html += '</div>';
-
-  // ════ 5. SECTOR ROTATION (RRG + click-to-expand detail) ════
+  // ════ 4. SECTOR ROTATION ════
   var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')==='true';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
-  html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 5</div><div class="card-header-bar">Sector Rotation</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Where is money flowing? Click a sector for details.</div></div></div>';
-  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);font-family:var(--font-body);">'+dataFreshness+'</span><span id="heatmap-arrow" style="font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span></div>';
+  html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
+  html += '<span id="heatmap-arrow" style="flex-shrink:0;font-size:12px;color:var(--text-muted);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 4</div><div class="card-header-bar">Sector Rotation</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Where is money flowing? Click a sector for details.</div></div></div>';
+  html += '<span style="font-size:12px;color:var(--text-muted);font-family:var(--font-body);flex-shrink:0;">'+dataFreshness+'</span>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
   // Store maps globally for sector detail expansion
@@ -1264,10 +1298,10 @@ async function renderOverview() {
   // ════ 6. TODAY'S CATALYSTS + THEMES ════
   var catalystsCollapsed = localStorage.getItem('mac_catalysts_collapsed')!=='false';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div onclick="toggleCard(\'catalysts\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
-  html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 6</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">What events and narratives are driving today\'s price action?</div></div></div>';
-  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font-size:12px;color:var(--text-muted);">'+tsLabel(ts)+'</span><span id="catalysts-arrow" style="font-size:12px;color:var(--text-muted);">'+(catalystsCollapsed?'\u25b6':'\u25bc')+'</span></div>';
+  html += '<div onclick="toggleCard(\'catalysts\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
+  html += '<span id="catalysts-arrow" style="flex-shrink:0;font-size:12px;color:var(--text-muted);">'+(catalystsCollapsed?'\u25b6':'\u25bc')+'</span>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 5</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">What events and narratives are driving today\'s price action?</div></div></div>';
+  html += '<span style="font-size:12px;color:var(--text-muted);flex-shrink:0;">'+tsLabel(ts)+'</span>';
   html += '</div>';
   html += '<div id="catalysts-body" style="'+(catalystsCollapsed?'display:none;':'')+'">';
   // Econ calendar
@@ -1294,10 +1328,10 @@ async function renderOverview() {
   // ════ 7. TOP IDEAS (from scanners) ════
   var ideasCollapsed = localStorage.getItem('mac_ideas_collapsed')!=='false';
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div onclick="toggleCard(\'ideas\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">';
-  html += '<div style="flex:1;"></div>';
-  html += '<div style="flex:none;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 7</div><div class="card-header-bar">Top Ideas</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div></div>';
-  html += '<div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><button onclick="event.stopPropagation();runQuickScan()" id="quick-scan-btn" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Scan</button><span id="ideas-arrow" style="font-size:12px;color:var(--text-muted);">'+(ideasCollapsed?'\u25b6':'\u25bc')+'</span></div>';
+  html += '<div onclick="toggleCard(\'ideas\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
+  html += '<span id="ideas-arrow" style="flex-shrink:0;font-size:12px;color:var(--text-muted);">'+(ideasCollapsed?'\u25b6':'\u25bc')+'</span>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 6</div><div class="card-header-bar">Top Ideas</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div></div>';
+  html += '<span style="width:20px;"></span>';
   html += '</div>';
   html += '<div id="ideas-body" style="'+(ideasCollapsed?'display:none;':'')+'">';
   html += '<div id="top-ideas-content" style="padding:12px 16px;">';
@@ -1386,6 +1420,8 @@ async function renderOverview() {
   if(live) {
     startBreadthAutoRefresh();
   }
+  // Start auto-scan for Top Ideas (runs every 15 min)
+  startTopIdeasAutoScan();
   // Auto-generate themes if no cache and user is logged in
   if(!cachedThemes && window._currentSession){
     setTimeout(function(){ generateThemes(); }, 500);
@@ -2175,8 +2211,8 @@ async function generateThemes() {
 
 // ==================== QUICK SCAN ====================
 async function runQuickScan() {
-  var btn=document.getElementById('quick-scan-btn'),el=document.getElementById('top-ideas-content');
-  if(!el)return;if(btn){btn.textContent='Scanning...';btn.disabled=true;}
+  var el=document.getElementById('top-ideas-content');
+  if(!el)return;
   el.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px;">Scanning top tickers... <span id="qs-progress"></span></div>';
   try{
     var qt=['AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AMD','AVGO','CRM','NFLX','COIN','SNOW','PLTR','DKNG','UBER','SQ','SHOP','NET','CRWD','MU','MRVL','ANET','PANW','NOW','ADBE','ORCL','LLY','UNH','JPM','GS','V','MA','BAC','XOM','CVX','CAT','DE','LMT','BA','MSTR','SOFI','HOOD','RKLB','APP','HIMS','ARM','SMCI','TSM','ASML'];
@@ -2213,7 +2249,24 @@ async function runQuickScan() {
     try{localStorage.setItem('mac_top_ideas_'+new Date().toISOString().split('T')[0],JSON.stringify({ideas:ideas,ts:Date.now()}));}catch(e){}
     el.innerHTML=ideas.length>0?renderTopIdeasHTML(ideas,Date.now()):'<div style="text-align:center;padding:14px;color:var(--text-muted);font-size:12px;">No strong setups found. Try full scanners.</div>';
   }catch(e){el.innerHTML='<div style="color:var(--red);font-size:12px;">Scan failed: '+escapeHtml(e.message)+'</div>';}
-  if(btn){btn.textContent='Scan';btn.disabled=false;}
+}
+
+// Auto-scan Top Ideas every 15 min during market hours
+var _topIdeasAutoTimer=null;
+function startTopIdeasAutoScan(){
+  if(_topIdeasAutoTimer)return;
+  // Run initial scan if no fresh cache
+  var ideaKey='mac_top_ideas_'+new Date().toISOString().split('T')[0];
+  var cached=localStorage.getItem(ideaKey);
+  var needsScan=!cached;
+  if(cached){try{var d=JSON.parse(cached);if(Date.now()-d.ts>15*60*1000)needsScan=true;}catch(e){needsScan=true;}}
+  if(needsScan)setTimeout(function(){runQuickScan();},2000);
+  // Refresh every 15 min
+  _topIdeasAutoTimer=setInterval(function(){
+    var now=new Date();var h=now.getHours(),m=now.getMinutes();var et=h*60+m;
+    // Only scan during extended market hours (9:00 AM - 4:30 PM ET approximation)
+    if(et>=540&&et<=990) runQuickScan();
+  },15*60*1000);
 }
 
 // ==================== ECONOMIC CALENDAR (auto-fetch) ====================
