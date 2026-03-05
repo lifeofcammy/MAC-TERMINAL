@@ -1194,6 +1194,7 @@ async function renderOverview() {
     html += '</div>';
     html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:4px;">'+adStocksUp.toLocaleString()+' advancing · '+adStocksDown.toLocaleString()+' declining · '+adStocksFlat.toLocaleString()+' flat</div>';
     html += '</div>';
+    html += '<div id="breadth-body" style="margin-top:10px;"></div>';
     html += '</div></div>';
   }
 
