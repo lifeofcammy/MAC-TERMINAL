@@ -1259,7 +1259,8 @@ async function renderOverview() {
       // Quadrant badge
       html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:'+qc+'15;color:'+qc+';border:1px solid '+qc+'30;white-space:nowrap;">'+qLabels[row.q]+'</span>';
       // Sector name + ETF
-      html += '<span style="display:flex;align-items:center;gap:4px;"><span class="ticker-link" style="font-size:12px;" title="Click for chart">' + d.etf + '</span><span style="font-size:11px;color:var(--text-muted);">' + (d.short || d.name) + '</span></span>';
+      var tickerTitle = d.isAssetClass ? 'Click for chart' : 'Click for sector details';
+      html += '<span style="display:flex;align-items:center;gap:4px;"><span class="ticker-link" style="font-size:12px;" title="' + tickerTitle + '">' + d.etf + '</span><span style="font-size:11px;color:var(--text-muted);">' + (d.short || d.name) + '</span></span>';
       // RS ratio
       html += '<span style="font-family:var(--font-mono);font-weight:700;color:'+rsColor+';">'+row.rs.toFixed(1)+'</span>';
       // Momentum
@@ -1391,10 +1392,12 @@ async function renderOverview() {
             if(Math.sqrt(dx*dx + dy*dy) < 12) circleHit = d;
           });
           if(circleHit) {
-            showRRGSectorPopup(circleHit);
+            // Sectors → sector popup with subsectors; asset classes → chart
+            if(circleHit.isAssetClass) { openTVChart(circleHit.etf); }
+            else { showRRGSectorPopup(circleHit); }
             return;
           }
-          // Then check dots
+          // Then check dots (labels / arrow body)
           var closest = null, minDist = 20;
           (window._rrgData||[]).forEach(function(d){
             if(!d._canvasXY) return;
@@ -1403,7 +1406,9 @@ async function renderOverview() {
             if(dist < minDist){ minDist = dist; closest = d; }
           });
           if(closest) {
-            if(typeof openTVChart === 'function') openTVChart(closest.etf);
+            // Sectors → sector popup with subsectors; asset classes → chart
+            if(closest.isAssetClass) { openTVChart(closest.etf); }
+            else { showRRGSectorPopup(closest); }
           }
         });
       }
