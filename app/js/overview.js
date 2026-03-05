@@ -188,7 +188,7 @@ function renderBreadthTimeline() {
   var areaPath = linePath + ' L'+points[points.length-1].x.toFixed(1)+','+(padT+chartH)+' L'+points[0].x.toFixed(1)+','+(padT+chartH)+' Z';
 
   html += '<div style="position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg-secondary);padding:8px;height:180px;">';
-  html += '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:100%;display:block;" preserveAspectRatio="xMidYMid meet">';
+  html += '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:100%;display:block;" preserveAspectRatio="none">';
   // 50% line (neutral)
   if(minPct <= 50 && maxPct >= 50) {
     var y50 = padT + (1 - (50 - minPct) / range) * chartH;
