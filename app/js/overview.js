@@ -114,18 +114,18 @@ function renderBreadthBody(data) {
   var flatW = 100-greenW-redW;
 
   var html = '';
-  html += '<div style="text-align:center;font-size:12px;color:var(--text-muted);margin-bottom:8px;">'+data.up+' advancing \xb7 '+data.down+' declining'+(data.flat>0?' \xb7 '+data.flat+' flat':'')+'</div>';
-  // Bar
-  html += '<div style="display:flex;height:20px;border-radius:6px;overflow:hidden;background:var(--bg-secondary);">';
-  if(greenW>0) html += '<div style="width:'+greenW+'%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;">'+data.up+'</div>';
-  if(flatW>0) html += '<div style="width:'+flatW+'%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-muted);">'+data.flat+'</div>';
-  if(redW>0) html += '<div style="width:'+redW+'%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;">'+data.down+'</div>';
+  html += '<div style="text-align:center;font-size:11px;color:var(--text-muted);margin-bottom:4px;">'+data.up.toLocaleString()+' advancing \xb7 '+data.down.toLocaleString()+' declining'+(data.flat>0?' \xb7 '+data.flat.toLocaleString()+' flat':'')+'</div>';
+  // Compact stacked bar
+  html += '<div style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--bg-secondary);">';
+  if(greenW>0) html += '<div style="width:'+greenW+'%;background:var(--green);"></div>';
+  if(flatW>0) html += '<div style="width:'+flatW+'%;background:var(--bg-secondary);"></div>';
+  if(redW>0) html += '<div style="width:'+redW+'%;background:var(--red);"></div>';
   html += '</div>';
   // Footer: breadth % + last updated
   var updateLabel = _breadthLastUpdate ? _breadthLastUpdate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'}) + ' ET' : getDataFreshnessLabel();
-  html += '<div class="ov-breadth-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:14px;color:var(--text-muted);">';
+  html += '<div class="ov-breadth-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:12px;color:var(--text-muted);">';
   html += '<span>Breadth: <span style="color:'+color+';font-weight:700;">'+pct+'%</span></span>';
-  html += '<span style="font-size:12px;" id="breadth-updated-label">Updated '+updateLabel+'</span>';
+  html += '<span style="font-size:11px;" id="breadth-updated-label">Updated '+updateLabel+'</span>';
   html += '</div>';
   // History timeline (if we have 2+ readings)
   html += renderBreadthTimeline();
@@ -185,8 +185,8 @@ function renderBreadthTimeline() {
   // Fill area under curve
   var areaPath = linePath + ' L'+points[points.length-1].x.toFixed(1)+','+(padT+chartH)+' L'+points[0].x.toFixed(1)+','+(padT+chartH)+' Z';
 
-  html += '<div style="position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg-secondary);padding:8px;">';
-  html += '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;" preserveAspectRatio="none">';
+  html += '<div style="position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg-secondary);padding:8px;height:120px;">';
+  html += '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:100%;display:block;" preserveAspectRatio="xMidYMid meet">';
   // 50% line (neutral)
   if(minPct <= 50 && maxPct >= 50) {
     var y50 = padT + (1 - (50 - minPct) / range) * chartH;
@@ -1192,9 +1192,8 @@ async function renderOverview() {
     html += '<div style="height:8px;border-radius:4px;background:var(--red-bg);overflow:hidden;">';
     html += '<div style="height:100%;width:'+adBreadthPct+'%;background:var(--green);border-radius:4px;transition:width 0.3s;"></div>';
     html += '</div>';
-    html += '<div style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:4px;">'+adStocksUp.toLocaleString()+' advancing · '+adStocksDown.toLocaleString()+' declining · '+adStocksFlat.toLocaleString()+' flat</div>';
     html += '</div>';
-    html += '<div id="breadth-body" style="margin-top:10px;"></div>';
+    html += '<div id="breadth-body" style="margin-top:8px;"></div>';
     html += '</div></div>';
   }
 
