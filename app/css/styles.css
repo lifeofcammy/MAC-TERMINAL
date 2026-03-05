@@ -187,6 +187,21 @@ body {
 #header-account-input::-webkit-outer-spin-button,
 #header-account-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
+/* Step Header / Sidebar Centering — must be BEFORE media queries */
+.step-header-box {
+  text-align: center;
+  border: 2px solid var(--blue);
+  border-radius: 10px;
+  padding: 10px 20px;
+  display: inline-block;
+  position: relative;
+  left: 158px; /* offset half of sidebar(300)+gap(16) to center under tagline */
+}
+.center-under-tagline {
+  position: relative;
+  left: 158px;
+}
+
 /* Cards */
 .card {
   background: var(--bg-card);
@@ -198,8 +213,17 @@ body {
 }
 .card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 
-.an-pill:hover { border-color: var(--blue) !important; color: var(--blue) !important; }
+/* Card headers: centered, larger (must be BEFORE media queries) */
+.card-header-bar {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--blue);
+  text-align: center;
+  white-space: nowrap;
+}
 
+.an-pill:hover { border-color: var(--blue) !important; color: var(--blue) !important; }
 
 
 /* Trade Recap */
@@ -367,8 +391,8 @@ input:focus, textarea:focus, select:focus {
   #watchlist-sidebar { width: 100%; position: static; max-height: none; overflow-y: visible; }
   #account-box { display: none !important; }
   .main { padding: 20px 16px; }
-  .step-header-box { left: 0; }
-  .center-under-tagline { left: 0; }
+  .step-header-box { left: 0 !important; }
+  .center-under-tagline { left: 0 !important; }
 
   /* Overview: Market Snapshot 6-col → 3-col */
   .ov-snap-grid { grid-template-columns: repeat(3, 1fr) !important; }
@@ -410,7 +434,7 @@ input:focus, textarea:focus, select:focus {
   .main { padding: 14px 10px; }
 
   .card { border-radius: 12px; padding: 16px; }
-  .card-header-bar { font-size: 22px; white-space: normal; }
+  .card-header-bar { font-size: 22px !important; white-space: normal !important; }
 
   /* Overview: Market Snapshot 3-col → 2-col */
   .ov-snap-grid { grid-template-columns: repeat(2, 1fr) !important; }
@@ -477,7 +501,7 @@ input:focus, textarea:focus, select:focus {
   .main { padding: 10px 8px; }
 
   .card { border-radius: 10px; padding: 12px; }
-  .card-header-bar { font-size: 20px; }
+  .card-header-bar { font-size: 20px !important; }
 
   /* Overview: Breadth stats */
   .ov-breadth-footer { flex-direction: column; align-items: flex-start; gap: 2px; }
@@ -507,15 +531,7 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* ── Dashboard Font Size Bump ── */
-/* Card headers: centered, larger */
-.card-header-bar {
-  font-size: 28px;
-  font-weight: 700;
-  font-family: var(--font-display);
-  color: var(--blue);
-  text-align: center;
-  white-space: nowrap;
-}
+/* NOTE: .card-header-bar base styles moved above media queries — see Cards section */
 .ticker-link {
   font-weight: 800;
   font-family: var(--font-mono);
@@ -531,16 +547,5 @@ input:focus, textarea:focus, select:focus {
 .ticker-link:hover {
   background: rgba(245, 158, 11, 0.25);
 }
-.step-header-box {
-  text-align: center;
-  border: 2px solid var(--blue);
-  border-radius: 10px;
-  padding: 10px 20px;
-  display: inline-block;
-  position: relative;
-  left: 158px; /* offset half of sidebar(300)+gap(16) to center under tagline */
-}
-.center-under-tagline {
-  position: relative;
-  left: 158px;
-}
+/* NOTE: .step-header-box and .center-under-tagline base styles moved above
+   media queries — see "Step Header / Sidebar Centering" section near line 197 */
