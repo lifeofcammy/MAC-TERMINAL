@@ -408,8 +408,23 @@ input:focus, textarea:focus, select:focus {
 @media (max-width: 768px) {
   .header {
     padding: 0 12px;
-    height: 52px;
-    gap: 8px;
+    height: auto;
+    min-height: 52px;
+    gap: 4px 8px;
+    flex-wrap: wrap;
+  }
+  /* Re-show tagline on mobile — compact row below header icons */
+  .header-tagline {
+    display: block !important;
+    position: static !important;
+    left: auto !important;
+    transform: none !important;
+    width: 100%;
+    order: 99;
+    text-align: center;
+    font-size: 16px !important;
+    padding: 0 0 6px;
+    margin: 0;
   }
   .header-left { gap: 8px; }
   .header-title { font-size: 16px; }
@@ -428,7 +443,7 @@ input:focus, textarea:focus, select:focus {
   #user-email { display: none; }
 
   /* Tabs — match header height */
-  .tabs { padding: 0 8px; top: 52px; }
+  .tabs { padding: 0 8px; top: 74px; }
   .tab { padding: 10px 12px; font-size: 14px; }
 
   .main { padding: 14px 10px; }
