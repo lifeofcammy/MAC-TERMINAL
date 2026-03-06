@@ -20,20 +20,33 @@ var _breadthLastUpdate = null;
 window._currentRegime = 'Neutral';
 
 // Restore breadth history from localStorage (persists across tab closes)
+function _getETDateKey() {
+  var et = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  return et.getFullYear() + '-' + String(et.getMonth()+1).padStart(2,'0') + '-' + String(et.getDate()).padStart(2,'0');
+}
+
 (function restoreBreadthHistory() {
   try {
-    var key = 'mac_breadth_history_' + new Date().toISOString().split('T')[0];
+    var key = 'mac_breadth_history_' + _getETDateKey();
     var raw = localStorage.getItem(key);
-    // Also try sessionStorage for migration
+    // Also try sessionStorage and old UTC-keyed entries for migration
     if (!raw) raw = sessionStorage.getItem(key);
+    if (!raw) raw = localStorage.getItem('mac_breadth_history_' + new Date().toISOString().split('T')[0]);
     if (raw) {
       var parsed = JSON.parse(raw);
       if (parsed && parsed.length > 0) {
         _breadthHistory = parsed.map(function(r) {
           r.time = new Date(r.time);
           return r;
+        }).filter(function(r) {
+          // Only keep readings from market hours (9:30 AM - 4:15 PM ET)
+          var et = new Date(r.time.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+          var mins = et.getHours() * 60 + et.getMinutes();
+          return mins >= 570 && mins <= 975; // 9:30=570, 4:15=975
         });
-        _breadthLastUpdate = _breadthHistory[_breadthHistory.length - 1].time;
+        if (_breadthHistory.length > 0) {
+          _breadthLastUpdate = _breadthHistory[_breadthHistory.length - 1].time;
+        }
       }
     }
     // Clean up old days from localStorage
@@ -48,7 +61,7 @@ window._currentRegime = 'Neutral';
 
 function saveBreadthHistory() {
   try {
-    var key = 'mac_breadth_history_' + new Date().toISOString().split('T')[0];
+    var key = 'mac_breadth_history_' + _getETDateKey();
     localStorage.setItem(key, JSON.stringify(_breadthHistory));
   } catch(e) {}
 }
@@ -143,12 +156,11 @@ function renderBreadthTimeline() {
   var dirColor = delta > 0 ? 'var(--green)' : delta < 0 ? 'var(--red)' : 'var(--text-muted)';
   var dirArrow = delta > 0 ? '\u25b2' : delta < 0 ? '\u25bc' : '\u25cf';
 
-  html += '<div onclick="toggleBreadthTrend()" style="display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;margin:0 -20px;padding:6px 20px;">';
-  html += '<span id="breadth-trend-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(trendCollapsed?'\u25b6':'\u25bc')+'</span>';
+  html += '<div style="display:flex;align-items:center;gap:12px;margin:0 -20px;padding:6px 20px;">';
   html += '<span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;flex:1;">Intraday Trend</span>';
   html += '<span style="font-size:13px;font-weight:800;color:'+dirColor+';flex-shrink:0;">'+dirArrow+' '+dirLabel+' ('+(delta>0?'+':'')+delta+'%)</span>';
   html += '</div>';
-  html += '<div id="breadth-trend-body" style="'+(trendCollapsed?'display:none;':'')+'">';
+  html += '<div>';
 
   // SVG line chart — viewBox sized to avoid distortion with xMidYMid meet
   var W = 600; // viewBox width
