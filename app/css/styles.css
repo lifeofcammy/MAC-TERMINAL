@@ -408,27 +408,27 @@ input:focus, textarea:focus, select:focus {
 @media (max-width: 768px) {
   .header {
     padding: 0 12px;
-    height: auto;
-    min-height: 52px;
-    gap: 0 8px;
-    flex-wrap: wrap;
-    align-items: center;
+    height: 52px;
+    gap: 8px;
   }
-  .header-left { gap: 8px; order: 1; flex-shrink: 0; }
-  .header-right { gap: 6px; order: 2; flex-shrink: 0; margin-left: auto; }
-  /* Re-show tagline on mobile — full-width row below header icons */
+  /* Show tagline as a bar below the header using absolute positioning */
   .header-tagline {
     display: block !important;
-    position: static !important;
-    left: auto !important;
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 52px !important;
     transform: none !important;
-    width: 100%;
-    order: 3;
     text-align: center;
-    font-size: 16px !important;
-    padding: 2px 0 6px;
+    font-size: 15px !important;
+    font-weight: 700;
+    padding: 4px 0;
     margin: 0;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border);
+    z-index: 99;
   }
+  .header-left { gap: 8px; }
   .header-title { font-size: 16px; }
   .header-sub { display: none; } /* hide "Market Action Center" subtitle */
   .header-right .last-updated { display: none; }
@@ -443,8 +443,8 @@ input:focus, textarea:focus, select:focus {
   .header-right .refresh-btn[onclick="logoutUser()"] { font-size: 12px; padding: 8px 12px; }
   #user-email { display: none; }
 
-  /* Tabs — match header height */
-  .tabs { padding: 0 8px; top: 74px; }
+  /* Tabs — below header (52px) + tagline bar (~28px) */
+  .tabs { padding: 0 8px; top: 80px; }
   .tab { padding: 10px 12px; font-size: 14px; }
 
   .main { padding: 14px 10px; }
@@ -508,10 +508,11 @@ input:focus, textarea:focus, select:focus {
     padding: 0 8px;
     height: 48px;
   }
+  .header-tagline { top: 48px !important; font-size: 13px !important; }
   .header-title { font-size: 14px; }
 
-  /* Tabs: smaller, equal-width — match header height */
-  .tabs { padding: 0 4px; gap: 0; top: 48px; }
+  /* Tabs: smaller, equal-width — below header (48px) + tagline bar (~26px) */
+  .tabs { padding: 0 4px; gap: 0; top: 74px; }
   .tab { padding: 10px 6px; font-size: 12px; flex: 1; text-align: center; }
 
   .main { padding: 10px 8px; }
