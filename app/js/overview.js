@@ -659,26 +659,51 @@ async function refreshRegimeAndBreadth() {
     var regimeBody = document.getElementById('regime-body');
     if(regimeBody) {
       var rHtml = '';
-      rHtml += '<div style="text-align:center;margin-bottom:10px;">';
-      rHtml += '<div style="font-family:var(--font-display);font-size:28px;font-weight:700;color:'+regimeColor+';letter-spacing:0.02em;">'+regimeLabel+'</div>';
-      rHtml += '<div style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-top:4px;">'+regimeAction+'</div>';
-      rHtml += '</div>';
-      rHtml += '<div style="font-size:14px;color:var(--text-muted);line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
-      // SMA badges
-      rHtml += '<div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;">';
+      // SMA Status grid
+      rHtml += '<div style="margin-bottom:14px;">';
+      rHtml += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">SMA Status</div>';
+      rHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">';
       indexes.forEach(function(idx) {
         if(idx.s10===null) return;
         var both = idx.a10 && idx.a20;
         var neither = !idx.a10 && !idx.a20;
         var smaColor = both ? 'var(--green)' : neither ? 'var(--red)' : 'var(--amber)';
+        var smaBg = both ? 'rgba(63,185,80,0.06)' : neither ? 'rgba(239,68,68,0.06)' : 'rgba(210,153,34,0.06)';
+        var smaBorder = both ? 'rgba(63,185,80,0.15)' : neither ? 'rgba(239,68,68,0.15)' : 'rgba(210,153,34,0.15)';
         var smaLabel = both ? 'Above Both' : neither ? 'Below Both' : 'Mixed';
-        rHtml += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+smaColor+'15;color:'+smaColor+';font-family:var(--font-mono);">'+idx.name+' '+smaLabel+'</span>';
+        rHtml += '<div style="background:'+smaBg+';border:1px solid '+smaBorder+';border-radius:8px;padding:8px 10px;text-align:center;">';
+        rHtml += '<div style="font-size:13px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">'+idx.name+'</div>';
+        rHtml += '<div style="font-size:11px;font-weight:700;color:'+smaColor+';margin-top:2px;">'+smaLabel+'</div>';
+        rHtml += '</div>';
       });
-      rHtml += '</div>';
+      rHtml += '</div></div>';
+      // Index Snapshot grid
+      var snapItems = [
+        {ticker:'SPY',label:'S&P 500',data:spyLive},
+        {ticker:'QQQ',label:'Nasdaq',data:qqqLive},
+        {ticker:'IWM',label:'Russell',data:iwmLive},
+        {ticker:'DIA',label:'Dow',data:diaLive},
+        {ticker:'VIXY',label:'VIX Proxy',data:vixyLive},
+        {ticker:'UUP',label:'Dollar (DXY)',data:livePrice('UUP')}
+      ];
+      rHtml += '<div style="border-top:1px solid var(--border);padding-top:14px;">';
+      rHtml += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Index Snapshot</div>';
+      rHtml += '<div class="ov-snap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;">';
+      snapItems.forEach(function(idx) {
+        var d=idx.data; var color=d.pct>=0?'var(--green)':'var(--red)';
+        var bg=d.pct>=0?'rgba(52,211,153,0.04)':'rgba(252,165,165,0.04)';
+        var borderC=d.pct>=0?'rgba(52,211,153,0.15)':'rgba(252,165,165,0.15)';
+        if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';bg=d.pct<=0?'rgba(52,211,153,0.04)':'rgba(252,165,165,0.04)';borderC=d.pct<=0?'rgba(52,211,153,0.15)':'rgba(252,165,165,0.15)';}
+        rHtml += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:8px;padding:10px 8px;text-align:center;">';
+        rHtml += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:0.03em;">'+idx.label+'</div>';
+        rHtml += '<div style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);margin-top:3px;">'+(d.price?'$'+price(d.price):'\u2014')+'</div>';
+        rHtml += '<div style="font-size:13px;font-weight:700;color:'+color+';margin-top:2px;">'+pct(d.pct)+'</div>';
+        rHtml += '</div>';
+      });
+      rHtml += '</div></div>';
       // Updated timestamp
       var regimeTime = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
-      rHtml += '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;" id="regime-updated-label">Updated '+regimeTime+' ET</div>';
-      rHtml += '</div>';
+      rHtml += '<div style="font-size:12px;color:var(--text-muted);margin-top:10px;text-align:right;" id="regime-updated-label">Updated '+regimeTime+' ET</div>';
       regimeBody.innerHTML = rHtml;
       // Pulse
       var rLbl = document.getElementById('regime-updated-label');
@@ -689,33 +714,6 @@ async function refreshRegimeAndBreadth() {
     if(breadthDataResult) {
       recordBreadthReading(breadthDataResult);
       renderBreadthBody(breadthDataResult);
-    }
-
-    // 11. Update the Market Snapshot card prices too
-    var snapBody = document.getElementById('snapshot-body');
-    if(snapBody) {
-      var snapItems = [
-        {ticker:'SPY',label:'S&P 500',data:spyLive},
-        {ticker:'QQQ',label:'Nasdaq',data:qqqLive},
-        {ticker:'IWM',label:'Russell',data:iwmLive},
-        {ticker:'DIA',label:'Dow',data:diaLive},
-        {ticker:'VIXY',label:'VIX Proxy',data:vixyLive},
-        {ticker:'UUP',label:'Dollar (DXY)',data:livePrice('UUP')}
-      ];
-      var sHtml = '<div class="ov-snap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">';
-      snapItems.forEach(function(idx) {
-        var d=idx.data; var color=d.pct>=0?'var(--green)':'var(--red)';
-        var bg=d.pct>=0?'rgba(16,185,129,0.04)':'rgba(239,68,68,0.04)';
-        var borderC=d.pct>=0?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)';
-        if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';bg=d.pct<=0?'rgba(16,185,129,0.04)':'rgba(239,68,68,0.04)';borderC=d.pct<=0?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)';}
-        sHtml += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:12px;padding:12px 14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);">';
-        sHtml += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">'+idx.label+'</div>';
-        sHtml += '<div style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">'+(d.price?'$'+price(d.price):'\u2014')+'</div>';
-        sHtml += '<div style="font-size:14px;font-weight:700;color:'+color+';margin-top:2px;">'+pct(d.pct)+'</div>';
-        sHtml += '</div>';
-      });
-      sHtml += '</div>';
-      snapBody.innerHTML = sHtml;
     }
 
     console.log('[Auto-Refresh] Done. Regime: '+regimeLabel);
@@ -1133,8 +1131,7 @@ async function renderOverview() {
   html += '<div style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-top:4px;">'+regimeAction+'</div>';
   html += '</div></div>';
   html += '<div id="regime-body" style="'+(regimeCollapsed?'display:none;':'')+'padding:14px 20px;">';
-  html += '<div style="font-size:14px;color:var(--text-muted);line-height:1.4;">'+regimeDetail.replace(/\n/g,'<br>')+'</div>';
-  // Show all 4 indexes' SMA status
+  // SMA Status grid
   var smaIndexes = [
     {name:'SPY',s10:spySma10,s20:spySma20,a10:spyAbove10,a20:spyAbove20},
     {name:'QQQ',s10:qqqSma10,s20:qqqSma20,a10:qqqAbove10,a20:qqqAbove20},
@@ -1143,20 +1140,27 @@ async function renderOverview() {
   ];
   var hasSmaData = smaIndexes.some(function(idx){return idx.s10!==null;});
   if(hasSmaData){
-    html += '<div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;">';
+    html += '<div style="margin-bottom:14px;">';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">SMA Status</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">';
     smaIndexes.forEach(function(idx){
       if(idx.s10===null) return;
       var both = idx.a10 && idx.a20;
       var neither = !idx.a10 && !idx.a20;
       var smaColor = both ? 'var(--green)' : neither ? 'var(--red)' : 'var(--amber)';
+      var smaBg = both ? 'rgba(63,185,80,0.06)' : neither ? 'rgba(239,68,68,0.06)' : 'rgba(210,153,34,0.06)';
+      var smaBorder = both ? 'rgba(63,185,80,0.15)' : neither ? 'rgba(239,68,68,0.15)' : 'rgba(210,153,34,0.15)';
       var smaLabel = both ? 'Above Both' : neither ? 'Below Both' : 'Mixed';
-      html += '<span style="font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+smaColor+'15;color:'+smaColor+';font-family:var(--font-mono);">'+idx.name+' '+smaLabel+'</span>';
+      html += '<div style="background:'+smaBg+';border:1px solid '+smaBorder+';border-radius:8px;padding:8px 10px;text-align:center;">';
+      html += '<div style="font-size:13px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">'+idx.name+'</div>';
+      html += '<div style="font-size:11px;font-weight:700;color:'+smaColor+';margin-top:2px;">'+smaLabel+'</div>';
+      html += '</div>';
     });
-    html += '</div>';
+    html += '</div></div>';
   }
-  // Index snapshot grid (merged from Market Analysis)
-  html += '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">';
-  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Index Snapshot</div>';
+  // Index Snapshot grid
+  html += '<div id="snapshot-body" style="border-top:1px solid var(--border);padding-top:14px;">';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Index Snapshot</div>';
   html += '<div class="ov-snap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;">';
   var snapItems = [
     {ticker:'SPY',label:'S&P 500',data:spyData},
@@ -1171,16 +1175,16 @@ async function renderOverview() {
     var bg=d.pct>=0?'rgba(52,211,153,0.04)':'rgba(252,165,165,0.04)';
     var borderC=d.pct>=0?'rgba(52,211,153,0.15)':'rgba(252,165,165,0.15)';
     if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';bg=d.pct<=0?'rgba(52,211,153,0.04)':'rgba(252,165,165,0.04)';borderC=d.pct<=0?'rgba(52,211,153,0.15)':'rgba(252,165,165,0.15)';}
-    html += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:8px;padding:8px 6px;text-align:center;">';
-    html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:0.03em;">'+idx.label+'</div>';
-    html += '<div style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);margin-top:1px;">'+(d.price?'$'+price(d.price):'—')+'</div>';
-    html += '<div style="font-size:12px;font-weight:700;color:'+color+';margin-top:1px;">'+pct(d.pct)+'</div>';
+    html += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:8px;padding:10px 8px;text-align:center;">';
+    html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:0.03em;">'+idx.label+'</div>';
+    html += '<div style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);margin-top:3px;">'+(d.price?'$'+price(d.price):'—')+'</div>';
+    html += '<div style="font-size:13px;font-weight:700;color:'+color+';margin-top:2px;">'+pct(d.pct)+'</div>';
     html += '</div>';
   });
   html += '</div></div>';
-  // Updated timestamp for initial load
+  // Updated timestamp
   var regimeInitTime = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'});
-  html += '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;" id="regime-updated-label">Updated '+regimeInitTime+' ET</div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);margin-top:10px;text-align:right;" id="regime-updated-label">Updated '+regimeInitTime+' ET</div>';
   html += '</div></div>';
   html += '</div>';
 
