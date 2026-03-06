@@ -405,8 +405,57 @@ Rules:
         messages: [{ role: 'user', content: prompt }],
       }
 
+    } else if (task === 'generate_recap') {
+      // Validate inputs
+      const indices = sanitizeString(body.indices, 500)
+      const breadth = sanitizeString(body.breadth, 300)
+      const sectors = sanitizeString(body.sectors, 500)
+      const topMovers = sanitizeString(body.topMovers, 2000)
+      const scannerSetups = sanitizeString(body.scannerSetups, 1000)
+
+      const prompt = `You are a trading desk analyst writing a concise end-of-day recap for active traders.
+
+TODAY'S INDEX PERFORMANCE:
+${indices}
+
+MARKET BREADTH:
+${breadth}
+
+SECTOR PERFORMANCE:
+${sectors}
+
+TOP MOVERS (by % change, min $10 price, 1M+ volume):
+${topMovers}
+
+SCANNER SETUPS (from today's compression/breakout scan):
+${scannerSetups}
+
+Write a concise end-of-day recap. Return JSON ONLY in this exact format:
+{
+  "summary": "2-3 sentence market summary. What drove the session, breadth quality, sector leadership/lagging.",
+  "movers": [
+    {"ticker": "OKTA", "pct": 9.1, "volume": "9M", "note": "1-2 sentence catalyst + why it matters for tomorrow"}
+  ],
+  "watchlist": [
+    {"ticker": "AAPL", "level": "$185 support", "thesis": "1 sentence why to watch", "direction": "long|short"}
+  ],
+  "bias": {"direction": "bullish|bearish|neutral", "keyLevel": "SPY $675 support", "reasoning": "1 sentence why"}
+}
+
+Rules:
+- Include 3-5 movers max (most significant by volume + catalyst quality)
+- Include 3-5 watchlist items for tomorrow with specific price levels
+- Be direct and actionable. No fluff. Think like a prop desk morning note.
+- Return ONLY the JSON object.`
+
+      anthropicBody = {
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2048,
+        messages: [{ role: 'user', content: prompt }],
+      }
+
     } else {
-      return new Response(JSON.stringify({ error: `Unknown task: ${task}. Supported: generate_analysis, analysis_chat, generate_themes, day_trade_scan` }), {
+      return new Response(JSON.stringify({ error: `Unknown task: ${task}. Supported: generate_analysis, analysis_chat, generate_themes, day_trade_scan, generate_recap` }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })

@@ -641,6 +641,7 @@ async function refreshRegimeAndBreadth() {
     }
     if(hasHighImpactEvent&&isMarketOpen()) regimeAction+=' \u26a0 '+eventName+' today \u2014 expect volatility.';
     window._currentRegime = regimeLabel;
+    window._indexData = indexes;
 
     // 9. Render regime body
     var regimeBody = document.getElementById('regime-body');
@@ -1344,6 +1345,28 @@ async function renderOverview() {
   if(cachedIdeas&&cachedIdeas.ideas&&cachedIdeas.ideas.length>0){html+=renderTopIdeasHTML(cachedIdeas.ideas,cachedIdeas.ts);}
   else{html += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">Click "Scan" to find today\'s top setups.</div>';}
   html += '</div></div></div>';
+
+  // ════ 8. TODAY'S RECAP ════
+  var recapCollapsed = localStorage.getItem('mac_recap_collapsed')!=='false';
+  var todayKey = new Date().toISOString().split('T')[0];
+  var cachedRecap = null;
+  try { var rr = localStorage.getItem('mac_recap_'+todayKey); if(rr) cachedRecap = JSON.parse(rr); } catch(e) {}
+  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
+  html += '<div onclick="toggleCard(\'recap\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
+  html += '<span id="recap-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(recapCollapsed?'\u25b6':'\u25bc')+'</span>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 7</div><div class="card-header-bar">Today\'s Recap</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">AI summary of today\'s action + tomorrow\'s watchlist.</div></div></div>';
+  html += '<span style="width:20px;"></span>';
+  html += '</div>';
+  html += '<div id="recap-body" style="'+(recapCollapsed?'display:none;':'')+'padding:12px 16px;">';
+  if (cachedRecap) {
+    html += renderRecapHTML(cachedRecap);
+  } else {
+    html += '<div id="recap-content" style="text-align:center;padding:16px;">';
+    html += '<button onclick="generateRecap()" class="refresh-btn" style="padding:8px 20px;font-size:13px;">Generate Recap</button>';
+    html += '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Best after market close (4 PM ET)</div>';
+    html += '</div>';
+  }
+  html += '</div></div>';
 
   container.innerHTML = html;
 
@@ -2392,4 +2415,151 @@ function renderAutoEconCal(el, grouped, ts) {
 
   html += '<div style="margin-top:6px;font-size:12px;color:var(--text-muted);">Updated '+new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})+' \xb7 <a href="#" onclick="localStorage.removeItem(\'mac_econ_cal_auto_\'+function(){var t=new Date(),d=t.getDay(),m=new Date(t);m.setDate(t.getDate()-(d===0?6:d-1));return m.toISOString().split(\'T\')[0];}());loadEconCalendar();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
   el.innerHTML=html;
+}
+
+// ==================== TODAY'S RECAP ====================
+
+function renderRecapHTML(data) {
+  var html = '';
+  // Bias badge
+  if (data.bias) {
+    var bDir = (data.bias.direction || 'neutral').toLowerCase();
+    var bColor = bDir === 'bullish' ? 'var(--green)' : bDir === 'bearish' ? 'var(--red)' : 'var(--amber)';
+    var bBg = bDir === 'bullish' ? 'var(--green-bg)' : bDir === 'bearish' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">';
+    html += '<span style="font-size:12px;font-weight:800;padding:4px 10px;border-radius:6px;background:'+bBg+';color:'+bColor+';text-transform:uppercase;letter-spacing:.06em;">'+bDir+'</span>';
+    if (data.bias.keyLevel) html += '<span style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">'+escapeHtml(data.bias.keyLevel)+'</span>';
+    html += '</div>';
+    if (data.bias.reasoning) html += '<div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;font-style:italic;">'+escapeHtml(data.bias.reasoning)+'</div>';
+  }
+  // Summary
+  if (data.summary) {
+    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.6;margin-bottom:16px;">'+escapeHtml(data.summary)+'</div>';
+  }
+  // Key movers
+  if (data.movers && data.movers.length > 0) {
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Key Movers</div>';
+    html += '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">';
+    data.movers.forEach(function(m) {
+      var pctColor = m.pct >= 0 ? 'var(--green)' : 'var(--red)';
+      html += '<div style="display:flex;align-items:baseline;gap:8px;font-size:13px;">';
+      html += '<span style="font-weight:700;color:var(--text-primary);font-family:var(--font-mono);min-width:50px;">'+escapeHtml(m.ticker)+'</span>';
+      html += '<span style="font-weight:700;color:'+pctColor+';font-family:var(--font-mono);min-width:50px;">'+(m.pct>=0?'+':'')+m.pct.toFixed(1)+'%</span>';
+      if (m.volume) html += '<span style="color:var(--text-muted);font-size:11px;">'+escapeHtml(m.volume)+' vol</span>';
+      html += '</div>';
+      if (m.note) html += '<div style="font-size:12px;color:var(--text-muted);margin-left:0;margin-bottom:2px;line-height:1.4;">'+escapeHtml(m.note)+'</div>';
+    });
+    html += '</div>';
+  }
+  // Tomorrow's watchlist
+  if (data.watchlist && data.watchlist.length > 0) {
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Tomorrow\'s Watchlist</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">';
+    data.watchlist.forEach(function(w) {
+      var dirColor = w.direction === 'long' ? 'var(--green)' : w.direction === 'short' ? 'var(--red)' : 'var(--blue)';
+      html += '<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 12px;min-width:140px;flex:1;">';
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
+      html += '<span style="font-weight:700;font-family:var(--font-mono);font-size:13px;color:var(--text-primary);">'+escapeHtml(w.ticker)+'</span>';
+      html += '<span style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;background:'+dirColor+'15;color:'+dirColor+';text-transform:uppercase;">'+escapeHtml(w.direction||'watch')+'</span>';
+      html += '</div>';
+      if (w.level) html += '<div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">'+escapeHtml(w.level)+'</div>';
+      if (w.thesis) html += '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;line-height:1.3;">'+escapeHtml(w.thesis)+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  // Timestamp
+  if (data.ts) {
+    html += '<div style="font-size:11px;color:var(--text-muted);text-align:right;">Generated '+new Date(data.ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})+' ET</div>';
+  }
+  return html;
+}
+
+async function generateRecap() {
+  var el = document.getElementById('recap-content');
+  if (!el && document.getElementById('recap-body')) {
+    el = document.getElementById('recap-body');
+  }
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:20px;"><div style="font-size:13px;color:var(--text-muted);">Generating recap...</div><div style="margin-top:8px;height:3px;background:var(--bg-secondary);border-radius:2px;overflow:hidden;"><div style="width:60%;height:100%;background:var(--blue);border-radius:2px;animation:pulse 1.5s infinite;"></div></div></div>';
+
+  try {
+    // Build index data
+    var idxData = window._indexData || [];
+    var indicesStr = idxData.map(function(idx) {
+      return idx.name + ': $' + idx.price.toFixed(2) + ' (' + (idx.pct>=0?'+':'') + idx.pct.toFixed(2) + '%)';
+    }).join(' | ');
+    if (!indicesStr) indicesStr = 'No index data available';
+
+    // Build sector data
+    var secData = window._sectorData || [];
+    var sectorsStr = secData.map(function(s) {
+      return s.name + ' (' + s.etf + '): ' + (s.dayChg>=0?'+':'') + s.dayChg.toFixed(2) + '%';
+    }).join('\n');
+
+    // Breadth
+    var sectorsUp = secData.filter(function(s){return s.dayChg>0;}).length;
+    var sectorsDown = secData.filter(function(s){return s.dayChg<0;}).length;
+    var breadthStr = sectorsUp + '/' + secData.length + ' sectors green, ' + sectorsDown + '/' + secData.length + ' red. Regime: ' + (window._currentRegime || 'Unknown');
+
+    // Top movers from grouped daily (fetch via polygon-proxy)
+    var todayStr = new Date().toISOString().split('T')[0];
+    var moversStr = 'No mover data available';
+    try {
+      var gd = await polyGet('/v2/aggs/grouped/locale/us/market/stocks/' + todayStr + '?adjusted=true');
+      var bars = gd.results || [];
+      var movers = [];
+      bars.forEach(function(b) {
+        if (!b.T || !b.c || !b.o || !b.v) return;
+        if (b.T.length > 5 || b.T.indexOf('.') >= 0 || b.T.indexOf('-') >= 0) return;
+        if (b.c < 10 || b.v < 1000000) return;
+        var chg = ((b.c - b.o) / b.o) * 100;
+        movers.push({ticker: b.T, pct: chg, price: b.c, vol: b.v});
+      });
+      movers.sort(function(a,b) { return Math.abs(b.pct) - Math.abs(a.pct); });
+      var topMovers = movers.slice(0, 15);
+      moversStr = topMovers.map(function(m) {
+        var volStr = m.vol >= 1000000 ? (m.vol/1000000).toFixed(1) + 'M' : (m.vol/1000).toFixed(0) + 'K';
+        return m.ticker + ' ' + (m.pct>=0?'+':'') + m.pct.toFixed(1) + '% ($' + m.price.toFixed(2) + ') Vol=' + volStr;
+      }).join('\n');
+    } catch(e) { /* grouped daily may not be available intraday */ }
+
+    // Scanner setups
+    var scannerStr = 'No scanner data available';
+    try {
+      var sr = localStorage.getItem('mac_scan_results');
+      if (sr) {
+        var scanData = JSON.parse(sr);
+        var setups = scanData.setups || [];
+        if (setups.length > 0) {
+          scannerStr = setups.slice(0, 10).map(function(s) {
+            return s.ticker + ' (' + (s.category||'SETUP') + ') Score=' + s.score + ' Entry=$' + (s.entryPrice||0).toFixed(2) + ' Target=$' + (s.targetPrice||0).toFixed(2);
+          }).join('\n');
+        }
+      }
+    } catch(e) {}
+
+    var data = await callAIProxy({
+      task: 'generate_recap',
+      indices: indicesStr,
+      breadth: breadthStr,
+      sectors: sectorsStr,
+      topMovers: moversStr,
+      scannerSetups: scannerStr
+    });
+
+    // Parse response
+    var text = data.content && data.content[0] ? data.content[0].text : '';
+    var jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Could not parse AI response');
+    var recap = JSON.parse(jsonMatch[0]);
+    recap.ts = Date.now();
+
+    // Cache for today
+    try { localStorage.setItem('mac_recap_'+todayStr, JSON.stringify(recap)); } catch(e) {}
+
+    el.innerHTML = renderRecapHTML(recap);
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:16px;"><div style="color:var(--red);font-size:13px;">Failed to generate recap: '+escapeHtml(e.message)+'</div><button onclick="generateRecap()" class="refresh-btn" style="margin-top:8px;padding:6px 16px;font-size:12px;">Retry</button></div>';
+  }
 }
