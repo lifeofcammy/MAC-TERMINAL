@@ -1221,6 +1221,12 @@ async function renderOverview() {
   window._rrgData = rrgData;
 
   html += '<div style="padding:10px 8px;">';
+  if(!isMarketOpen()){
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(88,166,255,0.08);border:1px solid rgba(88,166,255,0.2);border-radius:8px;margin-bottom:10px;font-size:13px;color:var(--blue);">';
+    html+='<span style="font-size:15px;flex-shrink:0;">&#128337;</span>';
+    html+='<span>Showing last session\'s sector positioning. Live updates resume at market open.</span>';
+    html+='</div>';
+  }
   if(rrgData.length > 0) {
     html += '<div style="position:relative;"><canvas id="rrg-canvas" style="width:100%;border-radius:8px;"></canvas></div>';
 
@@ -2069,7 +2075,7 @@ function toggleMindset(){
 // ==================== RENDER THEMES HTML (new format: movers + why + industries) ====================
 function renderThemesHTML(data, cacheTs) {
   var html='';var time=new Date(cacheTs).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
-  html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Updated '+time+' · <a href="#" onclick="localStorage.removeItem(\'mac_themes_\'+new Date().toISOString().split(\'T\')[0]);generateThemes();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Updated '+time+'</div>';
 
   // Market narrative (if present)
   if(data.narrative){
@@ -2177,7 +2183,7 @@ function renderThemesHTML(data, cacheTs) {
 // Legacy renderer (for old cached data that has themes array only)
 function renderLegacyThemesHTML(themes, cacheTs) {
   var html='';var time=new Date(cacheTs).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
-  html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Generated '+time+' · <a href="#" onclick="localStorage.removeItem(\'mac_themes_\'+new Date().toISOString().split(\'T\')[0]);renderOverview();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Generated '+time+'</div>';
   html += '<div style="display:grid;gap:8px;">';
   themes.forEach(function(theme,i){
     var colors=['var(--blue)','var(--purple)','var(--cyan)'];var bgs=['rgba(37,99,235,0.05)','rgba(124,58,237,0.05)','rgba(8,145,178,0.05)'];
@@ -2454,7 +2460,7 @@ function renderAutoEconCal(el, grouped, ts) {
   });
   html += '</div>';
 
-  html += '<div style="margin-top:6px;font-size:12px;color:var(--text-muted);">Updated '+new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})+' \xb7 <a href="#" onclick="localStorage.removeItem(\'mac_econ_cal_auto_\'+function(){var t=new Date(),d=t.getDay(),m=new Date(t);m.setDate(t.getDate()-(d===0?6:d-1));return m.toISOString().split(\'T\')[0];}());loadEconCalendar();return false;" style="color:var(--blue);text-decoration:none;">Refresh</a></div>';
+  html += '<div style="margin-top:6px;font-size:12px;color:var(--text-muted);">Updated '+new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})+'</div>';
   el.innerHTML=html;
 }
 
