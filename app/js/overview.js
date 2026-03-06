@@ -2332,9 +2332,8 @@ async function generateThemes() {
 
 // ==================== QUICK SCAN ====================
 async function runQuickScan() {
-  console.log('[TopIdeas] runQuickScan started');
   var el=document.getElementById('top-ideas-content');
-  if(!el){console.log('[TopIdeas] #top-ideas-content not found, aborting');return;}
+  if(!el)return;
   el.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px;">Scanning top tickers... <span id="qs-progress"></span></div>';
   try{
     var qt=['AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AMD','AVGO','CRM','NFLX','COIN','SNOW','PLTR','DKNG','UBER','SQ','SHOP','NET','CRWD','MU','MRVL','ANET','PANW','NOW','ADBE','ORCL','LLY','UNH','JPM','GS','V','MA','BAC','XOM','CVX','CAT','DE','LMT','BA','MSTR','SOFI','HOOD','RKLB','APP','HIMS','ARM','SMCI','TSM','ASML'];
@@ -2362,16 +2361,16 @@ async function runQuickScan() {
       }catch(e){continue;}
     }
     ideas.sort(function(a,b){return b.score-a.score;});ideas=ideas.slice(0,4);
-    console.log('[TopIdeas] Found '+ideas.length+' ideas:', ideas.map(function(i){return i.ticker+' ('+i.score+')';}).join(', '));
     // Fetch industry + market cap for top ideas
     if(ideas.length>0){
       var detailPromises=ideas.map(function(idea){return polyGet('/v3/reference/tickers/'+idea.ticker).then(function(d){var r=d.results||{};return{ticker:idea.ticker,mc:r.market_cap||null,ind:r.sic_description||null,type:r.type||null};}).catch(function(){return{ticker:idea.ticker,mc:null,ind:null,type:null};});});
       var detailResults=await Promise.all(detailPromises);
       detailResults.forEach(function(r){var idea=ideas.find(function(i){return i.ticker===r.ticker;});if(idea){idea.mcap=r.mc;idea.industry=r.ind;idea.tickerType=r.type;}});
     }
-    try{localStorage.setItem('mac_top_ideas_'+new Date().toISOString().split('T')[0],JSON.stringify({ideas:ideas,ts:Date.now()}));}catch(e){}
+    // Only cache if we found ideas — don't cache empty results (prevents stale empty cache blocking future scans)
+    if(ideas.length>0){try{localStorage.setItem('mac_top_ideas_'+new Date().toISOString().split('T')[0],JSON.stringify({ideas:ideas,ts:Date.now()}));}catch(e){}}
     el.innerHTML=ideas.length>0?renderTopIdeasHTML(ideas,Date.now()):'<div style="text-align:center;padding:14px;color:var(--text-muted);font-size:12px;">No strong setups found. Try full scanners.</div>';
-  }catch(e){console.error('[TopIdeas] Scan failed:', e);el.innerHTML='<div style="color:var(--red);font-size:12px;">Scan failed: '+escapeHtml(e.message)+'</div>';}
+  }catch(e){el.innerHTML='<div style="color:var(--red);font-size:12px;">Scan failed: '+escapeHtml(e.message)+'</div>';}
 }
 
 // Auto-scan Top Ideas every 15 min during market hours
@@ -2383,7 +2382,6 @@ function startTopIdeasAutoScan(){
   var cached=localStorage.getItem(ideaKey);
   var needsScan=!cached;
   if(cached){try{var d=JSON.parse(cached);if(Date.now()-d.ts>15*60*1000)needsScan=true;}catch(e){needsScan=true;}}
-  console.log('[TopIdeas] needsScan='+needsScan+' cached='+(cached?'yes':'no'));
   if(needsScan)setTimeout(function(){runQuickScan();},2000);
   // Refresh every 15 min
   _topIdeasAutoTimer=setInterval(function(){
