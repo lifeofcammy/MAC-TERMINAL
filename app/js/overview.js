@@ -1315,16 +1315,39 @@ async function renderOverview() {
   html += '<div id="econ-cal-grid" style="font-size:12px;color:var(--text-muted);">Loading...</div>';
   html += '</div>';
   // ════ TODAY'S THEMES (inside Catalysts card) ════
+  var _themesEt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  var _themesPreMarket = (_themesEt.getDay() >= 1 && _themesEt.getDay() <= 5 && (_themesEt.getHours() < 9 || (_themesEt.getHours() === 9 && _themesEt.getMinutes() < 30)));
   html += '<div style="padding:10px 16px;border-top:1px solid var(--border);">';
   html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
   html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Today\'s Themes</div>';
-  html += '<button id="generate-themes-btn" onclick="generateThemes()" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Scan</button>';
+  if(!_themesPreMarket){html += '<button id="generate-themes-btn" onclick="generateThemes()" class="refresh-btn" style="padding:4px 10px;font-size:12px;">Scan</button>';}
   html += '</div>';
   html += '<div id="themes-content">';
   var cachedThemes=null;
   try{var themeKey='mac_themes_'+new Date().toISOString().split('T')[0];var themeData=localStorage.getItem(themeKey);if(themeData)cachedThemes=JSON.parse(themeData);}catch(e){}
   if(cachedThemes&&cachedThemes.movers){html+=renderThemesHTML(cachedThemes,cachedThemes.ts);}
   else if(cachedThemes&&cachedThemes.themes){html+=renderLegacyThemesHTML(cachedThemes.themes,cachedThemes.ts);}
+  else if(_themesPreMarket){
+    // Look back to previous trading day's cached themes
+    var _prevThemes=null,_prevLabel='';
+    try{
+      var _ptd=new Date(_themesEt);_ptd.setDate(_ptd.getDate()-1);
+      while(_ptd.getDay()===0||_ptd.getDay()===6)_ptd.setDate(_ptd.getDate()-1);
+      var _ptdKey='mac_themes_'+_ptd.getFullYear()+'-'+String(_ptd.getMonth()+1).padStart(2,'0')+'-'+String(_ptd.getDate()).padStart(2,'0');
+      var _ptdRaw=localStorage.getItem(_ptdKey);
+      if(_ptdRaw){_prevThemes=JSON.parse(_ptdRaw);_prevLabel=_ptd.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
+    }catch(e){}
+    if(_prevThemes&&(_prevThemes.movers||_prevThemes.themes)){
+      html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(210,153,34,0.08);border:1px solid rgba(210,153,34,0.25);border-radius:8px;margin-bottom:10px;font-size:12px;color:#d29922;">';
+      html+='<span style="font-size:14px;flex-shrink:0;">&#9202;</span>';
+      html+='<span>Showing <span style="background:rgba(210,153,34,0.15);padding:2px 8px;border-radius:4px;font-weight:700;white-space:nowrap;">'+_prevLabel+'</span> themes &mdash; today\'s scan available after market open (9:30 AM ET)</span>';
+      html+='</div>';
+      if(_prevThemes.movers){html+=renderThemesHTML(_prevThemes,_prevThemes.ts);}
+      else{html+=renderLegacyThemesHTML(_prevThemes.themes,_prevThemes.ts);}
+    }else{
+      html+='<div style="font-size:13px;color:var(--text-muted);text-align:center;padding:12px 0;">Themes available after market open (9:30 AM ET). Live price data is needed to identify today\'s movers.</div>';
+    }
+  }
   else{html += '<div style="font-size:14px;color:var(--text-muted);">'+(window._currentSession?'Auto-loading themes...':'Log in to auto-generate themes.')+'</div>';}
   html += '</div></div>';
   html += '</div>'; // close catalysts-body
@@ -1471,8 +1494,8 @@ async function renderOverview() {
   }
   // Start auto-scan for Top Ideas (runs every 15 min)
   startTopIdeasAutoScan();
-  // Auto-generate themes if no cache and user is logged in
-  if(!cachedThemes && window._currentSession){
+  // Auto-generate themes if no cache and user is logged in (skip pre-market)
+  if(!cachedThemes && !_themesPreMarket && window._currentSession){
     setTimeout(function(){ generateThemes(); }, 500);
   }
 }
