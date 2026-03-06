@@ -1372,7 +1372,13 @@ async function renderOverview() {
   var cachedIdeas=null;
   try{var ideaKey='mac_top_ideas_'+new Date().toISOString().split('T')[0];var ideaData=localStorage.getItem(ideaKey);if(ideaData)cachedIdeas=JSON.parse(ideaData);}catch(e){}
   if(cachedIdeas&&cachedIdeas.ideas&&cachedIdeas.ideas.length>0){html+=renderTopIdeasHTML(cachedIdeas.ideas,cachedIdeas.ts);}
-  else{html += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">Click "Scan" to find today\'s top setups.</div>';}
+  else{
+    if(isMarketOpen()){
+      html += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">Scanning for top setups...</div>';
+    } else {
+      html += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">Top ideas populate automatically during market hours (9:30 AM – 4:00 PM ET).</div>';
+    }
+  }
   html += '</div></div></div>';
 
   // ════ 8. AFTER THE BELL ════
@@ -1409,7 +1415,7 @@ async function renderOverview() {
       html += '<button onclick="generateRecap()" class="refresh-btn" style="padding:8px 20px;font-size:13px;">Generate Recap</button>';
       html += '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">'+recapDateLabel+' session</div>';
     } else {
-      html += '<div style="font-size:13px;color:var(--text-muted);">Available after market close (4 PM ET)</div>';
+      html += '<div style="font-size:13px;color:var(--text-muted);">No recap generated for '+recapDateLabel+'. Recaps can be generated after market close (4 PM ET).</div>';
     }
     html += '</div>';
   }
