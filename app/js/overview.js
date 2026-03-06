@@ -532,7 +532,7 @@ async function refreshRegimeAndBreadth() {
     function livePrice(ticker) {
       var s = snap[ticker];
       if(!s) return { price:0, pct:0 };
-      var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : (s.prevDay&&s.prevDay.c ? s.prevDay.c : (s.lastTrade?s.lastTrade.p:0));
+      var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : (s.lastTrade&&s.lastTrade.p>0 ? s.lastTrade.p : (s.prevDay&&s.prevDay.c ? s.prevDay.c : 0));
       var prev = s.prevDay ? s.prevDay.c : p;
       return { price: p, pct: prev>0 ? ((p-prev)/prev)*100 : 0 };
     }
@@ -555,6 +555,7 @@ async function refreshRegimeAndBreadth() {
     indexes.forEach(function(idx) {
       idx.a10 = idx.s10!==null && idx.price>idx.s10;
       idx.a20 = idx.s20!==null && idx.price>idx.s20;
+      console.log('[SMA Debug]', idx.name, 'price='+idx.price.toFixed(2), 'sma10='+(idx.s10?idx.s10.toFixed(2):'null'), 'sma20='+(idx.s20?idx.s20.toFixed(2):'null'), 'a10='+idx.a10, 'a20='+idx.a20);
     });
 
     var idxAboveBoth=0, idxBelowBoth=0, idxMixed=0;
@@ -881,7 +882,7 @@ async function renderOverview() {
   function getSnap(ticker) {
     var s = snap[ticker];
     if (!s) return {price:0,change:0,pct:0,vol:0,prevClose:0,high:0,low:0,vwap:0};
-    var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : (s.prevDay&&s.prevDay.c ? s.prevDay.c : (s.lastTrade?s.lastTrade.p:0));
+    var p = s.day&&s.day.c&&s.day.c>0 ? s.day.c : (s.lastTrade&&s.lastTrade.p>0 ? s.lastTrade.p : (s.prevDay&&s.prevDay.c ? s.prevDay.c : 0));
     var prev = s.prevDay ? s.prevDay.c : p;
     // On weekends/holidays: day.c and prevDay.c may be the same (both = Friday close)
     // Use spyBars (daily bars) for SPY to get proper last-day change if available
