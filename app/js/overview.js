@@ -1346,24 +1346,42 @@ async function renderOverview() {
   else{html += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">Click "Scan" to find today\'s top setups.</div>';}
   html += '</div></div></div>';
 
-  // ════ 8. TODAY'S RECAP ════
+  // ════ 8. AFTER THE BELL ════
   var recapCollapsed = localStorage.getItem('mac_recap_collapsed')!=='false';
-  var todayKey = new Date().toISOString().split('T')[0];
+  // Determine the last completed trading session date
+  var _recapSessionDate = (function() {
+    var now = new Date();
+    var et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    var h = et.getHours(), dow = et.getDay();
+    // Before 4 PM ET on a weekday, use previous trading day
+    if (dow >= 1 && dow <= 5 && h < 16) et.setDate(et.getDate() - 1);
+    // Roll past weekends
+    while (et.getDay() === 0 || et.getDay() === 6) et.setDate(et.getDate() - 1);
+    return et;
+  })();
+  var recapDateKey = _recapSessionDate.getFullYear() + '-' + String(_recapSessionDate.getMonth()+1).padStart(2,'0') + '-' + String(_recapSessionDate.getDate()).padStart(2,'0');
+  var recapDateLabel = _recapSessionDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   var cachedRecap = null;
-  try { var rr = localStorage.getItem('mac_recap_'+todayKey); if(rr) cachedRecap = JSON.parse(rr); } catch(e) {}
+  try { var rr = localStorage.getItem('mac_recap_'+recapDateKey); if(rr) cachedRecap = JSON.parse(rr); } catch(e) {}
   html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'recap\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
   html += '<span id="recap-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(recapCollapsed?'\u25b6':'\u25bc')+'</span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 7</div><div class="card-header-bar">Today\'s Recap</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">AI summary of today\'s action + tomorrow\'s watchlist.</div></div></div>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 7</div><div class="card-header-bar">After the Bell</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">'+recapDateLabel+' \u2014 Session recap + tomorrow\'s watchlist.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   html += '<div id="recap-body" style="'+(recapCollapsed?'display:none;':'')+'padding:12px 16px;">';
   if (cachedRecap) {
     html += renderRecapHTML(cachedRecap);
   } else {
+    var etNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    var isAfterClose = etNow.getHours() >= 16 || etNow.getDay() === 0 || etNow.getDay() === 6;
     html += '<div id="recap-content" style="text-align:center;padding:16px;">';
-    html += '<button onclick="generateRecap()" class="refresh-btn" style="padding:8px 20px;font-size:13px;">Generate Recap</button>';
-    html += '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Best after market close (4 PM ET)</div>';
+    if (isAfterClose) {
+      html += '<button onclick="generateRecap()" class="refresh-btn" style="padding:8px 20px;font-size:13px;">Generate Recap</button>';
+      html += '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">'+recapDateLabel+' session</div>';
+    } else {
+      html += '<div style="font-size:13px;color:var(--text-muted);">Available after market close (4 PM ET)</div>';
+    }
     html += '</div>';
   }
   html += '</div></div>';
@@ -2502,11 +2520,20 @@ async function generateRecap() {
     var sectorsDown = secData.filter(function(s){return s.dayChg<0;}).length;
     var breadthStr = sectorsUp + '/' + secData.length + ' sectors green, ' + sectorsDown + '/' + secData.length + ' red. Regime: ' + (window._currentRegime || 'Unknown');
 
+    // Determine the session date (last completed trading day)
+    var _sd = (function() {
+      var now = new Date();
+      var et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      var h = et.getHours(), dow = et.getDay();
+      if (dow >= 1 && dow <= 5 && h < 16) et.setDate(et.getDate() - 1);
+      while (et.getDay() === 0 || et.getDay() === 6) et.setDate(et.getDate() - 1);
+      return et.getFullYear() + '-' + String(et.getMonth()+1).padStart(2,'0') + '-' + String(et.getDate()).padStart(2,'0');
+    })();
+
     // Top movers from grouped daily (fetch via polygon-proxy)
-    var todayStr = new Date().toISOString().split('T')[0];
     var moversStr = 'No mover data available';
     try {
-      var gd = await polyGet('/v2/aggs/grouped/locale/us/market/stocks/' + todayStr + '?adjusted=true');
+      var gd = await polyGet('/v2/aggs/grouped/locale/us/market/stocks/' + _sd + '?adjusted=true');
       var bars = gd.results || [];
       var movers = [];
       bars.forEach(function(b) {
@@ -2555,8 +2582,8 @@ async function generateRecap() {
     var recap = JSON.parse(jsonMatch[0]);
     recap.ts = Date.now();
 
-    // Cache for today
-    try { localStorage.setItem('mac_recap_'+todayStr, JSON.stringify(recap)); } catch(e) {}
+    // Cache by session date
+    try { localStorage.setItem('mac_recap_'+_sd, JSON.stringify(recap)); } catch(e) {}
 
     el.innerHTML = renderRecapHTML(recap);
   } catch(e) {
