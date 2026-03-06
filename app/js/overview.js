@@ -1177,11 +1177,16 @@ async function renderOverview() {
 
     var breadthLabel = adBreadthPct >= 60 ? 'Broad Rally' : adBreadthPct <= 40 ? 'Broad Selling' : 'Narrow / Mixed';
     var breadthColor = adBreadthPct >= 60 ? 'var(--green)' : adBreadthPct <= 40 ? 'var(--red)' : 'var(--amber)';
+    var breadthCollapsed = localStorage.getItem('mac_breadth_collapsed')==='true';
     html += '<div class="card" style="padding:0;margin-bottom:14px;overflow:hidden;">';
-    html += '<div style="padding:12px 20px;">';
-    html += '<div style="text-align:center;margin-bottom:4px;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 3</div><div class="card-header-bar">Stock Breadth</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Is the move broad or narrow? Confirms if the regime call is real.</div></div></div>';
+    html += '<div onclick="toggleBreadth()" style="display:flex;align-items:center;padding:10px 16px;cursor:pointer;user-select:none;gap:12px;">';
+    html += '<span id="breadth-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(breadthCollapsed?'\u25b6':'\u25bc')+'</span>';
+    html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 3</div><div class="card-header-bar">Stock Breadth</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Is the move broad or narrow? Confirms if the regime call is real.</div></div></div>';
+    html += '<span style="width:20px;"></span>';
+    html += '</div>';
+    html += '<div id="breadth-content" style="'+(breadthCollapsed?'display:none;':'')+'padding:0 20px 12px;">';
     // Gauge bar
-    html += '<div style="margin-top:10px;">';
+    html += '<div>';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
     html += '<span style="font-size:12px;font-weight:700;color:var(--green);">'+adBreadthPct+'% Up</span>';
     html += '<span style="font-size:14px;font-weight:800;color:'+breadthColor+';">'+breadthLabel+'</span>';
@@ -1983,6 +1988,13 @@ async function toggleSubsectors(sectorEtf) {
     el.innerHTML = '<div style="padding:6px 4px;font-size:12px;color:var(--red);">Failed to load sector data</div>';
   }
 }
+function toggleBreadth(){
+  var body=document.getElementById('breadth-content'),arrow=document.getElementById('breadth-arrow');
+  if(!body)return;var h=body.style.display==='none';body.style.display=h?'':'none';
+  if(arrow)arrow.textContent=h?'\u25bc':'\u25b6';
+  try{localStorage.setItem('mac_breadth_collapsed',h?'false':'true');}catch(e){}
+}
+
 function toggleMindset(){
   var body=document.getElementById('mindset-body'),arrow=document.getElementById('mindset-arrow');
   if(!body)return;var h=body.style.display==='none';body.style.display=h?'':'none';
