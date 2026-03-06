@@ -472,7 +472,7 @@ input:focus, textarea:focus, select:focus {
   .tj-day-grid { grid-template-columns: 1fr !important; }
   /* Trade Journal: Calendar grid → horizontal scroll */
   #cal-grid { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  #cal-grid > div { min-width: 480px; }
+  #cal-grid > div { min-width: 620px; }
   /* Trade Journal: Calendar stat cells */
   .rv-stat-grid { grid-template-columns: repeat(4, 1fr); }
   /* Trade Journal: Recap results 2-col → stacked */
