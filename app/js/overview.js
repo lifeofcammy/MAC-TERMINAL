@@ -1631,7 +1631,7 @@ async function loadWatchlistPrices() {
 // ==================== TOGGLES ====================
 // Generic card toggle — works for any card with id='<name>-body' and id='<name>-arrow'
 // displayType defaults to 'block'; pass 'flex' for flex-layout bodies
-var _cardDisplayType = {regime:'flex'};
+var _cardDisplayType = {};
 function toggleCard(name) {
   var body=document.getElementById(name+'-body'),arrow=document.getElementById(name+'-arrow');
   if(!body)return;var h=body.style.display==='none';
