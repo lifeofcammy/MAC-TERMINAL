@@ -75,8 +75,6 @@ document.querySelectorAll('.tabs > .tab').forEach(tab => {
 function refreshAll() {
   var btn = document.getElementById('refreshBtn');
   btn.classList.add('spinning');
-  document.getElementById('lastUpdated').textContent = 'Refreshing...';
-
   // Clear the Polygon cache so all data is re-fetched fresh
   if (typeof clearPolyCache === 'function') clearPolyCache();
 
@@ -86,6 +84,5 @@ function refreshAll() {
 
   setTimeout(function() {
     btn.classList.remove('spinning');
-    document.getElementById('lastUpdated').textContent = 'Updated ' + getTimestamp();
   }, 2000);
 }
