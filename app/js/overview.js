@@ -114,13 +114,7 @@ function renderBreadthBody(data) {
   var flatW = 100-greenW-redW;
 
   var html = '';
-  html += '<div style="text-align:center;font-size:11px;color:var(--text-muted);margin-bottom:4px;">'+data.up.toLocaleString()+' advancing \xb7 '+data.down.toLocaleString()+' declining'+(data.flat>0?' \xb7 '+data.flat.toLocaleString()+' flat':'')+'</div>';
-  // Compact stacked bar
-  html += '<div style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--bg-secondary);">';
-  if(greenW>0) html += '<div style="width:'+greenW+'%;background:var(--green);"></div>';
-  if(flatW>0) html += '<div style="width:'+flatW+'%;background:var(--bg-secondary);"></div>';
-  if(redW>0) html += '<div style="width:'+redW+'%;background:var(--red);"></div>';
-  html += '</div>';
+  html += '<div style="display:flex;justify-content:center;font-size:11px;color:var(--text-muted);margin-bottom:4px;">'+data.up.toLocaleString()+' advancing \xb7 '+data.down.toLocaleString()+' declining'+(data.flat>0?' \xb7 '+data.flat.toLocaleString()+' flat':'')+'</div>';
   // Footer: breadth % + last updated
   var updateLabel = _breadthLastUpdate ? _breadthLastUpdate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'}) + ' ET' : getDataFreshnessLabel();
   html += '<div class="ov-breadth-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:12px;color:var(--text-muted);">';
