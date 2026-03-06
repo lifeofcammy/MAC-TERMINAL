@@ -763,6 +763,13 @@ async function renderOverview() {
   var ts = getTimestamp();
   var live = isMarketOpen();
 
+  // Reset all cards to collapsed each new day (ET)
+  var todayET = _getETDateKey();
+  if (localStorage.getItem('mac_collapse_date') !== todayET) {
+    ['mcc_mindset_collapsed','mac_regime_collapsed','mac_breadth_collapsed','mac_heatmap_collapsed','mac_catalysts_collapsed','mac_ideas_collapsed','mac_recap_collapsed'].forEach(function(k){ localStorage.removeItem(k); });
+    localStorage.setItem('mac_collapse_date', todayET);
+  }
+
   container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:14px;">Loading Overview...</div>';
 
   // ── TICKERS TO FETCH ──
