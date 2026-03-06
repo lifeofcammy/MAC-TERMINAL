@@ -156,11 +156,10 @@ function renderBreadthTimeline() {
   html += '</div>';
   html += '<div id="breadth-trend-body" style="'+(trendCollapsed?'display:none;':'')+'">';
 
-  // SVG line chart — wide viewBox (400:60) matches typical container aspect ratio
-  // so preserveAspectRatio="none" won't distort circles/text
-  var W = 400; // viewBox width (wide to match container)
-  var H = 60;  // viewBox height
-  var padL = 0, padR = 0, padT = 16, padB = 14; // padding for labels
+  // SVG line chart — viewBox sized to avoid distortion with xMidYMid meet
+  var W = 600; // viewBox width
+  var H = 200; // viewBox height (proportional to 180px container)
+  var padL = 8, padR = 8, padT = 28, padB = 24; // padding for labels
   var chartW = W - padL - padR;
   var chartH = H - padT - padB;
 
@@ -190,32 +189,32 @@ function renderBreadthTimeline() {
   var areaPath = linePath + ' L'+points[points.length-1].x.toFixed(1)+','+(padT+chartH)+' L'+points[0].x.toFixed(1)+','+(padT+chartH)+' Z';
 
   html += '<div style="position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg-secondary);padding:8px;height:180px;">';
-  html += '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:100%;display:block;" preserveAspectRatio="none">';
+  html += '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:100%;display:block;" preserveAspectRatio="xMidYMid meet">';
   // 50% line (neutral)
   if(minPct <= 50 && maxPct >= 50) {
     var y50 = padT + (1 - (50 - minPct) / range) * chartH;
-    html += '<line x1="'+padL+'" y1="'+y50.toFixed(1)+'" x2="'+(padL+chartW)+'" y2="'+y50.toFixed(1)+'" stroke="var(--text-muted)" stroke-width="0.5" stroke-dasharray="8,8" opacity="0.5"/>';
-    html += '<text x="'+(padL+4)+'" y="'+(y50-2).toFixed(1)+'" fill="var(--text-muted)" font-size="8" font-family="var(--font-mono)">50%</text>';
+    html += '<line x1="'+padL+'" y1="'+y50.toFixed(1)+'" x2="'+(padL+chartW)+'" y2="'+y50.toFixed(1)+'" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="8,8" opacity="0.5"/>';
+    html += '<text x="'+(padL+6)+'" y="'+(y50-4).toFixed(1)+'" fill="var(--text-muted)" font-size="14" font-family="var(--font-mono)">50%</text>';
   }
   // Area fill
   html += '<path d="'+areaPath+'" fill="'+fillColor+'"/>';
   // Line
-  html += '<path d="'+linePath+'" fill="none" stroke="'+lineColor+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  html += '<path d="'+linePath+'" fill="none" stroke="'+lineColor+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
   // Data points
   points.forEach(function(p,i){
     var dotColor = i === points.length-1 ? lineColor : 'var(--text-muted)';
-    var dotR = i === points.length-1 ? '3' : '2';
+    var dotR = i === points.length-1 ? '5' : '4';
     html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+dotR+'" fill="'+dotColor+'"/>';
   });
   // Time labels (first and last)
   var timeOpts = {hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'};
   var firstTime = points[0].time.toLocaleTimeString('en-US',timeOpts).replace(' ','');
   var lastTime = points[points.length-1].time.toLocaleTimeString('en-US',timeOpts).replace(' ','');
-  html += '<text x="'+padL+'" y="'+(H-1)+'" fill="var(--text-muted)" font-size="8" font-family="var(--font-mono)">'+firstTime+'</text>';
-  html += '<text x="'+(padL+chartW)+'" y="'+(H-1)+'" fill="var(--text-muted)" font-size="8" font-family="var(--font-mono)" text-anchor="end">'+lastTime+'</text>';
+  html += '<text x="'+padL+'" y="'+(H-2)+'" fill="var(--text-muted)" font-size="14" font-family="var(--font-mono)">'+firstTime+'</text>';
+  html += '<text x="'+(padL+chartW)+'" y="'+(H-2)+'" fill="var(--text-muted)" font-size="14" font-family="var(--font-mono)" text-anchor="end">'+lastTime+'</text>';
   // Pct labels (first and last reading values)
-  html += '<text x="'+(points[0].x+4).toFixed(1)+'" y="'+(points[0].y-4).toFixed(1)+'" fill="var(--text-muted)" font-size="8" font-family="var(--font-mono)">'+first+'%</text>';
-  html += '<text x="'+(points[points.length-1].x-4).toFixed(1)+'" y="'+(points[points.length-1].y-4).toFixed(1)+'" fill="'+lineColor+'" font-size="9" font-weight="700" font-family="var(--font-mono)" text-anchor="end">'+last+'%</text>';
+  html += '<text x="'+(points[0].x+6).toFixed(1)+'" y="'+(points[0].y-6).toFixed(1)+'" fill="var(--text-muted)" font-size="14" font-family="var(--font-mono)">'+first+'%</text>';
+  html += '<text x="'+(points[points.length-1].x-6).toFixed(1)+'" y="'+(points[points.length-1].y-6).toFixed(1)+'" fill="'+lineColor+'" font-size="15" font-weight="700" font-family="var(--font-mono)" text-anchor="end">'+last+'%</text>';
   html += '</svg>';
   html += '</div>';
 
