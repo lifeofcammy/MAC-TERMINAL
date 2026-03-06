@@ -97,6 +97,8 @@ async function fetchBreadthData() {
 // Record a breadth reading into history
 function recordBreadthReading(data) {
   if(!data) return;
+  // Skip 0% readings where no stocks moved (delayed data not yet available)
+  if(data.pct === 0 && data.up === 0 && data.down === 0) return;
   var now = new Date();
   // Skip if last reading was less than 2 minutes ago (avoid duplicates from concurrent calls)
   if (_breadthHistory.length > 0) {
@@ -132,7 +134,7 @@ function renderBreadthBody(data) {
   var updateLabel = _breadthLastUpdate ? _breadthLastUpdate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'}) + ' ET' : getDataFreshnessLabel();
   html += '<div class="ov-breadth-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:12px;color:var(--text-muted);">';
   html += '<span>Breadth: <span style="color:'+color+';font-weight:700;">'+pct+'%</span></span>';
-  html += '<span style="font-size:11px;" id="breadth-updated-label">Updated '+updateLabel+'</span>';
+  html += '<span style="font-size:11px;" id="breadth-updated-label">Updated '+updateLabel+' <span style="color:var(--text-muted);opacity:0.7;">(15-min delayed)</span></span>';
   html += '</div>';
   // History timeline (if we have 2+ readings)
   html += renderBreadthTimeline();
@@ -1194,7 +1196,7 @@ async function renderOverview() {
   html += '</div>';
 
   // ════ 3. STOCK BREADTH (simple gauge — moved before snapshot) ════
-  if(adTotal > 0) {
+  if(adTotal > 0 && (adStocksUp > 0 || adStocksDown > 0)) {
     recordBreadthReading({ up: adStocksUp, down: adStocksDown, flat: adStocksFlat, total: adTotal, pct: adBreadthPct });
 
     var breadthLabel = adBreadthPct >= 60 ? 'Broad Rally' : adBreadthPct <= 40 ? 'Broad Selling' : 'Narrow / Mixed';
@@ -1517,8 +1519,8 @@ async function renderOverview() {
   loadEconCalendar();
   // Load watchlist live prices async
   loadWatchlistPrices();
-  // Render initial breadth card body (uses recordBreadthReading data from above)
-  if(adTotal > 0) {
+  // Render initial breadth card body (skip if all flat — delayed data not yet available)
+  if(adTotal > 0 && (adStocksUp > 0 || adStocksDown > 0)) {
     renderBreadthBody({ up: adStocksUp, down: adStocksDown, flat: adStocksFlat, total: adTotal, pct: adBreadthPct });
   }
   // Start 15-min auto-refresh for breadth (only during market hours)
