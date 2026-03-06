@@ -1338,8 +1338,8 @@ async function renderOverview() {
       if(_ptdRaw){_prevThemes=JSON.parse(_ptdRaw);_prevLabel=_ptd.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
     }catch(e){}
     if(_prevThemes&&(_prevThemes.movers||_prevThemes.themes)){
-      html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(210,153,34,0.08);border:1px solid rgba(210,153,34,0.25);border-radius:8px;margin-bottom:10px;font-size:12px;color:#d29922;">';
-      html+='<span style="font-size:14px;flex-shrink:0;">&#9202;</span>';
+      html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(210,153,34,0.08);border:1px solid rgba(210,153,34,0.25);border-radius:8px;margin-bottom:10px;font-size:13px;color:#d29922;">';
+      html+='<span style="font-size:15px;flex-shrink:0;">&#9202;</span>';
       html+='<span>Showing <span style="background:rgba(210,153,34,0.15);padding:2px 8px;border-radius:4px;font-weight:700;white-space:nowrap;">'+_prevLabel+'</span> themes &mdash; today\'s scan available after market open (9:30 AM ET)</span>';
       html+='</div>';
       if(_prevThemes.movers){html+=renderThemesHTML(_prevThemes,_prevThemes.ts);}
