@@ -539,8 +539,9 @@ async function refreshRegimeAndBreadth() {
     var spyLive=livePrice('SPY'), qqqLive=livePrice('QQQ'), iwmLive=livePrice('IWM'), diaLive=livePrice('DIA'), vixyLive=livePrice('VIXY');
 
     function calcSMA(bars, period) {
-      if(!bars||bars.length<period) return null;
-      var cl=bars.map(function(b){return b.c;}); var ln=cl.length;
+      if(!bars||bars.length<period+1) return null;
+      // Exclude today's incomplete bar — use only completed trading days
+      var cl=bars.slice(0,-1).map(function(b){return b.c;}); var ln=cl.length;
       var sum=0; for(var i=ln-period;i<ln;i++) sum+=cl[i]; return sum/period;
     }
 
@@ -912,8 +913,9 @@ async function renderOverview() {
 
   // ── INDEX 10 & 20 SMAs (SPY, QQQ, IWM, DIA) ──
   function calcSMA(bars, period) {
-    if(!bars||bars.length<period) return null;
-    var cl=bars.map(function(b){return b.c;}); var ln=cl.length;
+    if(!bars||bars.length<period+1) return null;
+    // Exclude today's incomplete bar — use only completed trading days
+    var cl=bars.slice(0,-1).map(function(b){return b.c;}); var ln=cl.length;
     var sum=0; for(var i=ln-period;i<ln;i++) sum+=cl[i]; return sum/period;
   }
   var spySma10=calcSMA(spyBars,10), spySma20=calcSMA(spyBars,20);
