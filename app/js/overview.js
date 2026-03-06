@@ -555,7 +555,6 @@ async function refreshRegimeAndBreadth() {
     indexes.forEach(function(idx) {
       idx.a10 = idx.s10!==null && idx.price>idx.s10;
       idx.a20 = idx.s20!==null && idx.price>idx.s20;
-      console.log('[SMA Debug]', idx.name, 'price='+idx.price.toFixed(2), 'sma10='+(idx.s10?idx.s10.toFixed(2):'null'), 'sma20='+(idx.s20?idx.s20.toFixed(2):'null'), 'a10='+idx.a10, 'a20='+idx.a20);
     });
 
     var idxAboveBoth=0, idxBelowBoth=0, idxMixed=0;
@@ -933,7 +932,6 @@ async function renderOverview() {
   var qqqSma10=calcSMA(qqqBars,10),qqqSma20=calcSMA(qqqBars,20);
   var iwmSma10=calcSMA(iwmBars,10),iwmSma20=calcSMA(iwmBars,20);
   var diaSma10=calcSMA(diaBars,10),diaSma20=calcSMA(diaBars,20);
-  console.log('[SMA Debug] bars count — SPY:'+spyBars.length+' QQQ:'+qqqBars.length+' IWM:'+iwmBars.length+' DIA:'+diaBars.length);
 
   var qqqAbove10=qqqSma10!==null&&qqqData.price>qqqSma10;
   var qqqAbove20=qqqSma20!==null&&qqqData.price>qqqSma20;
@@ -949,7 +947,6 @@ async function renderOverview() {
    {name:'QQQ',p:qqqData.price,a10:qqqAbove10,a20:qqqAbove20,s10:qqqSma10,s20:qqqSma20},
    {name:'IWM',p:iwmData.price,a10:iwmAbove10,a20:iwmAbove20,s10:iwmSma10,s20:iwmSma20},
    {name:'DIA',p:diaData.price,a10:diaAbove10,a20:diaAbove20,s10:diaSma10,s20:diaSma20}].forEach(function(idx){
-    console.log('[SMA Debug]', idx.name, 'price='+idx.p.toFixed(2), 'sma10='+(idx.s10?idx.s10.toFixed(2):'null'), 'sma20='+(idx.s20?idx.s20.toFixed(2):'null'), 'a10='+idx.a10, 'a20='+idx.a20);
     if(idx.s10===null)return;
     if(idx.a10&&idx.a20){idxAboveBoth++;idxSmaDetails.push(idx.name+' above both');}
     else if(!idx.a10&&!idx.a20){idxBelowBoth++;idxSmaDetails.push(idx.name+' below both');}
