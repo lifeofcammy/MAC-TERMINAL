@@ -1017,10 +1017,10 @@ async function renderOverview() {
   var dailyFocus = mindsetRules[todayIdx];
   var mindsetCollapsed = localStorage.getItem('mcc_mindset_collapsed')!=='false';
 
-  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;border-left:3px solid var(--amber);border-radius:14px;">';
-  html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;padding:10px 16px;cursor:pointer;user-select:none;gap:12px;">';
+  html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;border-left:3px solid var(--amber);border-radius:14px;">';
+  html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;gap:10px;">';
   html += '<span id="mindset-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 1</div><div class="card-header-bar">Morning Mindset</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Set your mental game before the market opens</div></div></div>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:1px;">Step 1</div><div class="card-header-bar">Morning Mindset</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Set your mental game before the market opens</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Today's Focus — ALWAYS visible, centered under header
@@ -1125,10 +1125,10 @@ async function renderOverview() {
   if(hasHighImpactEvent&&live) regimeAction+=' \u26a0 '+eventName+' today — expect volatility.';
   window._currentRegime = regimeLabel;
 
-  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div onclick="toggleCard(\'regime\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
+  html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
+  html += '<div onclick="toggleCard(\'regime\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
   html += '<span id="regime-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(regimeCollapsed?'▶':'▼')+'</span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 2</div><div class="card-header-bar">Market Outlook</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div></div>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:1px;">Step 2</div><div class="card-header-bar">Market Outlook</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Regime label — always visible, centered under header
@@ -1203,9 +1203,9 @@ async function renderOverview() {
     var breadthColor = adBreadthPct >= 60 ? 'var(--green)' : adBreadthPct <= 40 ? 'var(--red)' : 'var(--amber)';
     var breadthCollapsed = localStorage.getItem('mac_breadth_collapsed')!=='false';
     html += '<div class="card" style="padding:0;margin-bottom:14px;overflow:hidden;">';
-    html += '<div onclick="toggleBreadth()" style="display:flex;align-items:center;padding:10px 16px;cursor:pointer;user-select:none;gap:12px;">';
+    html += '<div onclick="toggleBreadth()" style="display:flex;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;gap:10px;">';
     html += '<span id="breadth-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(breadthCollapsed?'\u25b6':'\u25bc')+'</span>';
-    html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 3</div><div class="card-header-bar">Stock Breadth</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Is the move broad or narrow? Confirms if the regime call is real.</div></div></div>';
+    html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:1px;">Step 3</div><div class="card-header-bar">Stock Breadth</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Is the move broad or narrow? Confirms if the regime call is real.</div></div></div>';
     html += '<span style="width:20px;"></span>';
     html += '</div>';
     html += '<div id="breadth-content" style="'+(breadthCollapsed?'display:none;':'')+'padding:0 20px 12px;">';
@@ -1226,10 +1226,10 @@ async function renderOverview() {
 
   // ════ 4. SECTOR ROTATION ════
   var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')!=='false';
-  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div onclick="toggleHeatmap()" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
+  html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
+  html += '<div onclick="toggleHeatmap()" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
   html += '<span id="heatmap-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 4</div><div class="card-header-bar">Sector Rotation</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Where is money flowing? Click a sector for details.</div></div></div>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:1px;">Step 4</div><div class="card-header-bar">Sector Rotation</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Where is money flowing? Click a sector for details.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
@@ -1331,10 +1331,10 @@ async function renderOverview() {
 
   // ════ 6. TODAY'S CATALYSTS + THEMES ════
   var catalystsCollapsed = localStorage.getItem('mac_catalysts_collapsed')!=='false';
-  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div onclick="toggleCard(\'catalysts\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
+  html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
+  html += '<div onclick="toggleCard(\'catalysts\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
   html += '<span id="catalysts-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(catalystsCollapsed?'\u25b6':'\u25bc')+'</span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 5</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">What events and narratives are driving today\'s price action?</div></div></div>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:1px;">Step 5</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">What events and narratives are driving today\'s price action?</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   html += '<div id="catalysts-body" style="'+(catalystsCollapsed?'display:none;':'')+'">';
@@ -1384,10 +1384,10 @@ async function renderOverview() {
 
   // ════ 7. TOP IDEAS (from scanners) ════
   var ideasCollapsed = localStorage.getItem('mac_ideas_collapsed')!=='false';
-  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div onclick="toggleCard(\'ideas\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
+  html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
+  html += '<div onclick="toggleCard(\'ideas\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
   html += '<span id="ideas-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(ideasCollapsed?'\u25b6':'\u25bc')+'</span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 6</div><div class="card-header-bar">Top Ideas</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div></div>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:1px;">Step 6</div><div class="card-header-bar">Top Ideas</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   html += '<div id="ideas-body" style="'+(ideasCollapsed?'display:none;':'')+'">';
@@ -1421,10 +1421,10 @@ async function renderOverview() {
   var recapDateLabel = _recapSessionDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   var cachedRecap = null;
   try { var rr = localStorage.getItem('mac_recap_'+recapDateKey); if(rr) cachedRecap = JSON.parse(rr); } catch(e) {}
-  html += '<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;">';
-  html += '<div onclick="toggleCard(\'recap\')" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:12px;">';
+  html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
+  html += '<div onclick="toggleCard(\'recap\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
   html += '<span id="recap-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(recapCollapsed?'\u25b6':'\u25bc')+'</span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:2px;">Step 7</div><div class="card-header-bar">After the Bell</div><div style="font-size:13px;color:var(--blue);font-weight:600;margin-top:2px;">'+recapDateLabel+' \u2014 Session recap + tomorrow\'s watchlist.</div></div></div>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:1px;">Step 7</div><div class="card-header-bar">After the Bell</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">'+recapDateLabel+' \u2014 Session recap + tomorrow\'s watchlist.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   html += '<div id="recap-body" style="'+(recapCollapsed?'display:none;':'')+'padding:12px 16px;">';
