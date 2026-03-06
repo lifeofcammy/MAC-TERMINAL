@@ -166,6 +166,30 @@ async function dbLoadRecapData(date) {
 }
 
 
+// ==================== WIN RATE (scanner_history) ====================
+
+async function dbGetWinRate(strategy, days) {
+  var sb = getSupabase();
+  if (!sb) return null;
+  try {
+    var cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - (days || 30));
+    var cutoffStr = cutoff.toISOString().split('T')[0];
+    var q = sb.from('scanner_history')
+      .select('hit_target, hit_stop')
+      .gte('date', cutoffStr);
+    if (strategy) q = q.eq('strategy', strategy);
+    var res = await q;
+    if (!res.data || res.data.length === 0) return null;
+    var total = res.data.length;
+    var wins = 0;
+    for (var i = 0; i < res.data.length; i++) {
+      if (res.data[i].hit_target && !res.data[i].hit_stop) wins++;
+    }
+    return { winRate: Math.round((wins / total) * 100), wins: wins, total: total, days: days || 30 };
+  } catch(e) { console.warn('dbGetWinRate error:', e); return null; }
+}
+
 // ==================== USER SETTINGS ====================
 
 async function dbSaveUserSettings(settings) {

@@ -54,6 +54,23 @@
         <div style="font-size:14px;color:var(--text-muted);line-height:1.6;">AI-powered analysis and trade coaching is built in. No API key needed \u2014 it runs through our secure server.</div>
       </div>
 
+      <!-- Scanner Alerts -->
+      <div style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div>
+            <span style="font-size:14px;font-weight:700;color:var(--text-primary);">Scanner Alerts</span>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Browser notification when a high-score setup appears (score 70+)</div>
+          </div>
+          <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;">
+            <input type="checkbox" id="settings-alerts-toggle" onchange="saveAlertsPreference(this.checked)"
+              style="opacity:0;width:0;height:0;position:absolute;">
+            <span style="position:absolute;inset:0;background:var(--bg-secondary);border-radius:12px;cursor:pointer;border:1px solid var(--border);transition:background 0.2s;"></span>
+            <span id="alerts-toggle-knob" style="position:absolute;top:3px;left:3px;width:18px;height:18px;background:white;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span>
+          </label>
+        </div>
+        <div id="alerts-permission-note" style="font-size:12px;color:var(--amber);display:none;">Click "Allow" when your browser asks for notification permission.</div>
+      </div>
+
       <div style="display:flex;gap:10px;margin-top:24px;">
         <button onclick="toggleSettings()" style="flex:1;background:var(--blue);color:white;border:none;border-radius:8px;padding:12px;font-weight:700;font-size:14px;cursor:pointer;">Done</button>
       </div>
@@ -66,6 +83,51 @@
   document.body.insertAdjacentHTML('beforeend', modalHTML);
 })();
 
+function saveAlertsPreference(enabled) {
+  if (enabled) {
+    if (!('Notification' in window)) {
+      alert('Your browser does not support notifications.');
+      var cb = document.getElementById('settings-alerts-toggle');
+      if (cb) cb.checked = false;
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      alert('Notifications are blocked. Please allow them in your browser settings.');
+      var cb = document.getElementById('settings-alerts-toggle');
+      if (cb) cb.checked = false;
+      return;
+    }
+    if (Notification.permission === 'default') {
+      var note = document.getElementById('alerts-permission-note');
+      if (note) note.style.display = 'block';
+      Notification.requestPermission().then(function(result) {
+        if (note) note.style.display = 'none';
+        if (result !== 'granted') {
+          var cb = document.getElementById('settings-alerts-toggle');
+          if (cb) cb.checked = false;
+          localStorage.setItem('mac_scanner_alerts', 'false');
+        } else {
+          localStorage.setItem('mac_scanner_alerts', 'true');
+          updateAlertsToggleStyle(true);
+        }
+      });
+      return;
+    }
+  }
+  localStorage.setItem('mac_scanner_alerts', enabled ? 'true' : 'false');
+  updateAlertsToggleStyle(enabled);
+}
+
+function updateAlertsToggleStyle(on) {
+  var knob = document.getElementById('alerts-toggle-knob');
+  if (knob) knob.style.transform = on ? 'translateX(20px)' : 'translateX(0)';
+  var toggle = document.getElementById('settings-alerts-toggle');
+  if (toggle && toggle.parentElement) {
+    var track = toggle.parentElement.querySelector('span');
+    if (track) track.style.background = on ? 'var(--green)' : 'var(--bg-secondary)';
+  }
+}
+
 function toggleSettings() {
   var overlay = document.getElementById('settings-overlay');
   if (!overlay) return;
@@ -76,6 +138,11 @@ function toggleSettings() {
     var riskInput = document.getElementById('settings-risk-pct');
     if (acctInput) acctInput.value = localStorage.getItem('mcc_account') || '';
     if (riskInput) riskInput.value = localStorage.getItem('mcc_risk') || '';
+    // Load alerts toggle state
+    var alertsOn = localStorage.getItem('mac_scanner_alerts') === 'true';
+    var alertsCb = document.getElementById('settings-alerts-toggle');
+    if (alertsCb) alertsCb.checked = alertsOn;
+    updateAlertsToggleStyle(alertsOn);
   } else {
     // Save on close
     var acctInput = document.getElementById('settings-account-size');

@@ -14,6 +14,9 @@ var SCANNER_RESULTS_KEY = 'mac_scan_results';
 var DAYTRADE_CACHE_KEY = 'mac_daytrade_results';
 var DAYTRADE_UNIVERSE_KEY = 'mac_daytrade_universe';
 
+// ORB timeframe preference — controls breakout confirmation candle size and target multiplier
+var _orbTimeframe = localStorage.getItem('mac_orb_timeframe') || '15min';
+
 // Known ETF tickers to exclude (common ones that sneak through)
 var KNOWN_ETFS = [
   'SPY','QQQ','IWM','DIA','VOO','VTI','VIXY','UUP','GLD','SLV','TLT','HYG','LQD',
@@ -757,29 +760,23 @@ async function buildDayTradeUniverse(statusFn) {
 }
 
 // Calculate ORB (Opening Range Breakout) for a ticker
-async function calcORBForTicker(ticker, today) {
+// timeframe: '15min' or '1hr' — controls breakout confirmation candle size
+async function calcORBForTicker(ticker, today, timeframe) {
   try {
+    // Always use 1-min candles for precise OR calculation (9:30-9:45)
     var data = await polyGetRetry('/v2/aggs/ticker/' + ticker + '/range/1/minute/' + today + '/' + today + '?adjusted=true&sort=asc&limit=500');
     var bars = data.results || [];
     if (bars.length === 0) return null;
 
     // Find bars in opening range (9:30-9:45 ET = first 15 minutes)
-    // Polygon timestamps are in UTC ms
     var orBars = [];
-    var postORBars = [];
-
     bars.forEach(function(b) {
       var d = new Date(b.t);
       var etStr = d.toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: 'numeric', hour12: false });
       var parts = etStr.split(':');
       var h = parseInt(parts[0]), m = parseInt(parts[1]);
       var mins = h * 60 + m;
-
-      if (mins >= 570 && mins < 585) { // 9:30-9:44
-        orBars.push(b);
-      } else if (mins >= 585) { // 9:45+
-        postORBars.push(b);
-      }
+      if (mins >= 570 && mins < 585) orBars.push(b); // 9:30-9:44
     });
 
     if (orBars.length === 0) return null;
@@ -795,21 +792,37 @@ async function calcORBForTicker(ticker, today) {
     var orRange = orHigh - orLow;
     var orRangePct = orHigh > 0 ? (orRange / orHigh) * 100 : 0;
 
-    // Current price = last bar close
-    var lastBar = bars[bars.length - 1];
-    var curPrice = lastBar.c;
+    // Fetch confirmation-timeframe candles for breakout detection
+    var confirmMult = timeframe === '1hr' ? 60 : 15;
+    var confirmData = await polyGetRetry('/v2/aggs/ticker/' + ticker + '/range/' + confirmMult + '/minute/' + today + '/' + today + '?adjusted=true&sort=asc&limit=100');
+    var confirmBars = (confirmData.results || []).filter(function(b) {
+      var d = new Date(b.t);
+      var etStr = d.toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: 'numeric', hour12: false });
+      var parts = etStr.split(':');
+      var mins = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+      return mins >= 585; // after 9:45 AM ET
+    });
 
-    // Post-OR volume
+    // Use confirmation bar close for breakout detection (less noise than 1-min)
+    var curPrice;
     var postORVol = 0;
-    postORBars.forEach(function(b) { postORVol += (b.v || 0); });
+    if (confirmBars.length > 0) {
+      var lastConfirm = confirmBars[confirmBars.length - 1];
+      curPrice = lastConfirm.c;
+      confirmBars.forEach(function(b) { postORVol += (b.v || 0); });
+    } else {
+      // Fallback to 1-min last bar if no confirmation bars yet
+      var lastBar = bars[bars.length - 1];
+      curPrice = lastBar.c;
+    }
 
-    // Breakout detection
+    // Breakout detection on confirmation-timeframe price
     var breakoutType = 'none';
     var breakoutStrength = 0;
 
     if (curPrice > orHigh) {
       breakoutType = 'long';
-      breakoutStrength = ((curPrice - orHigh) / orRange) * 100; // % of OR range above high
+      breakoutStrength = ((curPrice - orHigh) / orRange) * 100;
     } else if (curPrice < orLow) {
       breakoutType = 'short';
       breakoutStrength = ((orLow - curPrice) / orRange) * 100;
@@ -825,7 +838,8 @@ async function calcORBForTicker(ticker, today) {
       curPrice: Math.round(curPrice * 100) / 100,
       breakoutType: breakoutType,
       breakoutStrength: Math.round(breakoutStrength),
-      barCount: bars.length
+      barCount: bars.length,
+      timeframe: timeframe || '15min'
     };
   } catch(e) {
     return null;
@@ -833,7 +847,8 @@ async function calcORBForTicker(ticker, today) {
 }
 
 // Score a day trade setup (max 100 pts)
-function scoreDayTrade(gapper, orb) {
+// timeframe: '15min' or '1hr' — adjusts OR tightness thresholds for longer holds
+function scoreDayTrade(gapper, orb, timeframe) {
   var score = 0;
   var components = {};
 
@@ -858,10 +873,14 @@ function scoreDayTrade(gapper, orb) {
   components.breakout = ptsBreakout;
   score += ptsBreakout;
 
-  // 4. OR Tightness (0-15) — tight OR = cleaner breakout
+  // 4. OR Tightness (0-15) — wider thresholds for longer timeframes
   var ptsTight = 0;
   if (orb) {
-    ptsTight = orb.orRangePct < 1 ? 15 : orb.orRangePct < 2 ? 10 : orb.orRangePct < 3 ? 5 : 0;
+    if (timeframe === '1hr') {
+      ptsTight = orb.orRangePct < 2 ? 15 : orb.orRangePct < 3 ? 10 : orb.orRangePct < 4 ? 5 : 0;
+    } else {
+      ptsTight = orb.orRangePct < 1 ? 15 : orb.orRangePct < 2 ? 10 : orb.orRangePct < 3 ? 5 : 0;
+    }
   }
   components.tightness = ptsTight;
   score += ptsTight;
@@ -920,8 +939,9 @@ async function runDayTradeScan(statusFn) {
     var orbBatchSize = 5;
     for (var i = 0; i < gappers.length; i += orbBatchSize) {
       var batch = gappers.slice(i, i + orbBatchSize);
+      var tf = _orbTimeframe;
       var orbPromises = batch.map(function(g) {
-        return calcORBForTicker(g.ticker, today).then(function(orb) {
+        return calcORBForTicker(g.ticker, today, tf).then(function(orb) {
           return { gapper: g, orb: orb };
         });
       });
@@ -929,17 +949,18 @@ async function runDayTradeScan(statusFn) {
 
       orbResults.forEach(function(r) {
         if (!r.orb) return;
-        var scored = scoreDayTrade(r.gapper, r.orb);
+        var scored = scoreDayTrade(r.gapper, r.orb, tf);
         if (scored.score < 30) return;
 
         // Direction based on breakout, fallback to gap direction
         var direction = r.orb.breakoutType !== 'none' ? (r.orb.breakoutType === 'long' ? 'LONG' : 'SHORT') : r.gapper.direction;
 
-        // Trade levels
+        // Trade levels — wider targets for longer timeframes
+        var targetMult = tf === '1hr' ? 2.5 : 2.0;
         var entry = direction === 'LONG' ? r.orb.orHigh : r.orb.orLow;
         var stop = direction === 'LONG' ? r.orb.orLow : r.orb.orHigh;
         var risk = Math.abs(entry - stop);
-        var target = direction === 'LONG' ? entry + (risk * 1.5) : entry - (risk * 1.5);
+        var target = direction === 'LONG' ? entry + (risk * targetMult) : entry - (risk * targetMult);
 
         setups.push({
           ticker: r.gapper.ticker,
@@ -1204,6 +1225,11 @@ async function runDayTradeScanUI() {
 
     if (resultsEl) resultsEl.innerHTML = renderDayTradeResults(results);
 
+    // Check for high-score alerts
+    if (results.setups && results.setups.length > 0) {
+      checkScannerAlerts(results.setups);
+    }
+
     // Update phase label
     var phaseEl = document.getElementById('dt-phase-label');
     if (phaseEl) {
@@ -1301,6 +1327,12 @@ function renderScanner() {
   html += '<div style="display:flex;align-items:center;gap:8px;">';
   html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Day Trade</span>';
   html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:var(--red);text-transform:uppercase;letter-spacing:.04em;">ORB</span>';
+  // Timeframe toggle
+  var tf15Active = _orbTimeframe === '15min';
+  html += '<div style="display:flex;background:var(--bg-secondary);border-radius:6px;padding:2px;gap:2px;margin-left:4px;">';
+  html += '<button onclick="setORBTimeframe(\'15min\')" style="padding:2px 8px;font-size:10px;font-weight:700;border:none;border-radius:4px;cursor:pointer;background:'+(tf15Active?'var(--red)':'transparent')+';color:'+(tf15Active?'#fff':'var(--text-muted)')+';transition:all 0.15s;">15m</button>';
+  html += '<button onclick="setORBTimeframe(\'1hr\')" style="padding:2px 8px;font-size:10px;font-weight:700;border:none;border-radius:4px;cursor:pointer;background:'+(!tf15Active?'var(--red)':'transparent')+';color:'+(!tf15Active?'#fff':'var(--text-muted)')+';transition:all 0.15s;">1hr</button>';
+  html += '</div>';
   html += '</div>';
   html += '<button onclick="runDayTradeScanUI()" class="refresh-btn" style="padding:5px 12px;font-size:12px;">Scan</button>';
   html += '</div>';
@@ -1335,6 +1367,7 @@ function renderScanner() {
   html += '<div style="display:flex;align-items:center;gap:8px;">';
   html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Swing Setups</span>';
   html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(37,99,235,0.1);color:var(--blue);text-transform:uppercase;letter-spacing:.04em;">Compression</span>';
+  html += '<span id="swing-win-rate-badge"></span>';
   html += '</div>';
   html += '<button onclick="runFullScanUI()" id="scan-btn" class="refresh-btn" style="padding:5px 12px;font-size:12px;">Scan</button>';
   html += '</div>';
@@ -1412,6 +1445,18 @@ function renderScanner() {
   html += '</div></div>';
 
   container.innerHTML = html;
+  loadWinRateBadge();
+}
+
+function loadWinRateBadge() {
+  if (typeof dbGetWinRate !== 'function') return;
+  dbGetWinRate(null, 30).then(function(data) {
+    var el = document.getElementById('swing-win-rate-badge');
+    if (!el || !data || data.total < 5) return;
+    var color = data.winRate >= 60 ? 'var(--green)' : data.winRate >= 45 ? 'var(--amber)' : 'var(--red)';
+    var bg = data.winRate >= 60 ? 'var(--green-bg)' : data.winRate >= 45 ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)';
+    el.innerHTML = '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:'+bg+';color:'+color+';letter-spacing:.02em;">'+data.winRate+'% win ('+data.total+' trades, '+data.days+'d)</span>';
+  }).catch(function(){});
 }
 
 
@@ -1825,6 +1870,50 @@ async function triggerServerScan() {
   }
 }
 
+
+// ==================== TIMEFRAME SELECTOR ====================
+
+function setORBTimeframe(tf) {
+  _orbTimeframe = tf;
+  try { localStorage.setItem('mac_orb_timeframe', tf); } catch(e) {}
+  try { localStorage.removeItem(DAYTRADE_CACHE_KEY); } catch(e) {}
+  // Re-render scanner to update toggle button styles
+  if (typeof renderScanner === 'function') renderScanner();
+  // Re-scan with new timeframe
+  setTimeout(function() { runDayTradeScanUI(); }, 300);
+}
+
+// ==================== SCANNER ALERTS ====================
+
+var _alertedSetups = {};
+
+function checkScannerAlerts(setups) {
+  if (localStorage.getItem('mac_scanner_alerts') !== 'true') return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  setups.forEach(function(s) {
+    if (s.score < 70) return;
+    if (_alertedSetups[s.ticker]) return;
+    _alertedSetups[s.ticker] = true;
+
+    var dirStr = s.direction === 'LONG' ? 'breaking out' : 'breaking down';
+    var gapStr = (s.gapPct >= 0 ? '+' : '') + s.gapPct.toFixed(1) + '% gap';
+    var body = s.ticker + ' ' + dirStr + ' (' + gapStr + ', score ' + s.score + ')';
+
+    var n = new Notification('ORB Alert: ' + s.ticker, {
+      body: body,
+      tag: 'orb-' + s.ticker
+    });
+
+    n.onclick = function() {
+      window.focus();
+      if (typeof openTVChart === 'function') openTVChart(s.ticker);
+      n.close();
+    };
+
+    setTimeout(function() { n.close(); }, 8000);
+  });
+}
 
 // ==================== TOGGLES ====================
 
