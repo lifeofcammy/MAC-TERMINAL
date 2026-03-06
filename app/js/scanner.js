@@ -1307,6 +1307,18 @@ function renderScanner() {
   html += '<div id="dt-phase-label" style="font-size:11px;margin-top:4px;"></div>';
   html += '<div id="dt-scanner-status" style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + (dtResults ? 'Cached' : 'Click Scan or wait for auto-scan') + '</div>';
   html += '</div>';
+  // Info banner
+  html += '<div onclick="toggleDTInfo()" style="padding:8px 16px;background:rgba(239,68,68,0.05);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;">';
+  html += '<span style="font-size:12px;color:var(--red);">&#9432;</span>';
+  html += '<span style="font-size:11px;color:var(--text-muted);font-weight:600;">How does this work?</span>';
+  html += '<span id="dt-info-arrow" style="margin-left:auto;font-size:10px;color:var(--text-muted);">\u25b6</span>';
+  html += '</div>';
+  html += '<div id="dt-info-body" style="display:none;padding:12px 16px;background:rgba(239,68,68,0.03);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary);line-height:1.6;">';
+  html += '<div style="font-weight:700;margin-bottom:6px;color:var(--text-primary);">Opening Range Breakout (ORB)</div>';
+  html += '<div style="margin-bottom:8px;"><strong>What it shows:</strong> Stocks that gapped 2%+ from yesterday\'s close with unusual volume. After 9:45 AM, it tracks whether they break above or below their first 15-minute trading range.</div>';
+  html += '<div style="margin-bottom:8px;"><strong>Why it works:</strong> Big gaps with high volume signal institutional interest or a major catalyst. The opening range (9:30\u20139:45) establishes the battleground \u2014 a clean break above or below it often leads to a sustained move in that direction.</div>';
+  html += '<div><strong>How to use it:</strong> Look for setups with high scores (60+). Entry is at the OR break level, stop is the opposite side of the range, target is 1.5\u00d7 the range. Higher RVol (2x+) and a tight OR range (&lt;2%) are the strongest signals.</div>';
+  html += '</div>';
   html += '<div id="dt-scan-results" style="padding:12px;">';
   if (dtResults && dtResults.setups && dtResults.setups.length > 0) {
     html += renderDayTradeResults(dtResults);
@@ -1335,6 +1347,18 @@ function renderScanner() {
   html += '</div>';
   html += '</div>';
 
+  // Info banner
+  html += '<div onclick="toggleSwingInfo()" style="padding:8px 16px;background:rgba(37,99,235,0.05);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;">';
+  html += '<span style="font-size:12px;color:var(--blue);">&#9432;</span>';
+  html += '<span style="font-size:11px;color:var(--text-muted);font-weight:600;">How does this work?</span>';
+  html += '<span id="swing-info-arrow" style="margin-left:auto;font-size:10px;color:var(--text-muted);">\u25b6</span>';
+  html += '</div>';
+  html += '<div id="swing-info-body" style="display:none;padding:12px 16px;background:rgba(37,99,235,0.03);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary);line-height:1.6;">';
+  html += '<div style="font-weight:700;margin-bottom:6px;color:var(--text-primary);">SMA Compression Scanner</div>';
+  html += '<div style="margin-bottom:8px;"><strong>What it shows:</strong> Stocks where the 10-day and 20-day moving averages are squeezing together (compressing). It scans the top 100 US stocks by dollar volume and scores them on compression, trend alignment, extension, relative volume, and momentum.</div>';
+  html += '<div style="margin-bottom:8px;"><strong>Why it works:</strong> When moving averages compress, it means the stock is consolidating after a move. This builds energy \u2014 like a coiled spring. When the stock breaks out of compression with volume, it often leads to a strong directional move. The best setups are above all key SMAs (aligned uptrend) with low extension (not overextended).</div>';
+  html += '<div><strong>How to use it:</strong> Look for scores of 50+ with tight SMA spread (&lt;2%). Stocks above their 10, 20, and 50 SMA with rising relative volume are the highest-probability swing trades. These are multi-day holds (2\u201310 days), not day trades.</div>';
+  html += '</div>';
   // Screening funnel
   html += '<div id="scanner-status-idle" style="padding:6px 16px;min-height:16px;">';
   if (cache) {
@@ -1803,6 +1827,22 @@ async function triggerServerScan() {
 
 
 // ==================== TOGGLES ====================
+
+function toggleDTInfo() {
+  var body = document.getElementById('dt-info-body'), arrow = document.getElementById('dt-info-arrow');
+  if (!body) return;
+  var hidden = body.style.display === 'none';
+  body.style.display = hidden ? '' : 'none';
+  if (arrow) arrow.textContent = hidden ? '\u25bc' : '\u25b6';
+}
+
+function toggleSwingInfo() {
+  var body = document.getElementById('swing-info-body'), arrow = document.getElementById('swing-info-arrow');
+  if (!body) return;
+  var hidden = body.style.display === 'none';
+  body.style.display = hidden ? '' : 'none';
+  if (arrow) arrow.textContent = hidden ? '\u25bc' : '\u25b6';
+}
 
 function toggleUniverse() {
   var body = document.getElementById('universe-body'), arrow = document.getElementById('universe-arrow');
