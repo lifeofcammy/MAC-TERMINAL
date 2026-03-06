@@ -800,7 +800,7 @@ async function renderOverview() {
 
   // Asset classes for RRG (Relative Rotation Graph)
   var rrgAssets = [
-    {etf:'BITO',name:'Bitcoin',short:'Bitcoin'},{etf:'TLT',name:'Bonds (20Y+)',short:'Bonds'},
+    {etf:'IBIT',name:'Bitcoin',short:'Bitcoin'},{etf:'TLT',name:'Bonds (20Y+)',short:'Bonds'},
     {etf:'HYG',name:'High Yield',short:'HiYield'},{etf:'EFA',name:'Intl Developed',short:'Intl Dev'},
     {etf:'EEM',name:'Emerging Mkts',short:'Emerging'},{etf:'GLD',name:'Gold',short:'Gold'}
   ];
