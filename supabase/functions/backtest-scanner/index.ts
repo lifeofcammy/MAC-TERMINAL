@@ -174,16 +174,25 @@ Deno.serve(async (req: Request) => {
       const allSetups = [
         ...(bs.earlyBreakouts || []).map((s: any) => ({ ...s, strategy: 'EARLY BREAKOUT' })),
         ...(bs.pullbackEntries || []).map((s: any) => ({ ...s, strategy: 'PULLBACK' })),
+        ...(bs.meanReversions || []).map((s: any) => ({ ...s, strategy: 'MEAN REVERSION' })),
+        ...(bs.momentumBreakouts || []).map((s: any) => ({ ...s, strategy: 'MOMENTUM BREAKOUT' })),
+        ...(bs.daytrade_setups || []).map((s: any) => ({ ...s, strategy: 'ORB_BREAKOUT' })),
       ]
 
       for (const s of allSetups) {
         if (!s.ticker || !s.entryPrice || !s.targetPrice || !s.stopPrice) continue
+        // Determine direction: use explicit direction if set, then infer from category
+        let direction = 'LONG'
+        if (s.direction === 'SHORT') direction = 'SHORT'
+        else if (s.direction === 'LONG') direction = 'LONG'
+        else if (s.breakingOut === false && s.changePct < 0) direction = 'SHORT'
+
         setups.push({
           date: row.scan_date,
           ticker: s.ticker,
           strategy: s.strategy || s.category || 'UNKNOWN',
           score: s.score || 0,
-          direction: s.breakingOut ? 'LONG' : (s.changePct < 0 ? 'SHORT' : 'LONG'),
+          direction,
           entryPrice: s.entryPrice,
           targetPrice: s.targetPrice,
           stopPrice: s.stopPrice,
@@ -209,44 +218,71 @@ Deno.serve(async (req: Request) => {
 
     for (const setup of setupsToProcess) {
       try {
-        // Fetch 10 calendar days of daily bars starting day after the setup
-        const startDate = new Date(setup.date + 'T12:00:00Z')
-        startDate.setUTCDate(startDate.getUTCDate() + 1)
-        const endDate = new Date(startDate)
-        endDate.setUTCDate(endDate.getUTCDate() + 9) // 10 calendar days to get ~5 trading days
+        const isIntraday = setup.strategy === 'ORB_BREAKOUT'
+        const isShort = setup.direction === 'SHORT'
 
-        const fromStr = `${startDate.getUTCFullYear()}-${String(startDate.getUTCMonth() + 1).padStart(2, '0')}-${String(startDate.getUTCDate()).padStart(2, '0')}`
-        const toStr = `${endDate.getUTCFullYear()}-${String(endDate.getUTCMonth() + 1).padStart(2, '0')}-${String(endDate.getUTCDate()).padStart(2, '0')}`
+        let bars: any[] = []
 
-        const data = await polyGet(
-          `/v2/aggs/ticker/${setup.ticker}/range/1/day/${fromStr}/${toStr}?adjusted=true&sort=asc`,
-          polygonKey,
-        )
-        apiCalls++
+        if (isIntraday) {
+          // ORB: fetch 15-min bars for same day (9:45 AM - 4:00 PM ET)
+          const data = await polyGet(
+            `/v2/aggs/ticker/${setup.ticker}/range/15/minute/${setup.date}/${setup.date}?adjusted=true&sort=asc&limit=100`,
+            polygonKey,
+          )
+          apiCalls++
+          const allBars = data.results ?? []
+          // Filter to post-ORB bars (after 9:45 AM ET = 585 min)
+          bars = allBars.filter((b: any) => {
+            const d = new Date(b.t)
+            const etStr = d.toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: 'numeric', hour12: false })
+            const parts = etStr.split(':')
+            const mins = parseInt(parts[0]) * 60 + parseInt(parts[1])
+            return mins >= 585 && mins <= 960  // 9:45 AM to 4:00 PM
+          })
+        } else {
+          // Swing: fetch daily bars for 5 trading days after setup
+          const startDate = new Date(setup.date + 'T12:00:00Z')
+          startDate.setUTCDate(startDate.getUTCDate() + 1)
+          const endDate = new Date(startDate)
+          endDate.setUTCDate(endDate.getUTCDate() + 9)
 
-        const bars = data.results ?? []
+          const fromStr = `${startDate.getUTCFullYear()}-${String(startDate.getUTCMonth() + 1).padStart(2, '0')}-${String(startDate.getUTCDate()).padStart(2, '0')}`
+          const toStr = `${endDate.getUTCFullYear()}-${String(endDate.getUTCMonth() + 1).padStart(2, '0')}-${String(endDate.getUTCDate()).padStart(2, '0')}`
+
+          const data = await polyGet(
+            `/v2/aggs/ticker/${setup.ticker}/range/1/day/${fromStr}/${toStr}?adjusted=true&sort=asc`,
+            polygonKey,
+          )
+          apiCalls++
+          bars = (data.results ?? []).slice(0, 5)
+        }
+
         if (bars.length === 0) {
           console.log(`[backtest-scanner] No bars for ${setup.ticker} after ${setup.date}`)
           continue
         }
 
-        // Take up to 5 trading days
-        const tradingBars = bars.slice(0, 5)
-
-        // Check target/stop hits
+        // Check target/stop hits with direction awareness
         let hitTarget = false
         let hitStop = false
         let maxMovePct = 0
-        let eodClose = tradingBars[tradingBars.length - 1]?.c ?? null
+        let eodClose = bars[bars.length - 1]?.c ?? null
 
-        for (const bar of tradingBars) {
-          // Long direction: target = high >= targetPrice, stop = low <= stopPrice
-          if (bar.h >= setup.targetPrice) hitTarget = true
-          if (bar.l <= setup.stopPrice) hitStop = true
-
-          // Max favorable move from entry
-          const movePct = ((bar.h - setup.entryPrice) / setup.entryPrice) * 100
-          if (movePct > maxMovePct) maxMovePct = movePct
+        for (const bar of bars) {
+          if (isShort) {
+            // SHORT: target hit when low <= targetPrice, stop hit when high >= stopPrice
+            if (bar.l <= setup.targetPrice) hitTarget = true
+            if (bar.h >= setup.stopPrice) hitStop = true
+            // Max favorable move = how far price dropped from entry
+            const movePct = ((setup.entryPrice - bar.l) / setup.entryPrice) * 100
+            if (movePct > maxMovePct) maxMovePct = movePct
+          } else {
+            // LONG: target hit when high >= targetPrice, stop hit when low <= stopPrice
+            if (bar.h >= setup.targetPrice) hitTarget = true
+            if (bar.l <= setup.stopPrice) hitStop = true
+            const movePct = ((bar.h - setup.entryPrice) / setup.entryPrice) * 100
+            if (movePct > maxMovePct) maxMovePct = movePct
+          }
         }
 
         results.push({

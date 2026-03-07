@@ -1104,6 +1104,11 @@ async function runDayTradeScan(statusFn) {
 
   try { localStorage.setItem(DAYTRADE_CACHE_KEY, JSON.stringify(resultData)); } catch(e) {}
 
+  // Persist ORB setups to database for backtesting
+  if (setups.length > 0 && typeof dbSaveDayTradeSetups === 'function') {
+    dbSaveDayTradeSetups(setups, getTodayDateStr());
+  }
+
   statusFn('Found ' + setups.length + ' day trade setups.');
   return resultData;
 }
@@ -1300,6 +1305,25 @@ function renderScanner() {
   html += '<div style="text-align:center;"><div class="card-header-bar">Setup Scanner</div><div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-top:1px;">Find the best swing and day trade setups across the market</div></div>';
   html += '</div>';
 
+  // Hot strategy banner (from cached leaderboard data)
+  try {
+    var lbCache = localStorage.getItem('mac_strategy_leaderboard');
+    if (lbCache) {
+      var lb = JSON.parse(lbCache);
+      var hotStrats = lb.filter(function(s) { return s.status === 'HOT'; });
+      if (hotStrats.length > 0) {
+        html += '<div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);border-radius:8px;padding:8px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+        html += '<span style="font-size:11px;font-weight:700;color:var(--green);">HOT</span>';
+        for (var hi = 0; hi < hotStrats.length && hi < 2; hi++) {
+          var hs = hotStrats[hi];
+          html += '<span style="font-size:12px;color:var(--text-secondary);">' + getStratLabel(hs.strategy) + ' is hitting <span style="font-weight:700;color:var(--green);">' + hs.winRate + '%</span> (' + hs.total + ' trades)</span>';
+          if (hi === 0 && hotStrats.length > 1) html += '<span style="color:var(--text-muted);font-size:11px;">&middot;</span>';
+        }
+        html += '</div>';
+      }
+    }
+  } catch(e) {}
+
   // Progress bar (shared, hidden during idle)
   html += '<div id="scanner-progress-wrap" style="display:none;margin-bottom:14px;">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">';
@@ -1416,7 +1440,7 @@ function renderScanner() {
   html += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
   html += '<div style="display:flex;align-items:center;gap:8px;">';
-  html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Backtest Results</span>';
+  html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Strategy Leaderboard</span>';
   html += '<select id="backtest-days-select" onchange="loadBacktestResults(parseInt(this.value))" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-secondary);color:var(--text-secondary);cursor:pointer;"><option value="7">7d</option><option value="30" selected>30d</option><option value="90">90d</option><option value="365">All</option></select>';
   html += '</div>';
   html += '<div style="display:flex;align-items:center;gap:6px;">';
@@ -1424,7 +1448,7 @@ function renderScanner() {
   html += '<button onclick="loadBacktestResults()" class="refresh-btn" style="padding:5px 12px;font-size:12px;">Refresh</button>';
   html += '</div>';
   html += '</div>';
-  html += '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">How scanner picks actually performed</div>';
+  html += '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Which strategy is working in the current market</div>';
   html += '</div>';
   html += '<div id="backtest-results" style="' + (btCollapsed ? 'display:none;' : '') + 'padding:12px 16px;">';
   html += '<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:16px 0;">Loading backtest data...</div>';
@@ -2098,92 +2122,148 @@ async function loadBacktestResults(days) {
   }
 }
 
+function getStratLabel(strat) {
+  var labels = {
+    'EARLY BREAKOUT': 'Early Breakout', 'PULLBACK': 'Pullback',
+    'MEAN REVERSION': 'Mean Reversion', 'MOMENTUM BREAKOUT': 'Momentum BRK',
+    'ORB_BREAKOUT': 'ORB Breakout'
+  };
+  return labels[strat] || strat;
+}
+
+function getStratColor(strat) {
+  var colors = {
+    'EARLY BREAKOUT': 'var(--green)', 'PULLBACK': 'var(--blue)',
+    'MEAN REVERSION': '#a855f7', 'MOMENTUM BREAKOUT': '#f59e0b',
+    'ORB_BREAKOUT': 'var(--red)'
+  };
+  return colors[strat] || 'var(--text-muted)';
+}
+
+function getStratBg(strat) {
+  var bgs = {
+    'EARLY BREAKOUT': 'rgba(16,185,129,0.1)', 'PULLBACK': 'rgba(37,99,235,0.1)',
+    'MEAN REVERSION': 'rgba(168,85,247,0.1)', 'MOMENTUM BREAKOUT': 'rgba(245,158,11,0.1)',
+    'ORB_BREAKOUT': 'rgba(239,68,68,0.1)'
+  };
+  return bgs[strat] || 'rgba(128,128,128,0.1)';
+}
+
 function renderBacktestResults(data) {
-  // Calculate stats
-  var wins = 0, losses = 0, pending = 0;
-  var totalMaxMove = 0, maxMoveCount = 0;
+  // Calculate per-strategy stats
   var stratStats = {};
+  var totalWins = 0, totalLosses = 0, totalPending = 0;
+  var totalMaxMove = 0, maxMoveCount = 0;
 
   for (var i = 0; i < data.length; i++) {
     var r = data[i];
     var isWin = r.hit_target && !r.hit_stop;
     var isLoss = r.hit_stop;
-    if (isWin) wins++;
-    else if (isLoss) losses++;
-    else pending++;
+    if (isWin) totalWins++;
+    else if (isLoss) totalLosses++;
+    else totalPending++;
 
-    if (r.max_move_pct != null) {
-      totalMaxMove += r.max_move_pct;
-      maxMoveCount++;
-    }
+    if (r.max_move_pct != null) { totalMaxMove += r.max_move_pct; maxMoveCount++; }
 
     var strat = r.strategy || 'UNKNOWN';
-    if (!stratStats[strat]) stratStats[strat] = { wins: 0, total: 0 };
+    if (!stratStats[strat]) stratStats[strat] = { wins: 0, losses: 0, pending: 0, total: 0, maxMoveSum: 0, maxMoveCount: 0 };
     stratStats[strat].total++;
     if (isWin) stratStats[strat].wins++;
+    else if (isLoss) stratStats[strat].losses++;
+    else stratStats[strat].pending++;
+    if (r.max_move_pct != null) { stratStats[strat].maxMoveSum += r.max_move_pct; stratStats[strat].maxMoveCount++; }
   }
 
-  var total = wins + losses + pending;
-  var decided = wins + losses;
-  var winRate = decided > 0 ? Math.round((wins / decided) * 100) : 0;
-  var avgMaxMove = maxMoveCount > 0 ? (totalMaxMove / maxMoveCount).toFixed(1) : '0.0';
+  // Build leaderboard array sorted by win rate
+  var leaderboard = [];
+  for (var s in stratStats) {
+    var ss = stratStats[s];
+    var decided = ss.wins + ss.losses;
+    var wr = decided > 0 ? Math.round((ss.wins / decided) * 100) : 0;
+    var avgMove = ss.maxMoveCount > 0 ? (ss.maxMoveSum / ss.maxMoveCount) : 0;
+    var status = 'OK';
+    if (ss.total < 5) status = 'NEW';
+    else if (wr >= 60) status = 'HOT';
+    else if (wr < 45) status = 'COLD';
+    leaderboard.push({ strategy: s, winRate: wr, wins: ss.wins, losses: ss.losses, pending: ss.pending, total: ss.total, avgMove: avgMove, status: status });
+  }
+  leaderboard.sort(function(a, b) { return b.winRate - a.winRate; });
 
-  var wrColor = winRate >= 60 ? 'var(--green)' : winRate >= 45 ? 'var(--amber)' : 'var(--red)';
-  var wrBg = winRate >= 60 ? 'rgba(16,185,129,0.08)' : winRate >= 45 ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)';
+  // Cache leaderboard for hot strategy banner
+  try { localStorage.setItem('mac_strategy_leaderboard', JSON.stringify(leaderboard)); } catch(e) {}
+
+  var totalAll = totalWins + totalLosses + totalPending;
+  var decidedAll = totalWins + totalLosses;
+  var overallWR = decidedAll > 0 ? Math.round((totalWins / decidedAll) * 100) : 0;
+  var overallColor = overallWR >= 60 ? 'var(--green)' : overallWR >= 45 ? 'var(--amber)' : 'var(--red)';
 
   var html = '';
 
-  // Stats summary bar
-  html += '<div style="background:var(--bg-secondary);border-radius:8px;padding:12px 16px;margin-bottom:12px;">';
+  // ── Strategy Leaderboard ──
+  html += '<div style="margin-bottom:12px;">';
+  for (var k = 0; k < leaderboard.length; k++) {
+    var lb = leaderboard[k];
+    var lbColor = getStratColor(lb.strategy);
+    var lbBg = getStratBg(lb.strategy);
+    var statusBadge = '';
+    if (lb.status === 'HOT') statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(16,185,129,0.15);color:var(--green);">HOT</span>';
+    else if (lb.status === 'COLD') statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.15);color:var(--red);">COLD</span>';
+    else if (lb.status === 'NEW') statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(128,128,128,0.15);color:var(--text-muted);">NEW</span>';
 
-  // Top row: win rate + counts
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">';
-  html += '<div style="display:flex;align-items:center;gap:10px;">';
-  html += '<span style="font-size:22px;font-weight:900;color:' + wrColor + ';font-family:var(--font-mono);">' + winRate + '%</span>';
-  html += '<span style="font-size:12px;color:var(--text-muted);">win rate</span>';
-  html += '</div>';
-  html += '<div style="display:flex;align-items:center;gap:12px;font-size:12px;font-family:var(--font-mono);">';
-  html += '<span style="color:var(--green);font-weight:700;">' + wins + 'W</span>';
-  html += '<span style="color:var(--red);font-weight:700;">' + losses + 'L</span>';
-  if (pending > 0) html += '<span style="color:var(--amber);font-weight:700;">' + pending + 'P</span>';
-  html += '<span style="color:var(--text-muted);">' + total + ' total</span>';
-  html += '</div>';
+    var lbWrColor = lb.winRate >= 60 ? 'var(--green)' : lb.winRate >= 45 ? 'var(--amber)' : 'var(--red)';
+
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;margin-bottom:4px;background:' + (k === 0 ? 'var(--bg-secondary)' : 'transparent') + ';">';
+    // Rank
+    html += '<span style="font-size:12px;font-weight:900;color:var(--text-muted);width:16px;text-align:center;font-family:var(--font-mono);">' + (k + 1) + '</span>';
+    // Strategy badge
+    html += '<span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:' + lbBg + ';color:' + lbColor + ';min-width:110px;text-align:center;">' + getStratLabel(lb.strategy) + '</span>';
+    // Win rate
+    html += '<span style="font-size:14px;font-weight:900;color:' + lbWrColor + ';font-family:var(--font-mono);min-width:40px;text-align:right;">' + lb.winRate + '%</span>';
+    // Trade count
+    html += '<span style="font-size:11px;color:var(--text-muted);min-width:60px;">' + lb.total + ' trades</span>';
+    // Avg move
+    html += '<span style="font-size:11px;font-family:var(--font-mono);color:var(--green);min-width:50px;">+' + lb.avgMove.toFixed(1) + '%</span>';
+    // Status
+    html += statusBadge;
+    html += '</div>';
+  }
   html += '</div>';
 
+  // ── Overall stats bar ──
+  html += '<div style="background:var(--bg-secondary);border-radius:8px;padding:10px 14px;margin-bottom:12px;">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px;">';
+  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += '<span style="font-size:11px;color:var(--text-muted);">Overall:</span>';
+  html += '<span style="font-size:16px;font-weight:900;color:' + overallColor + ';font-family:var(--font-mono);">' + overallWR + '%</span>';
+  html += '</div>';
+  html += '<div style="display:flex;align-items:center;gap:10px;font-size:11px;font-family:var(--font-mono);">';
+  html += '<span style="color:var(--green);font-weight:700;">' + totalWins + 'W</span>';
+  html += '<span style="color:var(--red);font-weight:700;">' + totalLosses + 'L</span>';
+  if (totalPending > 0) html += '<span style="color:var(--amber);font-weight:700;">' + totalPending + 'P</span>';
+  html += '<span style="color:var(--text-muted);">' + totalAll + ' total</span>';
+  html += '</div>';
+  html += '</div>';
   // Win rate bar
-  html += '<div style="height:6px;background:var(--bg-primary);border-radius:3px;overflow:hidden;margin-bottom:8px;">';
-  if (decided > 0) {
-    var winPct = (wins / decided) * 100;
-    html += '<div style="width:' + winPct + '%;height:100%;background:' + wrColor + ';border-radius:3px;"></div>';
+  html += '<div style="height:5px;background:var(--bg-primary);border-radius:3px;overflow:hidden;">';
+  if (decidedAll > 0) {
+    html += '<div style="width:' + (totalWins / decidedAll * 100) + '%;height:100%;background:' + overallColor + ';border-radius:3px;"></div>';
   }
   html += '</div>';
-
-  // Bottom row: per-strategy + avg max move
-  html += '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--text-muted);">';
-  for (var strat in stratStats) {
-    var ss = stratStats[strat];
-    var swr = ss.total > 0 ? Math.round((ss.wins / ss.total) * 100) : 0;
-    var label = strat === 'EARLY BREAKOUT' ? 'Early BRK' : strat === 'PULLBACK' ? 'Pullback' : strat;
-    html += '<span>' + label + ': <span style="font-weight:700;color:var(--text-secondary);">' + swr + '%</span> (' + ss.total + ')</span>';
-  }
-  html += '<span>Avg max move: <span style="font-weight:700;color:var(--green);">+' + avgMaxMove + '%</span></span>';
   html += '</div>';
 
-  html += '</div>';
-
-  // Results table
+  // ── Results table (collapsible) ──
   var visibleCount = _backtestShowAll ? data.length : Math.min(data.length, 15);
 
   html += '<div style="overflow-x:auto;">';
   html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
   html += '<thead><tr style="border-bottom:2px solid var(--border);">';
-  html += '<th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Date</th>';
-  html += '<th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Ticker</th>';
-  html += '<th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Strategy</th>';
-  html += '<th style="text-align:center;padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Score</th>';
-  html += '<th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Entry</th>';
-  html += '<th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Result</th>';
-  html += '<th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Max Move</th>';
+  var thStyle = 'padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;';
+  html += '<th style="text-align:left;' + thStyle + '">Date</th>';
+  html += '<th style="text-align:left;' + thStyle + '">Ticker</th>';
+  html += '<th style="text-align:left;' + thStyle + '">Strategy</th>';
+  html += '<th style="text-align:center;' + thStyle + '">Score</th>';
+  html += '<th style="text-align:left;' + thStyle + '">Result</th>';
+  html += '<th style="text-align:right;' + thStyle + '">Max Move</th>';
   html += '</tr></thead><tbody>';
 
   for (var j = 0; j < visibleCount; j++) {
@@ -2197,37 +2277,26 @@ function renderBacktestResults(data) {
     else { resultText = 'Pending'; resultColor = 'var(--amber)'; }
 
     var dateStr = row.date || '';
-    if (dateStr.length >= 10) {
-      var parts = dateStr.split('-');
-      dateStr = parts[1] + '/' + parts[2];
-    }
-
-    var stratLabel = row.strategy === 'EARLY BREAKOUT' ? 'EARLY BRK' : row.strategy === 'PULLBACK' ? 'PULLBACK' : (row.strategy || '');
-    var stratColor = row.strategy === 'EARLY BREAKOUT' ? 'var(--green)' : 'var(--blue)';
-    var stratBgColor = row.strategy === 'EARLY BREAKOUT' ? 'rgba(16,185,129,0.1)' : 'rgba(37,99,235,0.1)';
+    if (dateStr.length >= 10) { var parts = dateStr.split('-'); dateStr = parts[1] + '/' + parts[2]; }
 
     var sc = row.score || 0;
     var scColor = sc >= 80 ? 'var(--green)' : sc >= 60 ? 'var(--blue)' : sc >= 40 ? 'var(--amber)' : 'var(--text-muted)';
-
-    var entryStr = row.entry_price ? '$' + Number(row.entry_price).toFixed(2) : '-';
     var maxMoveStr = row.max_move_pct != null ? '+' + Number(row.max_move_pct).toFixed(1) + '%' : '-';
     var maxMoveColor = row.max_move_pct >= 5 ? 'var(--green)' : row.max_move_pct >= 2 ? 'var(--text-secondary)' : 'var(--text-muted)';
 
     html += '<tr style="border-bottom:1px solid var(--border);background:' + rowBg + ';">';
-    html += '<td style="padding:6px 8px;color:var(--text-muted);font-family:var(--font-mono);">' + dateStr + '</td>';
-    html += '<td style="padding:6px 8px;font-weight:700;color:var(--text-primary);">' + (row.ticker || '') + '</td>';
-    html += '<td style="padding:6px 8px;"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:' + stratBgColor + ';color:' + stratColor + ';">' + stratLabel + '</span></td>';
-    html += '<td style="padding:6px 8px;text-align:center;"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;border:2px solid ' + scColor + ';font-size:10px;font-weight:900;color:' + scColor + ';font-family:var(--font-mono);">' + sc + '</span></td>';
-    html += '<td style="padding:6px 8px;font-family:var(--font-mono);color:var(--text-secondary);font-size:11px;">' + entryStr + '</td>';
-    html += '<td style="padding:6px 8px;font-weight:700;color:' + resultColor + ';">' + resultText + '</td>';
-    html += '<td style="padding:6px 8px;text-align:right;font-family:var(--font-mono);font-weight:700;color:' + maxMoveColor + ';">' + maxMoveStr + '</td>';
+    html += '<td style="padding:5px 8px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px;">' + dateStr + '</td>';
+    html += '<td style="padding:5px 8px;font-weight:700;color:var(--text-primary);">' + (row.ticker || '') + '</td>';
+    html += '<td style="padding:5px 8px;"><span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:' + getStratBg(row.strategy) + ';color:' + getStratColor(row.strategy) + ';">' + getStratLabel(row.strategy) + '</span></td>';
+    html += '<td style="padding:5px 8px;text-align:center;"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;border:2px solid ' + scColor + ';font-size:9px;font-weight:900;color:' + scColor + ';font-family:var(--font-mono);">' + sc + '</span></td>';
+    html += '<td style="padding:5px 8px;font-weight:700;font-size:11px;color:' + resultColor + ';">' + resultText + '</td>';
+    html += '<td style="padding:5px 8px;text-align:right;font-family:var(--font-mono);font-weight:700;font-size:11px;color:' + maxMoveColor + ';">' + maxMoveStr + '</td>';
     html += '</tr>';
   }
 
   html += '</tbody></table>';
   html += '</div>';
 
-  // Show more button
   if (data.length > 15) {
     html += '<div style="text-align:center;margin-top:8px;">';
     html += '<button onclick="toggleBacktestShowAll()" style="padding:4px 16px;font-size:11px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;">' + (_backtestShowAll ? 'Show less' : 'Show all ' + data.length + ' results') + '</button>';

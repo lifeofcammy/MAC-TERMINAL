@@ -190,6 +190,29 @@ async function dbGetWinRate(strategy, days) {
   } catch(e) { console.warn('dbGetWinRate error:', e); return null; }
 }
 
+// ==================== SAVE DAY TRADE SETUPS ====================
+
+async function dbSaveDayTradeSetups(setups, dateStr) {
+  var sb = getSupabase();
+  if (!sb || !setups || setups.length === 0) return;
+  try {
+    // Read existing scan_results row for this date
+    var res = await sb.from('scan_results').select('scan_date, breakout_setups').eq('scan_date', dateStr).maybeSingle();
+    var existing = (res.data && res.data.breakout_setups) ? res.data.breakout_setups : {};
+    // Add daytrade_setups to the breakout_setups JSON
+    existing.daytrade_setups = setups.map(function(s) {
+      return {
+        ticker: s.ticker, category: 'ORB_BREAKOUT', direction: s.direction || 'LONG',
+        price: s.price, score: s.score, entryPrice: s.entryPrice,
+        stopPrice: s.stopPrice, targetPrice: s.targetPrice,
+        gapPct: s.gapPct, orHigh: s.orHigh, orLow: s.orLow
+      };
+    });
+    await sb.from('scan_results').upsert({ scan_date: dateStr, breakout_setups: existing }, { onConflict: 'scan_date' });
+    console.log('[db] Saved ' + setups.length + ' ORB setups for ' + dateStr);
+  } catch(e) { console.warn('dbSaveDayTradeSetups error:', e); }
+}
+
 // ==================== BACKTEST RESULTS (scanner_history detail) ====================
 
 async function dbGetBacktestResults(days) {

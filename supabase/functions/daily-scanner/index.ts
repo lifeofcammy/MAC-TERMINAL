@@ -489,12 +489,85 @@ interface PullbackEntry {
   }
 }
 
+interface MeanReversion {
+  ticker: string
+  category: 'MEAN REVERSION'
+  price: number
+  prevClose: number
+  changePct: number
+  score: number
+  signals: string[]
+  description: string
+  pullbackDepth: number
+  rsi14: number
+  supportLevel: string
+  baseVolRatio: number
+  relativeVol: number
+  volume: number
+  avgVol20: number
+  aboveSMAs: string
+  entryPrice: number
+  stopPrice: number
+  targetPrice: number
+  riskPct: number
+  components: {
+    pullbackQuality: number
+    oversold: number
+    volumeDecline: number
+    trendIntact: number
+  }
+}
+
+interface MomentumBreakout {
+  ticker: string
+  category: 'MOMENTUM BREAKOUT'
+  price: number
+  prevClose: number
+  changePct: number
+  score: number
+  signals: string[]
+  description: string
+  range5: number
+  breakoutStrength: number
+  relativeVol: number
+  volume: number
+  avgVol20: number
+  aboveSMAs: string
+  smaStacked: boolean
+  entryPrice: number
+  stopPrice: number
+  targetPrice: number
+  riskPct: number
+  components: {
+    breakoutStrength: number
+    volumeSurge: number
+    smaAlignment: number
+    baseTightness: number
+    extensionAdj: number
+  }
+}
+
+function calcRSI(closes: number[], period = 14): number {
+  if (closes.length < period + 1) return 50 // default neutral
+  let gains = 0, losses = 0
+  for (let i = closes.length - period; i < closes.length; i++) {
+    const diff = closes[i] - closes[i - 1]
+    if (diff > 0) gains += diff
+    else losses += Math.abs(diff)
+  }
+  const avgGain = gains / period
+  const avgLoss = losses / period
+  if (avgLoss === 0) return 100
+  const rs = avgGain / avgLoss
+  return 100 - (100 / (1 + rs))
+}
+
 function analyzeSetups(
   ticker: string,
   bars: Bar[],
   livePrice?: number,
   livePrevClose?: number,
-): { eb: EarlyBreakout | null; pb: PullbackEntry | null } {
+): { eb: EarlyBreakout | null; pb: PullbackEntry | null; mr: MeanReversion | null; mb: MomentumBreakout | null } {
 
   const closes  = bars.map(b => b.c)
   const highs   = bars.map(b => b.h)
@@ -727,7 +800,178 @@ function analyzeSetups(
     }
   }
 
-  return { eb, pb }
+  // ════════════════════════════════════════════
+  // CATEGORY 3: MEAN REVERSION
+  // RSI oversold + support + volume declining = bounce candidate
+  // ════════════════════════════════════════════
+  let mr: MeanReversion | null = null
+
+  const rsi14 = calcRSI(closes)
+
+  if (pullbackDepth >= 8 && pullbackDepth <= 25 && rsi14 <= 40 && sma50 && curPrice > sma50 * 0.95) {
+    const mrSignals: string[] = []
+
+    // Oversold score (0-30 pts)
+    let mrOversold = 0
+    if      (rsi14 <= 25) { mrOversold = 30; mrSignals.push(`RSI deeply oversold (${rsi14.toFixed(0)})`) }
+    else if (rsi14 <= 30) { mrOversold = 25; mrSignals.push(`RSI oversold (${rsi14.toFixed(0)})`) }
+    else if (rsi14 <= 35) { mrOversold = 18; mrSignals.push(`RSI approaching oversold (${rsi14.toFixed(0)})`) }
+    else                  { mrOversold = 10; mrSignals.push(`RSI weak (${rsi14.toFixed(0)})`) }
+
+    // Pullback quality (0-30 pts)
+    let mrDepthPts = 0
+    if      (pullbackDepth >= 10 && pullbackDepth <= 18) { mrDepthPts = 30; mrSignals.push(`Healthy reversion zone (${pullbackDepth.toFixed(1)}% from high)`) }
+    else if (pullbackDepth >= 8 && pullbackDepth <= 22)  { mrDepthPts = 22; mrSignals.push(`Pulling into support (${pullbackDepth.toFixed(1)}% from high)`) }
+    else                                                   { mrDepthPts = 12; mrSignals.push(`Deep selloff (${pullbackDepth.toFixed(1)}%)`) }
+
+    // Volume declining (0-20 pts) — sellers exhausting
+    let mrVolDry = 0
+    if      (baseVolRatio <= 0.5)  { mrVolDry = 20; mrSignals.push(`Selling exhaustion (vol ${Math.round(baseVolRatio * 100)}% of avg)`) }
+    else if (baseVolRatio <= 0.7)  { mrVolDry = 14; mrSignals.push('Volume fading') }
+    else if (baseVolRatio <= 0.85) { mrVolDry = 6 }
+
+    // Trend intact (0-20 pts) — still in long-term uptrend
+    let mrTrend = 0
+    let mrSupportLabel = ''
+    if (sma50 && curPrice > sma50) {
+      mrTrend += 10; mrSupportLabel = '50 SMA'
+      if (nearSma20) { mrTrend += 5; mrSignals.push(`Holding 20 SMA`); mrSupportLabel = '20 SMA' }
+      else if (nearSma10 && sma10) { mrTrend += 5; mrSignals.push(`At 10 SMA`); mrSupportLabel = '10 SMA' }
+      if (sma50 && Math.abs(curPrice - sma50) / curPrice * 100 <= 2) {
+        mrTrend += 5; mrSignals.push(`At 50 SMA ($${sma50.toFixed(2)})`); mrSupportLabel = '50 SMA'
+      }
+    } else if (sma50 && curPrice > sma50 * 0.95) {
+      mrTrend += 5; mrSignals.push('Near 50 SMA support'); mrSupportLabel = '50 SMA'
+    }
+
+    const mrScore = Math.round(Math.max(0, mrOversold + mrDepthPts + mrVolDry + mrTrend))
+
+    if (mrScore >= 40) {
+      const recentLow = arrMin(lows, Math.max(0, len - 5))
+      const mrStop = recentLow * 0.98
+      const mrRisk = curPrice > 0 ? ((curPrice - mrStop) / curPrice) * 100 : 0
+      // Target = 20 SMA (mean reversion target)
+      const mrTarget = sma20
+
+      mr = {
+        ticker,
+        category: 'MEAN REVERSION',
+        price: curPrice,
+        prevClose,
+        changePct: Math.round(changePct * 100) / 100,
+        score: mrScore,
+        signals: mrSignals,
+        description: mrSignals.join(' · '),
+        pullbackDepth: Math.round(pullbackDepth * 10) / 10,
+        rsi14: Math.round(rsi14),
+        supportLevel: mrSupportLabel || 'Near support',
+        baseVolRatio: Math.round(baseVolRatio * 100),
+        relativeVol: 0,
+        volume: curVol,
+        avgVol20: avgVol20_val,
+        aboveSMAs: aboveSMAsCount + '/3',
+        entryPrice: curPrice,
+        stopPrice: mrStop,
+        targetPrice: mrTarget,
+        riskPct: Math.round(mrRisk * 10) / 10,
+        components: {
+          pullbackQuality: mrDepthPts,
+          oversold: mrOversold,
+          volumeDecline: mrVolDry,
+          trendIntact: mrTrend,
+        },
+      }
+    }
+  }
+
+  // ════════════════════════════════════════════
+  // CATEGORY 4: MOMENTUM BREAKOUT
+  // New highs + volume surge + SMAs stacked = ride the trend
+  // ════════════════════════════════════════════
+  let mb: MomentumBreakout | null = null
+
+  // Check if price is at or above the 20-day high
+  const high20 = arrMax(highs, Math.max(0, len - 20))
+  const breakoutPct = high20 > 0 ? ((curPrice - high20) / high20) * 100 : -99
+  const lastBarVol = volumes[len - 1]
+  const avgVol20num = avgVol20_val || 1
+  const rvolRatio = lastBarVol / avgVol20num
+
+  if (breakoutPct >= -1 && smaStacked && rvolRatio >= 1.2) {
+    const mbSignals: string[] = []
+
+    // Breakout strength (0-25 pts)
+    let mbBreakStr = 0
+    if      (breakoutPct >= 3) { mbBreakStr = 25; mbSignals.push(`Strong breakout (+${breakoutPct.toFixed(1)}% above 20d high)`) }
+    else if (breakoutPct >= 1) { mbBreakStr = 22; mbSignals.push(`Breaking out (+${breakoutPct.toFixed(1)}% above 20d high)`) }
+    else if (breakoutPct >= 0) { mbBreakStr = 18; mbSignals.push(`At 20d high ($${high20.toFixed(2)})`) }
+    else                       { mbBreakStr = 12; mbSignals.push(`Approaching 20d high (${breakoutPct.toFixed(1)}%)`) }
+
+    // Volume surge (0-25 pts)
+    let mbVolSurge = 0
+    if      (rvolRatio >= 3.0) { mbVolSurge = 25; mbSignals.push(`Volume exploding (${rvolRatio.toFixed(1)}x avg)`) }
+    else if (rvolRatio >= 2.0) { mbVolSurge = 20; mbSignals.push(`Strong volume (${rvolRatio.toFixed(1)}x avg)`) }
+    else if (rvolRatio >= 1.5) { mbVolSurge = 15; mbSignals.push(`Above-avg volume (${rvolRatio.toFixed(1)}x)`) }
+    else                       { mbVolSurge = 8 }
+
+    // SMA alignment (0-20 pts) — already know smaStacked = true
+    let mbSmaAlign = 15
+    mbSignals.push('SMAs stacked bullish (10>20>50)')
+    if (sma50 && curPrice > sma50 * 1.05) mbSmaAlign = 20
+
+    // Base tightness before breakout (0-20 pts)
+    let mbTight = 0
+    if      (range5 <= 3) { mbTight = 20; mbSignals.push(`Tight base (${range5.toFixed(1)}% 5d range)`) }
+    else if (range5 <= 5) { mbTight = 15; mbSignals.push(`Compressed base (${range5.toFixed(1)}%)`) }
+    else if (range5 <= 8) { mbTight = 8 }
+
+    // Extension check (-10 to +10 pts)
+    let mbExt = 0
+    if      (extFromSma20 <= 3) mbExt = 10
+    else if (extFromSma20 <= 5) mbExt = 5
+    else if (extFromSma20 <= 8) mbExt = 0
+    else if (extFromSma20 <= 12) mbExt = -5
+    else mbExt = -10
+
+    const mbScore = Math.round(Math.max(0, mbBreakStr + mbVolSurge + mbSmaAlign + mbTight + mbExt))
+
+    if (mbScore >= 45) {
+      const mbStop = Math.max(arrMin(lows, Math.max(0, len - 3)), sma10 ?? sma20 * 0.98)
+      const mbRisk = curPrice > 0 ? ((curPrice - mbStop) / curPrice) * 100 : 0
+      const mbTarget = curPrice + (curPrice - mbStop) * 2.5
+
+      mb = {
+        ticker,
+        category: 'MOMENTUM BREAKOUT',
+        price: curPrice,
+        prevClose,
+        changePct: Math.round(changePct * 100) / 100,
+        score: mbScore,
+        signals: mbSignals,
+        description: mbSignals.join(' · '),
+        range5: Math.round(range5 * 10) / 10,
+        breakoutStrength: Math.round(breakoutPct * 10) / 10,
+        relativeVol: Math.round(rvolRatio * 10) / 10,
+        volume: curVol,
+        avgVol20: avgVol20_val,
+        aboveSMAs: aboveSMAsCount + '/3',
+        smaStacked,
+        entryPrice: curPrice,
+        stopPrice: mbStop,
+        targetPrice: mbTarget,
+        riskPct: Math.round(mbRisk * 10) / 10,
+        components: {
+          breakoutStrength: mbBreakStr,
+          volumeSurge: mbVolSurge,
+          smaAlignment: mbSmaAlign,
+          baseTightness: mbTight,
+          extensionAdj: mbExt,
+        },
+      }
+    }
+  }
+
+  return { eb, pb, mr, mb }
 }
 
 // ── Main Handler ─────────────────────────────────────────
@@ -1027,6 +1271,8 @@ Deno.serve(async (req: Request) => {
     // ══════════════════════════════════════════════════
     const earlyBreakouts: EarlyBreakout[] = []
     const pullbackEntries: PullbackEntry[] = []
+    const meanReversions: MeanReversion[] = []
+    const momentumBreakouts: MomentumBreakout[] = []
 
     for (const stock of top150) {
       // Look up the bars we already have for this ticker
@@ -1035,7 +1281,7 @@ Deno.serve(async (req: Request) => {
 
       // Pass live prices if snapshot data exists for this ticker
       const snap = snapshot.get(stock.ticker)
-      const { eb, pb } = analyzeSetups(
+      const { eb, pb, mr, mb } = analyzeSetups(
         stock.ticker,
         bars,
         snap?.price,       // livePrice
@@ -1043,15 +1289,21 @@ Deno.serve(async (req: Request) => {
       )
       if (eb) earlyBreakouts.push(eb)
       if (pb) pullbackEntries.push(pb)
+      if (mr) meanReversions.push(mr)
+      if (mb) momentumBreakouts.push(mb)
     }
 
     // Sort each category by score descending; cap at 15 each
     earlyBreakouts.sort((a, b) => b.score - a.score)
     pullbackEntries.sort((a, b) => b.score - a.score)
-    const topEarlyBreakouts  = earlyBreakouts.slice(0, 15)
-    const topPullbackEntries = pullbackEntries.slice(0, 15)
+    meanReversions.sort((a, b) => b.score - a.score)
+    momentumBreakouts.sort((a, b) => b.score - a.score)
+    const topEarlyBreakouts    = earlyBreakouts.slice(0, 15)
+    const topPullbackEntries   = pullbackEntries.slice(0, 15)
+    const topMeanReversions    = meanReversions.slice(0, 15)
+    const topMomentumBreakouts = momentumBreakouts.slice(0, 15)
 
-    console.log(`[daily-scanner] Setups: ${topEarlyBreakouts.length} early breakouts, ${topPullbackEntries.length} pullback entries`)
+    console.log(`[daily-scanner] Setups: ${topEarlyBreakouts.length} EB, ${topPullbackEntries.length} PB, ${topMeanReversions.length} MR, ${topMomentumBreakouts.length} MB`)
 
     // ══════════════════════════════════════════════════
     // STEP 6: Build output payload — must match frontend expectations exactly
@@ -1071,8 +1323,10 @@ Deno.serve(async (req: Request) => {
       etTime: etTimeStr,           // e.g. '9:35 AM' or '4:00 PM'
       earlyBreakouts: topEarlyBreakouts,
       pullbackEntries: topPullbackEntries,
+      meanReversions: topMeanReversions,
+      momentumBreakouts: topMomentumBreakouts,
       // Legacy compatibility: combined array
-      setups: [...topEarlyBreakouts, ...topPullbackEntries],
+      setups: [...topEarlyBreakouts, ...topPullbackEntries, ...topMeanReversions, ...topMomentumBreakouts],
     }
 
     // ══════════════════════════════════════════════════
@@ -1103,6 +1357,8 @@ Deno.serve(async (req: Request) => {
         universe_count:     top150.length,
         early_breakouts:    topEarlyBreakouts.length,
         pullback_entries:   topPullbackEntries.length,
+        mean_reversions:    topMeanReversions.length,
+        momentum_breakouts: topMomentumBreakouts.length,
       }),
       {
         status: 200,
