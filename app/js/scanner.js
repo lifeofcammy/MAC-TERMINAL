@@ -1297,13 +1297,11 @@ async function runDayTradeScan(statusFn) {
 // Render a day trade card
 function renderDayTradeCard(s, idx) {
   var detailId = 'dt-detail-' + idx;
-  var sc = s.score >= 80 ? 'var(--green)' : s.score >= 60 ? 'var(--blue)' : s.score >= 40 ? 'var(--amber)' : 'var(--text-muted)';
-  var sbg = s.score >= 80 ? 'rgba(16,185,129,0.06)' : s.score >= 60 ? 'rgba(79,70,229,0.04)' : 'rgba(245,158,11,0.04)';
-  var dirColor = s.direction === 'LONG' ? 'var(--green)' : 'var(--red)';
-  var dirBg = s.direction === 'LONG' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)';
+  var dirColor = 'var(--text-secondary)';
+  var dirBg = 'rgba(0,0,0,0.05)';
 
   var html = '';
-  html += '<div style="background:' + sbg + ';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px 16px;border-left:3px solid ' + sc + ';">';
+  html += '<div style="background:var(--bg-card);box-shadow:0 1px 3px rgba(0,0,0,0.08);border-radius:12px;padding:14px 16px;border:1px solid var(--border2);">';
 
   // Header: ticker, direction badge, price, score
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
@@ -1317,7 +1315,7 @@ function renderDayTradeCard(s, idx) {
   html += '</div>';
 
   // Gap + RVol row
-  var gapColor = s.gapPct >= 0 ? 'var(--green)' : 'var(--red)';
+  var gapColor = 'var(--text-secondary)';
   html += '<div style="display:flex;gap:10px;font-size:12px;margin-bottom:6px;">';
   html += '<span style="color:' + gapColor + ';font-weight:700;font-family:var(--font-mono);">Gap ' + (s.gapPct >= 0 ? '+' : '') + s.gapPct.toFixed(1) + '%</span>';
   html += '<span style="color:var(--text-muted);font-family:var(--font-mono);">RVol ' + (s.rvol ? s.rvol.toFixed(1) + 'x' : '\u2014') + '</span>';
@@ -1564,7 +1562,7 @@ function renderScanner() {
   html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
   html += '<div style="display:flex;align-items:center;gap:8px;">';
   html += '<span style="font-size:15px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Day Trade</span>';
-  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:var(--red);text-transform:uppercase;letter-spacing:.04em;">ORB 15m</span>';
+  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(0,0,0,0.05);color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;">ORB 15m</span>';
   html += '</div>';
   html += '<button onclick="runDayTradeScanUI()" class="refresh-btn" style="padding:5px 12px;font-size:12px;">Scan</button>';
   html += '</div>';
@@ -1702,9 +1700,7 @@ function loadWinRateBadge() {
   dbGetWinRate(null, 30).then(function(data) {
     var el = document.getElementById('swing-win-rate-badge');
     if (!el || !data || data.total < 5) return;
-    var color = data.winRate >= 60 ? 'var(--green)' : data.winRate >= 45 ? 'var(--amber)' : 'var(--red)';
-    var bg = data.winRate >= 60 ? 'var(--green-bg)' : data.winRate >= 45 ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)';
-    el.innerHTML = '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:'+bg+';color:'+color+';letter-spacing:.02em;">'+data.winRate+'% win ('+data.total+' trades, '+data.days+'d)</span>';
+    el.innerHTML = '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(0,0,0,0.04);color:var(--text-muted);letter-spacing:.02em;">'+data.winRate+'% win ('+data.total+' trades, '+data.days+'d)</span>';
   }).catch(function(){});
 }
 
@@ -1719,7 +1715,7 @@ function renderStrategyBox(cfg) {
   html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
   html += '<div style="display:flex;align-items:center;gap:8px;">';
   html += '<span style="font-size:15px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">' + cfg.title + '</span>';
-  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:' + cfg.badgeBg + ';color:' + cfg.badgeColor + ';text-transform:uppercase;letter-spacing:.04em;">' + cfg.badge + '</span>';
+  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(0,0,0,0.05);color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;">' + cfg.badge + '</span>';
   html += '</div>';
   if (cfg.scanFn) {
     html += '<button onclick="' + cfg.scanFn + '" class="refresh-btn" style="padding:5px 12px;font-size:12px;">Scan</button>';
@@ -1788,12 +1784,8 @@ function expandStrategyResults(boxId) {
 function renderSetupCard(s, idx, scanData) {
   var detailId = 'score-detail-' + idx;
   var cat = s.category || '';
-  var borderColor = cat ? getStratColor(cat) : (s.score >= 80 ? 'var(--green)' : s.score >= 60 ? 'var(--blue)' : s.score >= 40 ? 'var(--amber)' : 'var(--text-muted)');
-  var sc = s.score >= 80 ? 'var(--green)' : s.score >= 60 ? 'var(--blue)' : s.score >= 40 ? 'var(--amber)' : 'var(--text-muted)';
-  var sbg = cat ? getStratBg(cat) : (s.score >= 80 ? 'rgba(16,185,129,0.06)' : s.score >= 60 ? 'rgba(79,70,229,0.04)' : 'rgba(245,158,11,0.04)');
-
   var html = '';
-  html += '<div style="background:' + sbg + ';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px 16px;border-left:3px solid ' + borderColor + ';">';
+  html += '<div style="background:var(--bg-card);box-shadow:0 1px 3px rgba(0,0,0,0.08);border-radius:12px;padding:14px 16px;border:1px solid var(--border2);">';
 
   // Header: ticker, price, score circle
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
@@ -1801,9 +1793,7 @@ function renderSetupCard(s, idx, scanData) {
   html += '<span class="ticker-link" style="font-size:14px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\'' + s.ticker + '\')">' + s.ticker + '</span>';
   var _type = (scanData && scanData.allTickerType && scanData.allTickerType[s.ticker]) || '';
   var _typeLabel = _type === 'ETF' ? 'ETF' : 'Stock';
-  var _typeBg = _type === 'ETF' ? 'var(--amber-bg)' : 'var(--blue-bg)';
-  var _typeColor = _type === 'ETF' ? 'var(--amber)' : 'var(--blue)';
-  html += '<span style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;background:' + _typeBg + ';color:' + _typeColor + ';">' + _typeLabel + '</span>';
+  html += '<span style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(0,0,0,0.05);color:var(--text-muted);">' + _typeLabel + '</span>';
   html += '<span style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
   html += '</div>';
   // Score circle
@@ -1835,7 +1825,7 @@ function renderSetupCard(s, idx, scanData) {
   // Strategy-specific component bars
   html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Score Breakdown</div>';
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:12px;margin-bottom:8px;">';
-  var barColor = cat ? getStratColor(cat) : 'var(--blue)';
+  var barColor = 'var(--text-muted)';
   if (cat === 'PULLBACK') {
     html += renderComponentBar('Pullback Quality', comps.pullbackQuality || 0, 30, barColor);
     html += renderComponentBar('Support Level', comps.supportLevel || 0, 25, barColor);
@@ -2415,21 +2405,11 @@ function getStratLabel(strat) {
 }
 
 function getStratColor(strat) {
-  var colors = {
-    'EARLY BREAKOUT': 'var(--green)', 'PULLBACK': 'var(--blue)',
-    'MEAN REVERSION': '#a855f7', 'MOMENTUM BREAKOUT': '#f59e0b',
-    'ORB_BREAKOUT': 'var(--red)'
-  };
-  return colors[strat] || 'var(--text-muted)';
+  return 'var(--text-secondary)';
 }
 
 function getStratBg(strat) {
-  var bgs = {
-    'EARLY BREAKOUT': 'rgba(16,185,129,0.1)', 'PULLBACK': 'rgba(79,70,229,0.1)',
-    'MEAN REVERSION': 'rgba(168,85,247,0.1)', 'MOMENTUM BREAKOUT': 'rgba(245,158,11,0.1)',
-    'ORB_BREAKOUT': 'rgba(239,68,68,0.1)'
-  };
-  return bgs[strat] || 'rgba(128,128,128,0.1)';
+  return 'rgba(0,0,0,0.04)';
 }
 
 function calcEdgeStats(trades) {
@@ -2557,7 +2537,7 @@ function renderBacktestResults(data) {
   var totalAll = totalWins + totalLosses + totalPending;
   var decidedAll = totalWins + totalLosses;
   var overallWR = decidedAll > 0 ? Math.round((totalWins / decidedAll) * 100) : 0;
-  var overallColor = overallWR >= 60 ? 'var(--green)' : overallWR >= 45 ? 'var(--amber)' : 'var(--red)';
+  var overallColor = 'var(--text-primary)';
   var overallStats = calcEdgeStats(data);
 
   var html = '';
@@ -2568,13 +2548,13 @@ function renderBacktestResults(data) {
   html += '<div style="display:flex;align-items:center;gap:10px;">';
   html += '<span style="font-size:11px;color:var(--text-muted);">Overall:</span>';
   html += '<span style="font-size:16px;font-weight:900;color:' + overallColor + ';font-family:var(--font-mono);">' + overallWR + '%</span>';
-  var expColor = overallStats.expectancy > 0 ? 'var(--green)' : overallStats.expectancy < 0 ? 'var(--red)' : 'var(--text-muted)';
+  var expColor = 'var(--text-primary)';
   html += '<span style="font-size:11px;color:var(--text-muted);">Exp:</span><span style="font-size:13px;font-weight:800;color:' + expColor + ';font-family:var(--font-mono);">' + (overallStats.expectancy >= 0 ? '+' : '') + overallStats.expectancy.toFixed(2) + 'R</span>';
   html += '</div>';
   html += '<div style="display:flex;align-items:center;gap:10px;font-size:11px;font-family:var(--font-mono);">';
-  html += '<span style="color:var(--green);font-weight:700;">' + totalWins + 'W</span>';
-  html += '<span style="color:var(--red);font-weight:700;">' + totalLosses + 'L</span>';
-  if (totalPending > 0) html += '<span style="color:var(--amber);font-weight:700;">' + totalPending + 'P</span>';
+  html += '<span style="color:var(--text-secondary);font-weight:700;">' + totalWins + 'W</span>';
+  html += '<span style="color:var(--text-secondary);font-weight:700;">' + totalLosses + 'L</span>';
+  if (totalPending > 0) html += '<span style="color:var(--text-muted);font-weight:700;">' + totalPending + 'P</span>';
   html += '<span style="color:var(--text-muted);">' + totalAll + ' total</span>';
   html += '</div>';
   html += '</div>';
@@ -2606,16 +2586,13 @@ function renderBacktestResults(data) {
 
     // Status badge
     var statusBadge = '';
-    if (lb.status === 'EDGE') statusBadge = '<span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:rgba(16,185,129,0.15);color:var(--green);">EDGE</span>';
-    else if (lb.status === 'HOT') statusBadge = '<span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:rgba(16,185,129,0.15);color:var(--green);">HOT</span>';
-    else if (lb.status === 'COLD') statusBadge = '<span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:rgba(239,68,68,0.15);color:var(--red);">COLD</span>';
-    else if (lb.status === 'NEW') statusBadge = '<span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:rgba(128,128,128,0.15);color:var(--text-muted);">NEW</span>';
+    if (lb.status) statusBadge = '<span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:rgba(0,0,0,0.05);color:var(--text-muted);">' + lb.status + '</span>';
 
-    var lbWrColor = lb.winRate >= 60 ? 'var(--green)' : lb.winRate >= 45 ? 'var(--amber)' : 'var(--red)';
-    var lbExpColor = lb.expectancy > 0 ? 'var(--green)' : lb.expectancy < 0 ? 'var(--red)' : 'var(--text-muted)';
-    var lbPfColor = lb.profitFactor >= 1.5 ? 'var(--green)' : lb.profitFactor >= 1.0 ? 'var(--amber)' : 'var(--red)';
-    var confColor = lb.confidence === 'HIGH' ? 'var(--green)' : lb.confidence === 'MED' ? 'var(--amber)' : 'var(--text-muted)';
-    var confBg = lb.confidence === 'HIGH' ? 'rgba(16,185,129,0.1)' : lb.confidence === 'MED' ? 'rgba(245,158,11,0.1)' : 'rgba(128,128,128,0.1)';
+    var lbWrColor = 'var(--text-primary)';
+    var lbExpColor = 'var(--text-primary)';
+    var lbPfColor = 'var(--text-secondary)';
+    var confColor = 'var(--text-muted)';
+    var confBg = 'rgba(0,0,0,0.04)';
 
     // Regime expand arrow (only if data exists)
     var regimeArrow = lb.hasRegime ? '<span id="regime-arrow-' + k + '" style="font-size:10px;color:var(--text-muted);cursor:pointer;">▸</span>' : '';
@@ -2728,19 +2705,19 @@ function renderBacktestResults(data) {
     var row = data[j];
     var isW = row.hit_target && !row.hit_stop;
     var isL = row.hit_stop;
-    var rowBg = isW ? 'rgba(16,185,129,0.04)' : isL ? 'rgba(239,68,68,0.04)' : 'transparent';
+    var rowBg = 'transparent';
     var resultText, resultColor;
-    if (isW) { resultText = 'Hit Target'; resultColor = 'var(--green)'; }
-    else if (isL) { resultText = 'Stopped Out'; resultColor = 'var(--red)'; }
-    else { resultText = 'Pending'; resultColor = 'var(--amber)'; }
+    if (isW) { resultText = 'Hit Target'; resultColor = 'var(--text-primary)'; }
+    else if (isL) { resultText = 'Stopped Out'; resultColor = 'var(--text-muted)'; }
+    else { resultText = 'Pending'; resultColor = 'var(--text-muted)'; }
 
     var dateStr = row.date || '';
     if (dateStr.length >= 10) { var parts = dateStr.split('-'); dateStr = parts[1] + '/' + parts[2]; }
 
     var sc = row.score || 0;
-    var scColor = sc >= 80 ? 'var(--green)' : sc >= 60 ? 'var(--blue)' : sc >= 40 ? 'var(--amber)' : 'var(--text-muted)';
+    var scColor = 'var(--border2)';
     var maxMoveStr = row.max_move_pct != null ? '+' + Number(row.max_move_pct).toFixed(1) + '%' : '-';
-    var maxMoveColor = row.max_move_pct >= 5 ? 'var(--green)' : row.max_move_pct >= 2 ? 'var(--text-secondary)' : 'var(--text-muted)';
+    var maxMoveColor = 'var(--text-secondary)';
 
     html += '<tr style="border-bottom:1px solid var(--border);background:' + rowBg + ';">';
     html += '<td style="padding:5px 8px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px;">' + dateStr + '</td>';
