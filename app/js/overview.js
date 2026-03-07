@@ -671,8 +671,8 @@ async function refreshRegimeAndBreadth() {
         var both = idx.a10 && idx.a20;
         var neither = !idx.a10 && !idx.a20;
         var smaColor = both ? 'var(--green)' : neither ? 'var(--red)' : 'var(--amber)';
-        var smaBg = both ? 'rgba(63,185,80,0.06)' : neither ? 'rgba(239,68,68,0.06)' : 'rgba(210,153,34,0.06)';
-        var smaBorder = both ? 'rgba(63,185,80,0.15)' : neither ? 'rgba(239,68,68,0.15)' : 'rgba(210,153,34,0.15)';
+        var smaBg = 'var(--bg-card)';
+        var smaBorder = 'var(--border2)';
         var smaLabel = both ? 'Above Both' : neither ? 'Below Both' : 'Mixed';
         rHtml += '<div style="background:'+smaBg+';border:1px solid '+smaBorder+';border-radius:8px;padding:8px 10px;text-align:center;">';
         rHtml += '<div style="font-size:13px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">'+idx.name+'</div>';
@@ -694,10 +694,8 @@ async function refreshRegimeAndBreadth() {
       rHtml += '<div class="ov-snap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;">';
       snapItems.forEach(function(idx) {
         var d=idx.data; var color=d.pct>=0?'var(--green)':'var(--red)';
-        var bg=d.pct>=0?'rgba(52,211,153,0.04)':'rgba(252,165,165,0.04)';
-        var borderC=d.pct>=0?'rgba(52,211,153,0.15)':'rgba(252,165,165,0.15)';
-        if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';bg=d.pct<=0?'rgba(52,211,153,0.04)':'rgba(252,165,165,0.04)';borderC=d.pct<=0?'rgba(52,211,153,0.15)':'rgba(252,165,165,0.15)';}
-        rHtml += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:8px;padding:10px 8px;text-align:center;">';
+        if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';}
+        rHtml += '<div style="background:var(--bg-card);border:1px solid var(--border2);border-radius:8px;padding:10px 8px;text-align:center;">';
         rHtml += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:0.03em;">'+idx.label+'</div>';
         rHtml += '<div style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);margin-top:3px;">'+(d.price?'$'+price(d.price):'\u2014')+'</div>';
         rHtml += '<div style="font-size:13px;font-weight:700;color:'+color+';margin-top:2px;">'+pct(d.pct)+'</div>';
@@ -1178,10 +1176,8 @@ async function renderOverview() {
   ];
   snapItems.forEach(function(idx){
     var d=idx.data; var color=d.pct>=0?'var(--green)':'var(--red)';
-    var bg=d.pct>=0?'rgba(52,211,153,0.04)':'rgba(252,165,165,0.04)';
-    var borderC=d.pct>=0?'rgba(52,211,153,0.15)':'rgba(252,165,165,0.15)';
-    if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';bg=d.pct<=0?'rgba(52,211,153,0.04)':'rgba(252,165,165,0.04)';borderC=d.pct<=0?'rgba(52,211,153,0.15)':'rgba(252,165,165,0.15)';}
-    html += '<div style="background:'+bg+';border:1px solid '+borderC+';border-radius:8px;padding:10px 8px;text-align:center;">';
+    if(idx.ticker==='VIXY'){color=d.pct<=0?'var(--green)':'var(--red)';}
+    html += '<div style="background:var(--bg-card);border:1px solid var(--border2);border-radius:8px;padding:10px 8px;text-align:center;">';
     html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:0.03em;">'+idx.label+'</div>';
     html += '<div style="font-size:14px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);margin-top:3px;">'+(d.price?'$'+price(d.price):'—')+'</div>';
     html += '<div style="font-size:13px;font-weight:700;color:'+color+';margin-top:2px;">'+pct(d.pct)+'</div>';
