@@ -1422,6 +1422,50 @@ function renderScanner() {
 
   html += '</div>'; // close scanner-dual-grid
 
+  // ── SOCIAL ARBITRAGE CARD (full-width) ──
+  var socialCache = null;
+  try { var sc = localStorage.getItem('mac_social_arb_results'); if (sc) socialCache = JSON.parse(sc); } catch(e) {}
+  var socialCollapsed = localStorage.getItem('mac_social_arb_collapsed') === 'true';
+
+  html += '<div class="card" style="margin-bottom:16px;padding:0;overflow:hidden;">';
+  html += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Social Arbitrage</span>';
+  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(168,85,247,0.1);color:#a855f7;text-transform:uppercase;letter-spacing:.04em;">Beta</span>';
+  html += '</div>';
+  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += '<button onclick="toggleSocialArbCollapse()" style="padding:3px 8px;font-size:11px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;" id="social-arb-toggle">' + (socialCollapsed ? 'Show' : 'Hide') + '</button>';
+  html += '<button onclick="runSocialArbitrageScanUI()" class="refresh-btn" style="padding:5px 12px;font-size:12px;" id="social-arb-scan-btn">Scan</button>';
+  html += '</div>';
+  html += '</div>';
+  html += '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Spotting consumer trends before Wall Street &mdash; inspired by Chris Camillo\'s social arbitrage method</div>';
+  html += '<div id="social-arb-status" style="font-size:11px;color:var(--text-muted);margin-top:4px;">' + (socialCache ? 'Cached results (' + (socialCache.picks || []).length + ' picks)' : 'Click Scan to find social signals') + '</div>';
+  html += '</div>';
+
+  // Info banner
+  html += '<div onclick="toggleSocialArbInfo()" style="padding:8px 16px;background:rgba(168,85,247,0.05);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;">';
+  html += '<span style="font-size:12px;color:#a855f7;">&#9432;</span>';
+  html += '<span style="font-size:11px;color:var(--text-muted);font-weight:600;">How does this work?</span>';
+  html += '<span id="social-arb-info-arrow" style="margin-left:auto;font-size:10px;color:var(--text-muted);">\u25b6</span>';
+  html += '</div>';
+  html += '<div id="social-arb-info-body" style="display:none;padding:12px 16px;background:rgba(168,85,247,0.03);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary);line-height:1.6;">';
+  html += '<div style="font-weight:700;margin-bottom:6px;color:var(--text-primary);">Chris Camillo\'s Social Arbitrage</div>';
+  html += '<div style="margin-bottom:8px;"><strong>What it shows:</strong> Stocks with unusual social buzz — spiking news volume, Reddit mentions, and consumer trend signals that institutional investors haven\'t priced in yet.</div>';
+  html += '<div style="margin-bottom:8px;"><strong>Why it works:</strong> Retail consumers spot product trends (viral products, sold-out items, brand switches) weeks before Wall Street analysts. Camillo turned $20K into $42M using this edge.</div>';
+  html += '<div><strong>Trigger phrases:</strong> "sold out", "out of stock", "going viral", "everyone is buying", "switched to", "game changer" — these signal real demand shifts that move stock prices.</div>';
+  html += '</div>';
+
+  // Results body
+  html += '<div id="social-arb-results" style="' + (socialCollapsed ? 'display:none;' : '') + 'padding:12px 16px;">';
+  if (socialCache && socialCache.picks && socialCache.picks.length > 0) {
+    html += renderSocialArbResults(socialCache);
+  } else {
+    html += '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">Scans news volume, Reddit mentions, and social buzz to find consumer trends before they hit Wall Street.</div>';
+  }
+  html += '</div>';
+  html += '</div>';
+
   // Universe list (collapsible card)
   var universeCount = (cache && cache.tickers) ? cache.tickers.length : 0;
   var listCollapsed = localStorage.getItem('mac_universe_collapsed') === 'true';
@@ -2007,4 +2051,389 @@ function scannerAutoBuild() {
     }
     _autoBuildRunning = false;
   })();
+}
+
+
+// ==================== SOCIAL ARBITRAGE SCANNER ====================
+
+var SOCIAL_ARB_CACHE_KEY = 'mac_social_arb_results';
+
+// Toggle info panel
+function toggleSocialArbInfo() {
+  var body = document.getElementById('social-arb-info-body');
+  var arrow = document.getElementById('social-arb-info-arrow');
+  if (!body) return;
+  var isHidden = body.style.display === 'none';
+  body.style.display = isHidden ? '' : 'none';
+  if (arrow) arrow.textContent = isHidden ? '\u25bc' : '\u25b6';
+}
+
+// Toggle collapse
+function toggleSocialArbCollapse() {
+  var body = document.getElementById('social-arb-results');
+  var btn = document.getElementById('social-arb-toggle');
+  if (!body) return;
+  var isHidden = body.style.display === 'none';
+  body.style.display = isHidden ? '' : 'none';
+  if (btn) btn.textContent = isHidden ? 'Hide' : 'Show';
+  try { localStorage.setItem('mac_social_arb_collapsed', isHidden ? 'false' : 'true'); } catch(e) {}
+}
+
+// UI wrapper for social arbitrage scan
+async function runSocialArbitrageScanUI() {
+  var btn = document.getElementById('social-arb-scan-btn');
+  var statusEl = document.getElementById('social-arb-status');
+  var resultsEl = document.getElementById('social-arb-results');
+  if (btn) { btn.disabled = true; btn.textContent = 'Scanning...'; }
+
+  try {
+    var results = await runSocialArbitrageScan(function(msg) {
+      if (statusEl) statusEl.textContent = msg;
+    });
+    if (results && results.picks && results.picks.length > 0) {
+      try { localStorage.setItem(SOCIAL_ARB_CACHE_KEY, JSON.stringify(results)); } catch(e) {}
+      if (resultsEl) resultsEl.innerHTML = renderSocialArbResults(results);
+      if (statusEl) statusEl.textContent = 'Found ' + results.picks.length + ' picks';
+    } else {
+      if (statusEl) statusEl.textContent = 'No strong social signals found right now';
+      if (resultsEl) resultsEl.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">No strong social arbitrage signals detected. Try again later.</div>';
+    }
+  } catch(err) {
+    console.error('[social-arb] Scan failed:', err);
+    if (statusEl) statusEl.textContent = 'Scan failed: ' + err.message;
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Scan'; }
+}
+
+// Core scan logic
+async function runSocialArbitrageScan(statusFn) {
+  if (!statusFn) statusFn = function() {};
+
+  // Step 1: Get a broad universe of tickers from the momentum cache or build one
+  statusFn('Building scan universe...');
+  var cache = getMomentumCache();
+  var universe = [];
+  if (cache && cache.tickers && cache.tickers.length > 0) {
+    universe = cache.tickers.map(function(t) { return t.ticker; });
+  } else {
+    // Fallback: use a curated list of high-profile consumer-facing stocks
+    universe = [
+      'AAPL','AMZN','TSLA','NFLX','DIS','NKE','SBUX','MCD','COST','WMT',
+      'TGT','LULU','CROX','ELF','CELH','DKNG','RBLX','SPOT','ABNB','UBER',
+      'META','SNAP','PINS','ETSY','CHWY','DASH','BROS','CAVA','DUOL','HIMS',
+      'PLTR','SHOP','SQ','PYPL','COIN','RIVN','LCID','GME','AMC','SOFI',
+      'NVDA','AMD','MSFT','GOOGL','SMCI','MELI','NU','SE','BABA','JD'
+    ];
+  }
+
+  // Cap at 50 tickers to stay within rate limits
+  universe = universe.slice(0, 50);
+
+  // Step 2: Fetch news volume for all tickers
+  statusFn('Scanning news volume for ' + universe.length + ' stocks...');
+  var newsData = [];
+  try {
+    var session = window._currentSession;
+    if (session && session.access_token) {
+      var newsResp = await fetch(EDGE_FN_BASE + '/social-scanner', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token,
+          'apikey': typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : ''
+        },
+        body: JSON.stringify({ task: 'news_volume', tickers: universe })
+      });
+      if (newsResp.ok) {
+        var nd = await newsResp.json();
+        newsData = nd.results || [];
+      }
+    }
+  } catch(e) { console.warn('[social-arb] News volume fetch failed:', e); }
+
+  // Step 3: Find tickers with above-average news volume
+  var avgNews = 0;
+  if (newsData.length > 0) {
+    var totalArticles = newsData.reduce(function(s, d) { return s + d.articleCount; }, 0);
+    avgNews = totalArticles / newsData.length;
+  }
+
+  // Tickers with 2x+ average news volume are candidates
+  var hotTickers = newsData.filter(function(d) {
+    return d.articleCount >= Math.max(avgNews * 2, 3);
+  }).map(function(d) { return d.ticker; });
+
+  // Also add tickers with any news if we have fewer than 10 candidates
+  if (hotTickers.length < 10) {
+    var extraTickers = newsData.filter(function(d) {
+      return d.articleCount >= 2 && hotTickers.indexOf(d.ticker) === -1;
+    }).sort(function(a, b) { return b.articleCount - a.articleCount; })
+      .slice(0, 10 - hotTickers.length)
+      .map(function(d) { return d.ticker; });
+    hotTickers = hotTickers.concat(extraTickers);
+  }
+
+  if (hotTickers.length === 0) {
+    statusFn('No stocks with unusual news volume found');
+    return { picks: [] };
+  }
+
+  statusFn('Found ' + hotTickers.length + ' stocks with elevated buzz — checking Reddit...');
+
+  // Step 4: Fetch Reddit mentions for hot tickers
+  var redditData = [];
+  try {
+    var session = window._currentSession;
+    if (session && session.access_token) {
+      var redditResp = await fetch(EDGE_FN_BASE + '/social-scanner', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token,
+          'apikey': typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : ''
+        },
+        body: JSON.stringify({ task: 'reddit_mentions', tickers: hotTickers })
+      });
+      if (redditResp.ok) {
+        var rd = await redditResp.json();
+        redditData = rd.results || [];
+      }
+    }
+  } catch(e) { console.warn('[social-arb] Reddit fetch failed:', e); }
+
+  // Step 5: Fetch snapshots for price/volume data
+  statusFn('Getting price data...');
+  var snapshots = {};
+  try {
+    snapshots = await getSnapshots(hotTickers);
+  } catch(e) {}
+
+  // Step 6: Score each ticker
+  statusFn('Scoring ' + hotTickers.length + ' candidates...');
+  var candidates = [];
+  var newsMap = {};
+  newsData.forEach(function(d) { newsMap[d.ticker] = d; });
+  var redditMap = {};
+  redditData.forEach(function(d) { redditMap[d.ticker] = d; });
+
+  for (var i = 0; i < hotTickers.length; i++) {
+    var ticker = hotTickers[i];
+    var news = newsMap[ticker] || { articleCount: 0, headlines: [] };
+    var reddit = redditMap[ticker] || { totalMentions: 0, topPosts: [] };
+    var snap = snapshots[ticker] || {};
+
+    // Price data
+    var price = 0, pricePct = 0, volumeRatio = 0;
+    if (snap.day && snap.day.c > 0) price = snap.day.c;
+    else if (snap.lastTrade && snap.lastTrade.p > 0) price = snap.lastTrade.p;
+    else if (snap.prevDay && snap.prevDay.c > 0) price = snap.prevDay.c;
+
+    if (snap.prevDay && snap.prevDay.c > 0 && price > 0) {
+      pricePct = ((price - snap.prevDay.c) / snap.prevDay.c) * 100;
+    }
+    if (snap.day && snap.day.v > 0 && snap.prevDay && snap.prevDay.v > 0) {
+      volumeRatio = snap.day.v / snap.prevDay.v;
+    }
+
+    // Scoring (0-100)
+    // News Volume: 0-30 pts
+    var newsScore = 0;
+    if (news.articleCount >= 10) newsScore = 30;
+    else if (news.articleCount >= 5) newsScore = Math.round(15 + (news.articleCount - 5) * 3);
+    else newsScore = Math.round(news.articleCount * 3);
+
+    // Reddit Mentions: 0-25 pts
+    var redditScore = 0;
+    if (reddit.totalMentions >= 20) redditScore = 25;
+    else if (reddit.totalMentions >= 10) redditScore = Math.round(15 + (reddit.totalMentions - 10) * 1);
+    else redditScore = Math.round(reddit.totalMentions * 1.5);
+
+    // Price Confirmation: 0-10 pts
+    var priceScore = 0;
+    var absPct = Math.abs(pricePct);
+    if (absPct >= 5) priceScore = 10;
+    else if (absPct >= 2) priceScore = Math.round(absPct * 2);
+
+    // Volume Confirmation: 0-10 pts
+    var volScore = 0;
+    if (volumeRatio >= 3) volScore = 10;
+    else if (volumeRatio >= 1.5) volScore = Math.round((volumeRatio - 1) * 5);
+
+    var totalScore = Math.min(100, newsScore + redditScore + priceScore + volScore);
+
+    candidates.push({
+      ticker: ticker,
+      socialScore: totalScore,
+      newsCount: news.articleCount,
+      redditMentions: reddit.totalMentions,
+      pricePct: pricePct,
+      volumeRatio: volumeRatio,
+      price: price,
+      headlines: news.headlines || [],
+      topPosts: (reddit.topPosts || []).map(function(p) { return p.title; }),
+      components: { news: newsScore, reddit: redditScore, price: priceScore, volume: volScore }
+    });
+  }
+
+  // Sort by social score descending
+  candidates.sort(function(a, b) { return b.socialScore - a.socialScore; });
+
+  // Step 7: Send top candidates to AI for thesis generation
+  var topCandidates = candidates.slice(0, 10);
+  statusFn('AI analyzing ' + topCandidates.length + ' top candidates...');
+
+  var picks = topCandidates.map(function(c) {
+    return {
+      ticker: c.ticker,
+      socialScore: c.socialScore,
+      newsCount: c.newsCount,
+      redditMentions: c.redditMentions,
+      pricePct: c.pricePct,
+      volumeRatio: c.volumeRatio,
+      price: c.price,
+      headlines: c.headlines,
+      topPosts: c.topPosts,
+      components: c.components
+    };
+  });
+
+  try {
+    var session = window._currentSession;
+    if (session && session.access_token) {
+      var aiResp = await fetch(EDGE_FN_BASE + '/ai-proxy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token,
+          'apikey': typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : ''
+        },
+        body: JSON.stringify({
+          task: 'social_arbitrage_analysis',
+          candidates: topCandidates
+        })
+      });
+
+      if (aiResp.ok) {
+        var aiData = await aiResp.json();
+        var aiText = '';
+        if (aiData.content && aiData.content[0]) aiText = aiData.content[0].text || '';
+
+        try {
+          var aiResult = JSON.parse(aiText);
+          if (aiResult.picks && Array.isArray(aiResult.picks)) {
+            // Merge AI analysis into our picks
+            aiResult.picks.forEach(function(aiPick) {
+              var match = picks.find(function(p) { return p.ticker === aiPick.ticker; });
+              if (match) {
+                match.catalyst = aiPick.catalyst || '';
+                match.thesis = aiPick.thesis || '';
+                match.signalStrength = aiPick.signalStrength || 0;
+                match.saturation = aiPick.saturation || 'unknown';
+                match.saturationNote = aiPick.saturationNote || '';
+                match.triggerPhrases = aiPick.triggerPhrases || [];
+                match.actionable = aiPick.actionable || false;
+                match.timeframe = aiPick.timeframe || '';
+              }
+            });
+          }
+        } catch(parseErr) {
+          console.warn('[social-arb] AI parse error:', parseErr);
+        }
+      }
+    }
+  } catch(e) {
+    console.warn('[social-arb] AI analysis failed:', e);
+  }
+
+  statusFn('Scan complete');
+  return { picks: picks, ts: Date.now() };
+}
+
+// Render social arbitrage results
+function renderSocialArbResults(data) {
+  var picks = data.picks || [];
+  if (picks.length === 0) return '';
+
+  var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">';
+
+  picks.forEach(function(pick) {
+    var scoreColor = pick.socialScore >= 60 ? 'var(--green)' : pick.socialScore >= 35 ? 'var(--amber)' : 'var(--text-muted)';
+    var scoreBg = pick.socialScore >= 60 ? 'var(--green-bg)' : pick.socialScore >= 35 ? 'rgba(245,158,11,0.1)' : 'var(--bg-secondary)';
+    var satColor = pick.saturation === 'early' ? 'var(--green)' : pick.saturation === 'mid' ? 'var(--amber)' : 'var(--red)';
+    var satLabel = pick.saturation === 'early' ? 'Early' : pick.saturation === 'mid' ? 'Mid' : pick.saturation === 'late' ? 'Late' : '?';
+
+    html += '<div style="background:var(--bg-secondary);border-radius:8px;padding:12px;border:1px solid var(--border);">';
+
+    // Header: ticker + score
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+    html += '<div style="display:flex;align-items:center;gap:8px;">';
+    html += '<span style="font-size:15px;font-weight:700;font-family:var(--font-mono);color:var(--text-primary);">' + pick.ticker + '</span>';
+    if (pick.actionable) {
+      html += '<span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px;background:rgba(34,197,94,0.15);color:var(--green);text-transform:uppercase;">Actionable</span>';
+    }
+    html += '</div>';
+    html += '<div style="display:flex;align-items:center;gap:6px;">';
+    html += '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:' + scoreBg + ';color:' + scoreColor + ';">' + pick.socialScore + '/100</span>';
+    html += '</div>';
+    html += '</div>';
+
+    // Price + volume line
+    var pctColor = pick.pricePct >= 0 ? 'var(--green)' : 'var(--red)';
+    html += '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-muted);margin-bottom:8px;">';
+    html += '<span>$' + (pick.price || 0).toFixed(2) + '</span>';
+    html += '<span style="color:' + pctColor + ';">' + (pick.pricePct >= 0 ? '+' : '') + (pick.pricePct || 0).toFixed(1) + '%</span>';
+    if (pick.volumeRatio > 0) html += '<span>Vol: ' + pick.volumeRatio.toFixed(1) + 'x</span>';
+    html += '</div>';
+
+    // Signal breakdown bar
+    var comp = pick.components || {};
+    html += '<div style="display:flex;gap:2px;height:4px;border-radius:2px;overflow:hidden;margin-bottom:8px;">';
+    html += '<div style="width:' + (comp.news || 0) + '%;background:#a855f7;" title="News: ' + (comp.news || 0) + '"></div>';
+    html += '<div style="width:' + (comp.reddit || 0) + '%;background:#f97316;" title="Reddit: ' + (comp.reddit || 0) + '"></div>';
+    html += '<div style="width:' + (comp.price || 0) + '%;background:var(--green);" title="Price: ' + (comp.price || 0) + '"></div>';
+    html += '<div style="width:' + (comp.volume || 0) + '%;background:var(--blue);" title="Volume: ' + (comp.volume || 0) + '"></div>';
+    html += '<div style="flex:1;background:var(--bg-tertiary);"></div>';
+    html += '</div>';
+
+    // Signal counts
+    html += '<div style="display:flex;gap:8px;font-size:11px;color:var(--text-muted);margin-bottom:8px;">';
+    html += '<span title="News articles">\ud83d\udcf0 ' + (pick.newsCount || 0) + '</span>';
+    html += '<span title="Reddit mentions">\ud83d\udcac ' + (pick.redditMentions || 0) + '</span>';
+    html += '<span title="Investor saturation" style="color:' + satColor + ';">Sat: ' + satLabel + '</span>';
+    if (pick.timeframe) html += '<span title="Timeframe">\u23f1 ' + pick.timeframe + '</span>';
+    html += '</div>';
+
+    // AI thesis
+    if (pick.catalyst) {
+      html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;"><strong>Catalyst:</strong> ' + pick.catalyst + '</div>';
+    }
+    if (pick.thesis) {
+      html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5;">' + pick.thesis + '</div>';
+    }
+
+    // Trigger phrases as tags
+    if (pick.triggerPhrases && pick.triggerPhrases.length > 0) {
+      html += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
+      pick.triggerPhrases.forEach(function(phrase) {
+        html += '<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(168,85,247,0.1);color:#a855f7;font-weight:600;">' + phrase + '</span>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>'; // close card
+  });
+
+  html += '</div>';
+
+  // Legend
+  html += '<div style="display:flex;gap:12px;margin-top:10px;font-size:10px;color:var(--text-muted);align-items:center;flex-wrap:wrap;">';
+  html += '<span style="display:flex;align-items:center;gap:3px;"><span style="width:8px;height:8px;border-radius:2px;background:#a855f7;display:inline-block;"></span>News</span>';
+  html += '<span style="display:flex;align-items:center;gap:3px;"><span style="width:8px;height:8px;border-radius:2px;background:#f97316;display:inline-block;"></span>Reddit</span>';
+  html += '<span style="display:flex;align-items:center;gap:3px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--green);display:inline-block;"></span>Price</span>';
+  html += '<span style="display:flex;align-items:center;gap:3px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--blue);display:inline-block;"></span>Volume</span>';
+  html += '<span style="margin-left:auto;">Sat = Investor Saturation (Early is best)</span>';
+  html += '</div>';
+
+  return html;
 }

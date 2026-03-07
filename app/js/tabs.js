@@ -46,7 +46,7 @@ document.querySelectorAll('.tabs > .tab').forEach(tab => {
 
     // Trigger per-tab renders (lazy-load scripts on first click)
     if (tab.dataset.tab === 'scanner') {
-      loadScript('js/scanner.js?v=20260305e').then(function() {
+      loadScript('js/scanner.js?v=20260306a').then(function() {
         if (!window._scannerLoaded) { renderScanner(); window._scannerLoaded = true; }
         if (!_scannerAutoBuildDone && typeof scannerAutoBuild === 'function') {
           _scannerAutoBuildDone = true;

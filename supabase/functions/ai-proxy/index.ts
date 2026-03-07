@@ -454,8 +454,92 @@ Rules:
         messages: [{ role: 'user', content: prompt }],
       }
 
+    } else if (task === 'social_arbitrage_analysis') {
+      // Validate inputs: array of stocks with social signal data
+      const candidates = body.candidates
+      if (!Array.isArray(candidates) || candidates.length === 0) {
+        return new Response(JSON.stringify({ error: 'No candidate data provided for social arbitrage analysis.' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Sanitize candidate data
+      const cleanCandidates = candidates.slice(0, 15).filter((c: any) =>
+        c && validateTicker(c.ticker) && typeof c.socialScore === 'number'
+      ).map((c: any) => ({
+        ticker: c.ticker,
+        socialScore: Number(c.socialScore),
+        newsCount: typeof c.newsCount === 'number' ? c.newsCount : 0,
+        redditMentions: typeof c.redditMentions === 'number' ? c.redditMentions : 0,
+        pricePct: typeof c.pricePct === 'number' ? c.pricePct : 0,
+        volumeRatio: typeof c.volumeRatio === 'number' ? c.volumeRatio : 0,
+        price: typeof c.price === 'number' ? c.price : 0,
+        headlines: Array.isArray(c.headlines) ? c.headlines.slice(0, 5).map((h: any) => sanitizeString(h, 200)) : [],
+        topPosts: Array.isArray(c.topPosts) ? c.topPosts.slice(0, 3).map((p: any) => sanitizeString(p, 200)) : [],
+      }))
+
+      if (cleanCandidates.length === 0) {
+        return new Response(JSON.stringify({ error: 'No valid candidates after validation.' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const candidateContext = cleanCandidates.map((c: any) => {
+        const newsStr = c.headlines.length > 0 ? '\n  Headlines: ' + c.headlines.join('; ') : ''
+        const redditStr = c.topPosts.length > 0 ? '\n  Reddit: ' + c.topPosts.join('; ') : ''
+        return `${c.ticker} — Social Score: ${c.socialScore}/100 | News articles: ${c.newsCount} | Reddit mentions: ${c.redditMentions} | Price: $${c.price.toFixed(2)} (${c.pricePct >= 0 ? '+' : ''}${c.pricePct.toFixed(1)}%) | Volume ratio: ${c.volumeRatio.toFixed(1)}x${newsStr}${redditStr}`
+      }).join('\n\n')
+
+      const prompt = `You are a social arbitrage analyst inspired by Chris Camillo's method of turning $20K into $42M by spotting consumer trends before Wall Street.
+
+CANDIDATES WITH SOCIAL SIGNALS:
+${candidateContext}
+
+For each stock, analyze the social signals and determine:
+1. What is the catalyst? Why is this stock getting unusual social attention?
+2. Rate the signal strength (1-10): Is this a genuine consumer trend or just noise?
+3. Investor saturation: Has Wall Street already priced this in, or is it still early?
+4. Is this a Camillo-style opportunity? Look for these trigger phrases in the news/social data:
+   - DEMAND signals: "sold out", "out of stock", "waiting list", "flying off shelves", "back-ordered"
+   - BUZZ signals: "going viral", "everyone is buying", "blowing up", "obsessed with", "trending"
+   - ADOPTION signals: "switched to", "never going back", "game changer", "just discovered"
+
+Return JSON ONLY in this exact format:
+{
+  "picks": [
+    {
+      "ticker": "CROX",
+      "signalStrength": 8,
+      "catalyst": "1-2 sentence explanation of the social catalyst",
+      "thesis": "2-3 sentence investment thesis connecting the social signal to stock price potential",
+      "saturation": "early|mid|late",
+      "saturationNote": "Brief note on whether institutions have caught on",
+      "triggerPhrases": ["sold out", "viral"],
+      "actionable": true,
+      "timeframe": "1-4 weeks"
+    }
+  ]
+}
+
+Rules:
+- Include ALL provided tickers in response
+- "saturation": early = institutions haven't noticed yet (best), mid = some coverage, late = widely known
+- "actionable": true only if signal is strong AND not fully priced in
+- "triggerPhrases": actual Camillo-style phrases found or implied in the data. Empty array if none.
+- Be honest — most stocks won't have strong social arbitrage signals. Say so.
+- Focus on consumer-facing trends that retail investors can spot before analysts.
+- Return ONLY the JSON object.`
+
+      anthropicBody = {
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2048,
+        messages: [{ role: 'user', content: prompt }],
+      }
+
     } else {
-      return new Response(JSON.stringify({ error: `Unknown task: ${task}. Supported: generate_analysis, analysis_chat, generate_themes, day_trade_scan, generate_recap` }), {
+      return new Response(JSON.stringify({ error: `Unknown task: ${task}. Supported: generate_analysis, analysis_chat, generate_themes, day_trade_scan, generate_recap, social_arbitrage_analysis` }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
