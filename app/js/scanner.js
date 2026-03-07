@@ -2202,25 +2202,51 @@ async function runSocialArbitrageScan(statusFn) {
     }
   } catch(e) { console.warn('[social-arb] Reddit fetch failed:', e); }
 
-  // Step 5: Fetch snapshots for price/volume data
+  // Step 5: Fetch Google Trends data for hot tickers
+  statusFn('Checking Google Trends for ' + hotTickers.length + ' stocks...');
+  var trendsData = [];
+  try {
+    var session = window._currentSession;
+    if (session && session.access_token) {
+      var trendsResp = await fetch(EDGE_FN_BASE + '/social-scanner', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token,
+          'apikey': typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : ''
+        },
+        body: JSON.stringify({ task: 'google_trends', tickers: hotTickers })
+      });
+      if (trendsResp.ok) {
+        var td = await trendsResp.json();
+        trendsData = td.results || [];
+      }
+    }
+  } catch(e) { console.warn('[social-arb] Google Trends fetch failed:', e); }
+
+  // Step 6: Fetch snapshots for price/volume data
   statusFn('Getting price data...');
   var snapshots = {};
   try {
     snapshots = await getSnapshots(hotTickers);
   } catch(e) {}
 
-  // Step 6: Score each ticker
+  // Step 7: Score each ticker
+  // Scoring model: News(0-25) + Reddit(0-20) + Google Trends(0-25) + Price(0-15) + Volume(0-15) = 100
   statusFn('Scoring ' + hotTickers.length + ' candidates...');
   var candidates = [];
   var newsMap = {};
   newsData.forEach(function(d) { newsMap[d.ticker] = d; });
   var redditMap = {};
   redditData.forEach(function(d) { redditMap[d.ticker] = d; });
+  var trendsMap = {};
+  trendsData.forEach(function(d) { trendsMap[d.ticker] = d; });
 
   for (var i = 0; i < hotTickers.length; i++) {
     var ticker = hotTickers[i];
     var news = newsMap[ticker] || { articleCount: 0, headlines: [] };
     var reddit = redditMap[ticker] || { totalMentions: 0, topPosts: [] };
+    var trends = trendsMap[ticker] || { trendScore: 0, avgInterest: 0, spikeRatio: 0, trending: 'flat', keyword: ticker };
     var snap = snapshots[ticker] || {};
 
     // Price data
@@ -2236,43 +2262,55 @@ async function runSocialArbitrageScan(statusFn) {
       volumeRatio = snap.day.v / snap.prevDay.v;
     }
 
-    // Scoring (0-100)
-    // News Volume: 0-30 pts
+    // News Volume: 0-25 pts
     var newsScore = 0;
-    if (news.articleCount >= 10) newsScore = 30;
-    else if (news.articleCount >= 5) newsScore = Math.round(15 + (news.articleCount - 5) * 3);
-    else newsScore = Math.round(news.articleCount * 3);
+    if (news.articleCount >= 10) newsScore = 25;
+    else if (news.articleCount >= 5) newsScore = Math.round(12 + (news.articleCount - 5) * 2.6);
+    else newsScore = Math.round(news.articleCount * 2.4);
 
-    // Reddit Mentions: 0-25 pts
+    // Reddit Mentions: 0-20 pts
     var redditScore = 0;
-    if (reddit.totalMentions >= 20) redditScore = 25;
-    else if (reddit.totalMentions >= 10) redditScore = Math.round(15 + (reddit.totalMentions - 10) * 1);
-    else redditScore = Math.round(reddit.totalMentions * 1.5);
+    if (reddit.totalMentions >= 20) redditScore = 20;
+    else if (reddit.totalMentions >= 10) redditScore = Math.round(12 + (reddit.totalMentions - 10) * 0.8);
+    else redditScore = Math.round(reddit.totalMentions * 1.2);
 
-    // Price Confirmation: 0-10 pts
+    // Google Trends: 0-25 pts (Camillo's key signal — search interest spikes)
+    var trendScore = 0;
+    if (trends.spikeRatio >= 2.0) trendScore = 25;       // 2x+ spike = max
+    else if (trends.spikeRatio >= 1.5) trendScore = Math.round(15 + (trends.spikeRatio - 1.5) * 20);
+    else if (trends.spikeRatio >= 1.2) trendScore = Math.round(8 + (trends.spikeRatio - 1.2) * 23);
+    else if (trends.trendScore >= 50) trendScore = 5;     // High baseline interest
+    // Bonus for uptrend direction
+    if (trends.trending === 'up' && trendScore > 0) trendScore = Math.min(25, trendScore + 3);
+
+    // Price Confirmation: 0-15 pts
     var priceScore = 0;
     var absPct = Math.abs(pricePct);
-    if (absPct >= 5) priceScore = 10;
-    else if (absPct >= 2) priceScore = Math.round(absPct * 2);
+    if (absPct >= 5) priceScore = 15;
+    else if (absPct >= 2) priceScore = Math.round(absPct * 3);
 
-    // Volume Confirmation: 0-10 pts
+    // Volume Confirmation: 0-15 pts
     var volScore = 0;
-    if (volumeRatio >= 3) volScore = 10;
-    else if (volumeRatio >= 1.5) volScore = Math.round((volumeRatio - 1) * 5);
+    if (volumeRatio >= 3) volScore = 15;
+    else if (volumeRatio >= 1.5) volScore = Math.round((volumeRatio - 1) * 7.5);
 
-    var totalScore = Math.min(100, newsScore + redditScore + priceScore + volScore);
+    var totalScore = Math.min(100, newsScore + redditScore + trendScore + priceScore + volScore);
 
     candidates.push({
       ticker: ticker,
       socialScore: totalScore,
       newsCount: news.articleCount,
       redditMentions: reddit.totalMentions,
+      googleTrend: trends.trendScore,
+      googleTrendSpike: trends.spikeRatio,
+      googleTrendDir: trends.trending,
+      googleKeyword: trends.keyword,
       pricePct: pricePct,
       volumeRatio: volumeRatio,
       price: price,
       headlines: news.headlines || [],
       topPosts: (reddit.topPosts || []).map(function(p) { return p.title; }),
-      components: { news: newsScore, reddit: redditScore, price: priceScore, volume: volScore }
+      components: { news: newsScore, reddit: redditScore, trends: trendScore, price: priceScore, volume: volScore }
     });
   }
 
@@ -2389,17 +2427,25 @@ function renderSocialArbResults(data) {
     // Signal breakdown bar
     var comp = pick.components || {};
     html += '<div style="display:flex;gap:2px;height:4px;border-radius:2px;overflow:hidden;margin-bottom:8px;">';
-    html += '<div style="width:' + (comp.news || 0) + '%;background:#a855f7;" title="News: ' + (comp.news || 0) + '"></div>';
-    html += '<div style="width:' + (comp.reddit || 0) + '%;background:#f97316;" title="Reddit: ' + (comp.reddit || 0) + '"></div>';
-    html += '<div style="width:' + (comp.price || 0) + '%;background:var(--green);" title="Price: ' + (comp.price || 0) + '"></div>';
-    html += '<div style="width:' + (comp.volume || 0) + '%;background:var(--blue);" title="Volume: ' + (comp.volume || 0) + '"></div>';
+    html += '<div style="width:' + (comp.news || 0) + '%;background:#a855f7;" title="News: ' + (comp.news || 0) + '/25"></div>';
+    html += '<div style="width:' + (comp.reddit || 0) + '%;background:#f97316;" title="Reddit: ' + (comp.reddit || 0) + '/20"></div>';
+    html += '<div style="width:' + (comp.trends || 0) + '%;background:#06b6d4;" title="Google Trends: ' + (comp.trends || 0) + '/25"></div>';
+    html += '<div style="width:' + (comp.price || 0) + '%;background:var(--green);" title="Price: ' + (comp.price || 0) + '/15"></div>';
+    html += '<div style="width:' + (comp.volume || 0) + '%;background:var(--blue);" title="Volume: ' + (comp.volume || 0) + '/15"></div>';
     html += '<div style="flex:1;background:var(--bg-tertiary);"></div>';
     html += '</div>';
 
     // Signal counts
-    html += '<div style="display:flex;gap:8px;font-size:11px;color:var(--text-muted);margin-bottom:8px;">';
+    var trendArrow = pick.googleTrendDir === 'up' ? '\u2197' : pick.googleTrendDir === 'down' ? '\u2198' : '\u2192';
+    var trendColor = pick.googleTrendDir === 'up' ? 'var(--green)' : pick.googleTrendDir === 'down' ? 'var(--red)' : 'var(--text-muted)';
+    html += '<div style="display:flex;gap:8px;font-size:11px;color:var(--text-muted);margin-bottom:8px;flex-wrap:wrap;">';
     html += '<span title="News articles">\ud83d\udcf0 ' + (pick.newsCount || 0) + '</span>';
     html += '<span title="Reddit mentions">\ud83d\udcac ' + (pick.redditMentions || 0) + '</span>';
+    if (pick.googleTrend > 0 || pick.googleTrendSpike > 0) {
+      html += '<span title="Google Trends: ' + (pick.googleKeyword || pick.ticker) + ' — Interest: ' + (pick.googleTrend || 0) + ', Spike: ' + (pick.googleTrendSpike || 0).toFixed(1) + 'x" style="color:' + trendColor + ';">\ud83d\udd0d ' + trendArrow;
+      if (pick.googleTrendSpike >= 1.3) html += ' ' + pick.googleTrendSpike.toFixed(1) + 'x';
+      html += '</span>';
+    }
     html += '<span title="Investor saturation" style="color:' + satColor + ';">Sat: ' + satLabel + '</span>';
     if (pick.timeframe) html += '<span title="Timeframe">\u23f1 ' + pick.timeframe + '</span>';
     html += '</div>';
@@ -2430,6 +2476,7 @@ function renderSocialArbResults(data) {
   html += '<div style="display:flex;gap:12px;margin-top:10px;font-size:10px;color:var(--text-muted);align-items:center;flex-wrap:wrap;">';
   html += '<span style="display:flex;align-items:center;gap:3px;"><span style="width:8px;height:8px;border-radius:2px;background:#a855f7;display:inline-block;"></span>News</span>';
   html += '<span style="display:flex;align-items:center;gap:3px;"><span style="width:8px;height:8px;border-radius:2px;background:#f97316;display:inline-block;"></span>Reddit</span>';
+  html += '<span style="display:flex;align-items:center;gap:3px;"><span style="width:8px;height:8px;border-radius:2px;background:#06b6d4;display:inline-block;"></span>Trends</span>';
   html += '<span style="display:flex;align-items:center;gap:3px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--green);display:inline-block;"></span>Price</span>';
   html += '<span style="display:flex;align-items:center;gap:3px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--blue);display:inline-block;"></span>Volume</span>';
   html += '<span style="margin-left:auto;">Sat = Investor Saturation (Early is best)</span>';

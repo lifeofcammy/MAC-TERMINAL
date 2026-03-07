@@ -1,10 +1,11 @@
 // ==================== social-scanner ====================
 // Supabase Edge Function that aggregates social signal data for stocks.
-// Fetches Reddit mention counts and news volume data for given tickers.
+// Fetches Reddit mentions, news volume, and Google Trends data for given tickers.
 //
 // Tasks:
 //   - reddit_mentions: Fetch mention frequency from Reddit investing subs
 //   - news_volume: Count Polygon news articles per ticker (uses server-side Polygon key)
+//   - google_trends: Fetch Google Trends interest data for ticker brand names
 //
 // Rate limiting: 10 requests/minute per user
 
@@ -141,6 +142,133 @@ async function fetchNewsVolume(
   return results;
 }
 
+// ==================== GOOGLE TRENDS ====================
+// Scrapes Google Trends internal API (same approach as open-source google-trends-api npm package).
+// No API key needed. Returns relative search interest (0-100) for each keyword.
+
+// Ticker → brand/company name mapping for consumer-facing companies
+const TICKER_BRANDS: Record<string, string> = {
+  AAPL: "Apple", AMZN: "Amazon", TSLA: "Tesla", NFLX: "Netflix", DIS: "Disney",
+  NKE: "Nike", SBUX: "Starbucks", MCD: "McDonalds", COST: "Costco", WMT: "Walmart",
+  TGT: "Target", LULU: "Lululemon", CROX: "Crocs", ELF: "elf Beauty", CELH: "Celsius energy drink",
+  DKNG: "DraftKings", RBLX: "Roblox", SPOT: "Spotify", ABNB: "Airbnb", UBER: "Uber",
+  META: "Instagram", SNAP: "Snapchat", PINS: "Pinterest", ETSY: "Etsy", CHWY: "Chewy",
+  DASH: "DoorDash", BROS: "Dutch Bros", CAVA: "Cava restaurant", DUOL: "Duolingo", HIMS: "Hims",
+  PLTR: "Palantir", SHOP: "Shopify", SQ: "Cash App", PYPL: "PayPal", COIN: "Coinbase",
+  RIVN: "Rivian", LCID: "Lucid Motors", GME: "GameStop", AMC: "AMC Theatres", SOFI: "SoFi",
+  NVDA: "Nvidia", AMD: "AMD", MSFT: "Microsoft", GOOGL: "Google", SMCI: "Supermicro",
+  DECK: "UGG boots", SPHR: "Sphere Las Vegas", BIRD: "Allbirds", LEVI: "Levis",
+  ROKU: "Roku", TTD: "The Trade Desk", MTCH: "Tinder", BMBL: "Bumble",
+  CMG: "Chipotle", SHAK: "Shake Shack", WING: "Wingstop", PZZA: "Papa Johns",
+  PTON: "Peloton", YETI: "Yeti cooler", COOK: "Traeger grill", ONON: "On Running shoes",
+  MNST: "Monster energy", KO: "Coca Cola", PEP: "Pepsi", SBUX: "Starbucks",
+};
+
+interface TrendResult {
+  ticker: string;
+  keyword: string;
+  trendScore: number;       // Current interest (0-100)
+  avgInterest: number;      // Average over period
+  spikeRatio: number;       // Current vs average (>1.5 = spike)
+  trending: "up" | "down" | "flat";
+}
+
+async function fetchGoogleTrends(tickers: string[]): Promise<TrendResult[]> {
+  const results: TrendResult[] = [];
+
+  for (const ticker of tickers) {
+    // Map ticker to a consumer brand/product keyword
+    const keyword = TICKER_BRANDS[ticker] || ticker;
+
+    try {
+      // Step 1: Get the explore widget token
+      const exploreReq = {
+        comparisonItem: [{ keyword, geo: "US", time: "today 3-m" }],
+        category: 0,
+        property: "",
+      };
+      const exploreUrl = `https://trends.google.com/trends/api/explore?hl=en-US&tz=300&req=${encodeURIComponent(JSON.stringify(exploreReq))}`;
+      const exploreResp = await fetch(exploreUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Accept": "application/json",
+        },
+      });
+
+      if (!exploreResp.ok) {
+        results.push({ ticker, keyword, trendScore: 0, avgInterest: 0, spikeRatio: 0, trending: "flat" });
+        continue;
+      }
+
+      // Google prepends ")]}',\n" to the response — strip it
+      const exploreText = await exploreResp.text();
+      const exploreJson = JSON.parse(exploreText.replace(/^\)\]\}\',?\n/, ""));
+
+      // Find the TIMESERIES widget
+      const timeWidget = exploreJson.widgets?.find(
+        (w: any) => w.id === "TIMESERIES"
+      );
+      if (!timeWidget || !timeWidget.token) {
+        results.push({ ticker, keyword, trendScore: 0, avgInterest: 0, spikeRatio: 0, trending: "flat" });
+        continue;
+      }
+
+      // Step 2: Fetch interest over time using the widget token
+      const multiReq = timeWidget.request;
+      const multiUrl = `https://trends.google.com/trends/api/widgetdata/multiline?hl=en-US&tz=300&req=${encodeURIComponent(JSON.stringify(multiReq))}&token=${timeWidget.token}`;
+      const multiResp = await fetch(multiUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Accept": "application/json",
+        },
+      });
+
+      if (!multiResp.ok) {
+        results.push({ ticker, keyword, trendScore: 0, avgInterest: 0, spikeRatio: 0, trending: "flat" });
+        continue;
+      }
+
+      const multiText = await multiResp.text();
+      const multiJson = JSON.parse(multiText.replace(/^\)\]\}\',?\n/, ""));
+
+      const timelineData = multiJson?.default?.timelineData || [];
+      if (timelineData.length === 0) {
+        results.push({ ticker, keyword, trendScore: 0, avgInterest: 0, spikeRatio: 0, trending: "flat" });
+        continue;
+      }
+
+      // Extract values (each entry has value[0] = interest score 0-100)
+      const values = timelineData.map((d: any) => d.value?.[0] || 0);
+      const current = values[values.length - 1] || 0;
+      const avg = values.reduce((s: number, v: number) => s + v, 0) / values.length;
+      const spikeRatio = avg > 0 ? current / avg : 0;
+
+      // Determine trend direction from last 4 data points
+      const recent = values.slice(-4);
+      let trending: "up" | "down" | "flat" = "flat";
+      if (recent.length >= 4) {
+        const firstHalf = (recent[0] + recent[1]) / 2;
+        const secondHalf = (recent[2] + recent[3]) / 2;
+        if (secondHalf > firstHalf * 1.15) trending = "up";
+        else if (secondHalf < firstHalf * 0.85) trending = "down";
+      }
+
+      results.push({
+        ticker,
+        keyword,
+        trendScore: current,
+        avgInterest: Math.round(avg),
+        spikeRatio: Math.round(spikeRatio * 100) / 100,
+        trending,
+      });
+    } catch (_e) {
+      results.push({ ticker, keyword, trendScore: 0, avgInterest: 0, spikeRatio: 0, trending: "flat" });
+    }
+  }
+
+  return results;
+}
+
 // ==================== MAIN HANDLER ====================
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -214,9 +342,15 @@ Deno.serve(async (req: Request) => {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    } else if (task === "google_trends") {
+      const results = await fetchGoogleTrends(cleanTickers);
+      return new Response(JSON.stringify({ results }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     } else {
       return new Response(
-        JSON.stringify({ error: `Unknown task: ${task}. Supported: reddit_mentions, news_volume` }),
+        JSON.stringify({ error: `Unknown task: ${task}. Supported: reddit_mentions, news_volume, google_trends` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
