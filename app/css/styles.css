@@ -236,7 +236,7 @@ body {
 
 /* Cards */
 .card {
-  background: #FAFAFA;
+  background: #FFFFFF;
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
