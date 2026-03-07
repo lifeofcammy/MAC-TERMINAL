@@ -1410,6 +1410,27 @@ function renderScanner() {
 
   html += '</div>'; // close scanner-dual-grid
 
+  // ── BACKTEST RESULTS CARD (full-width) ──
+  var btCollapsed = localStorage.getItem('mac_backtest_collapsed') === 'true';
+  html += '<div class="card" style="margin-bottom:16px;padding:0;overflow:hidden;">';
+  html += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Backtest Results</span>';
+  html += '<select id="backtest-days-select" onchange="loadBacktestResults(parseInt(this.value))" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-secondary);color:var(--text-secondary);cursor:pointer;"><option value="7">7d</option><option value="30" selected>30d</option><option value="90">90d</option><option value="365">All</option></select>';
+  html += '</div>';
+  html += '<div style="display:flex;align-items:center;gap:6px;">';
+  html += '<button onclick="toggleBacktestCollapse()" style="padding:3px 8px;font-size:11px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;" id="backtest-toggle">' + (btCollapsed ? 'Show' : 'Hide') + '</button>';
+  html += '<button onclick="loadBacktestResults()" class="refresh-btn" style="padding:5px 12px;font-size:12px;">Refresh</button>';
+  html += '</div>';
+  html += '</div>';
+  html += '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">How scanner picks actually performed</div>';
+  html += '</div>';
+  html += '<div id="backtest-results" style="' + (btCollapsed ? 'display:none;' : '') + 'padding:12px 16px;">';
+  html += '<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:16px 0;">Loading backtest data...</div>';
+  html += '</div>';
+  html += '</div>';
+
   // ── SOCIAL ARBITRAGE CARD (full-width) ──
   var socialCache = null;
   try { var sc = localStorage.getItem('mac_social_arb_results'); if (sc) socialCache = JSON.parse(sc); } catch(e) {}
@@ -1478,6 +1499,7 @@ function renderScanner() {
 
   container.innerHTML = html;
   loadWinRateBadge();
+  loadBacktestResults();
 }
 
 function loadWinRateBadge() {
@@ -2029,6 +2051,191 @@ function scannerAutoBuild() {
   })();
 }
 
+
+// ==================== BACKTEST RESULTS ====================
+
+var _backtestShowAll = false;
+
+function toggleBacktestCollapse() {
+  var body = document.getElementById('backtest-results');
+  var btn = document.getElementById('backtest-toggle');
+  if (!body) return;
+  var isHidden = body.style.display === 'none';
+  body.style.display = isHidden ? '' : 'none';
+  if (btn) btn.textContent = isHidden ? 'Hide' : 'Show';
+  try { localStorage.setItem('mac_backtest_collapsed', isHidden ? 'false' : 'true'); } catch(e) {}
+}
+
+function toggleBacktestShowAll() {
+  _backtestShowAll = !_backtestShowAll;
+  var sel = document.getElementById('backtest-days-select');
+  var days = sel ? parseInt(sel.value) : 30;
+  loadBacktestResults(days);
+}
+
+async function loadBacktestResults(days) {
+  if (!days) {
+    var sel = document.getElementById('backtest-days-select');
+    days = sel ? parseInt(sel.value) : 30;
+  }
+  var container = document.getElementById('backtest-results');
+  if (!container) return;
+  if (typeof dbGetBacktestResults !== 'function') {
+    container.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px;">Sign in to view backtest results</div>';
+    return;
+  }
+  container.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px;">Loading...</div>';
+  try {
+    var data = await dbGetBacktestResults(days);
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px;">No backtest data yet. Results appear after the nightly backtester runs.</div>';
+      return;
+    }
+    container.innerHTML = renderBacktestResults(data);
+  } catch(e) {
+    console.warn('[backtest] Load failed:', e);
+    container.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px;">Failed to load backtest data.</div>';
+  }
+}
+
+function renderBacktestResults(data) {
+  // Calculate stats
+  var wins = 0, losses = 0, pending = 0;
+  var totalMaxMove = 0, maxMoveCount = 0;
+  var stratStats = {};
+
+  for (var i = 0; i < data.length; i++) {
+    var r = data[i];
+    var isWin = r.hit_target && !r.hit_stop;
+    var isLoss = r.hit_stop;
+    if (isWin) wins++;
+    else if (isLoss) losses++;
+    else pending++;
+
+    if (r.max_move_pct != null) {
+      totalMaxMove += r.max_move_pct;
+      maxMoveCount++;
+    }
+
+    var strat = r.strategy || 'UNKNOWN';
+    if (!stratStats[strat]) stratStats[strat] = { wins: 0, total: 0 };
+    stratStats[strat].total++;
+    if (isWin) stratStats[strat].wins++;
+  }
+
+  var total = wins + losses + pending;
+  var decided = wins + losses;
+  var winRate = decided > 0 ? Math.round((wins / decided) * 100) : 0;
+  var avgMaxMove = maxMoveCount > 0 ? (totalMaxMove / maxMoveCount).toFixed(1) : '0.0';
+
+  var wrColor = winRate >= 60 ? 'var(--green)' : winRate >= 45 ? 'var(--amber)' : 'var(--red)';
+  var wrBg = winRate >= 60 ? 'rgba(16,185,129,0.08)' : winRate >= 45 ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)';
+
+  var html = '';
+
+  // Stats summary bar
+  html += '<div style="background:var(--bg-secondary);border-radius:8px;padding:12px 16px;margin-bottom:12px;">';
+
+  // Top row: win rate + counts
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">';
+  html += '<div style="display:flex;align-items:center;gap:10px;">';
+  html += '<span style="font-size:22px;font-weight:900;color:' + wrColor + ';font-family:var(--font-mono);">' + winRate + '%</span>';
+  html += '<span style="font-size:12px;color:var(--text-muted);">win rate</span>';
+  html += '</div>';
+  html += '<div style="display:flex;align-items:center;gap:12px;font-size:12px;font-family:var(--font-mono);">';
+  html += '<span style="color:var(--green);font-weight:700;">' + wins + 'W</span>';
+  html += '<span style="color:var(--red);font-weight:700;">' + losses + 'L</span>';
+  if (pending > 0) html += '<span style="color:var(--amber);font-weight:700;">' + pending + 'P</span>';
+  html += '<span style="color:var(--text-muted);">' + total + ' total</span>';
+  html += '</div>';
+  html += '</div>';
+
+  // Win rate bar
+  html += '<div style="height:6px;background:var(--bg-primary);border-radius:3px;overflow:hidden;margin-bottom:8px;">';
+  if (decided > 0) {
+    var winPct = (wins / decided) * 100;
+    html += '<div style="width:' + winPct + '%;height:100%;background:' + wrColor + ';border-radius:3px;"></div>';
+  }
+  html += '</div>';
+
+  // Bottom row: per-strategy + avg max move
+  html += '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--text-muted);">';
+  for (var strat in stratStats) {
+    var ss = stratStats[strat];
+    var swr = ss.total > 0 ? Math.round((ss.wins / ss.total) * 100) : 0;
+    var label = strat === 'EARLY BREAKOUT' ? 'Early BRK' : strat === 'PULLBACK' ? 'Pullback' : strat;
+    html += '<span>' + label + ': <span style="font-weight:700;color:var(--text-secondary);">' + swr + '%</span> (' + ss.total + ')</span>';
+  }
+  html += '<span>Avg max move: <span style="font-weight:700;color:var(--green);">+' + avgMaxMove + '%</span></span>';
+  html += '</div>';
+
+  html += '</div>';
+
+  // Results table
+  var visibleCount = _backtestShowAll ? data.length : Math.min(data.length, 15);
+
+  html += '<div style="overflow-x:auto;">';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+  html += '<thead><tr style="border-bottom:2px solid var(--border);">';
+  html += '<th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Date</th>';
+  html += '<th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Ticker</th>';
+  html += '<th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Strategy</th>';
+  html += '<th style="text-align:center;padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Score</th>';
+  html += '<th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Entry</th>';
+  html += '<th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Result</th>';
+  html += '<th style="text-align:right;padding:6px 8px;color:var(--text-muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Max Move</th>';
+  html += '</tr></thead><tbody>';
+
+  for (var j = 0; j < visibleCount; j++) {
+    var row = data[j];
+    var isW = row.hit_target && !row.hit_stop;
+    var isL = row.hit_stop;
+    var rowBg = isW ? 'rgba(16,185,129,0.04)' : isL ? 'rgba(239,68,68,0.04)' : 'transparent';
+    var resultText, resultColor;
+    if (isW) { resultText = 'Hit Target'; resultColor = 'var(--green)'; }
+    else if (isL) { resultText = 'Stopped Out'; resultColor = 'var(--red)'; }
+    else { resultText = 'Pending'; resultColor = 'var(--amber)'; }
+
+    var dateStr = row.date || '';
+    if (dateStr.length >= 10) {
+      var parts = dateStr.split('-');
+      dateStr = parts[1] + '/' + parts[2];
+    }
+
+    var stratLabel = row.strategy === 'EARLY BREAKOUT' ? 'EARLY BRK' : row.strategy === 'PULLBACK' ? 'PULLBACK' : (row.strategy || '');
+    var stratColor = row.strategy === 'EARLY BREAKOUT' ? 'var(--green)' : 'var(--blue)';
+    var stratBgColor = row.strategy === 'EARLY BREAKOUT' ? 'rgba(16,185,129,0.1)' : 'rgba(37,99,235,0.1)';
+
+    var sc = row.score || 0;
+    var scColor = sc >= 80 ? 'var(--green)' : sc >= 60 ? 'var(--blue)' : sc >= 40 ? 'var(--amber)' : 'var(--text-muted)';
+
+    var entryStr = row.entry_price ? '$' + Number(row.entry_price).toFixed(2) : '-';
+    var maxMoveStr = row.max_move_pct != null ? '+' + Number(row.max_move_pct).toFixed(1) + '%' : '-';
+    var maxMoveColor = row.max_move_pct >= 5 ? 'var(--green)' : row.max_move_pct >= 2 ? 'var(--text-secondary)' : 'var(--text-muted)';
+
+    html += '<tr style="border-bottom:1px solid var(--border);background:' + rowBg + ';">';
+    html += '<td style="padding:6px 8px;color:var(--text-muted);font-family:var(--font-mono);">' + dateStr + '</td>';
+    html += '<td style="padding:6px 8px;font-weight:700;color:var(--text-primary);">' + (row.ticker || '') + '</td>';
+    html += '<td style="padding:6px 8px;"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:' + stratBgColor + ';color:' + stratColor + ';">' + stratLabel + '</span></td>';
+    html += '<td style="padding:6px 8px;text-align:center;"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;border:2px solid ' + scColor + ';font-size:10px;font-weight:900;color:' + scColor + ';font-family:var(--font-mono);">' + sc + '</span></td>';
+    html += '<td style="padding:6px 8px;font-family:var(--font-mono);color:var(--text-secondary);font-size:11px;">' + entryStr + '</td>';
+    html += '<td style="padding:6px 8px;font-weight:700;color:' + resultColor + ';">' + resultText + '</td>';
+    html += '<td style="padding:6px 8px;text-align:right;font-family:var(--font-mono);font-weight:700;color:' + maxMoveColor + ';">' + maxMoveStr + '</td>';
+    html += '</tr>';
+  }
+
+  html += '</tbody></table>';
+  html += '</div>';
+
+  // Show more button
+  if (data.length > 15) {
+    html += '<div style="text-align:center;margin-top:8px;">';
+    html += '<button onclick="toggleBacktestShowAll()" style="padding:4px 16px;font-size:11px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;">' + (_backtestShowAll ? 'Show less' : 'Show all ' + data.length + ' results') + '</button>';
+    html += '</div>';
+  }
+
+  return html;
+}
 
 // ==================== SOCIAL ARBITRAGE SCANNER ====================
 

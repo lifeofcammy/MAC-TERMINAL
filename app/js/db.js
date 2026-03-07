@@ -190,6 +190,24 @@ async function dbGetWinRate(strategy, days) {
   } catch(e) { console.warn('dbGetWinRate error:', e); return null; }
 }
 
+// ==================== BACKTEST RESULTS (scanner_history detail) ====================
+
+async function dbGetBacktestResults(days) {
+  var sb = getSupabase();
+  if (!sb) return null;
+  try {
+    var cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - (days || 30));
+    var cutoffStr = cutoff.toISOString().split('T')[0];
+    var res = await sb.from('scanner_history')
+      .select('date, ticker, strategy, score, direction, entry_price, target_price, stop_price, eod_close, hit_target, hit_stop, max_move_pct')
+      .gte('date', cutoffStr)
+      .order('date', { ascending: false });
+    if (!res.data || res.data.length === 0) return null;
+    return res.data;
+  } catch(e) { console.warn('dbGetBacktestResults error:', e); return null; }
+}
+
 // ==================== USER SETTINGS ====================
 
 async function dbSaveUserSettings(settings) {
