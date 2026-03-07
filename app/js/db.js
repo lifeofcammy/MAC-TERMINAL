@@ -223,7 +223,7 @@ async function dbGetBacktestResults(days) {
     cutoff.setDate(cutoff.getDate() - (days || 30));
     var cutoffStr = cutoff.toISOString().split('T')[0];
     var res = await sb.from('scanner_history')
-      .select('date, ticker, strategy, score, direction, entry_price, target_price, stop_price, eod_close, hit_target, hit_stop, max_move_pct')
+      .select('date, ticker, strategy, score, direction, entry_price, target_price, stop_price, eod_close, hit_target, hit_stop, max_move_pct, market_regime')
       .gte('date', cutoffStr)
       .order('date', { ascending: false });
     if (!res.data || res.data.length === 0) return null;

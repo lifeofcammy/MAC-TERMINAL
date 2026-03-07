@@ -82,6 +82,80 @@ async function polyGet(path: string, apiKey: string, maxRetries = 4): Promise<an
   }
 }
 
+// ── Regime computation ───────────────────────────────────
+
+/** Fetch SMA for a ticker on a given date using Polygon daily bars */
+async function getSmaOnDate(ticker: string, dateStr: string, period: number, apiKey: string): Promise<number | null> {
+  // Fetch enough bars to compute SMA (period + buffer for weekends/holidays)
+  const endDate = new Date(dateStr + 'T12:00:00Z')
+  const startDate = new Date(endDate)
+  startDate.setUTCDate(startDate.getUTCDate() - (period * 2 + 10))
+
+  const fromStr = `${startDate.getUTCFullYear()}-${String(startDate.getUTCMonth() + 1).padStart(2, '0')}-${String(startDate.getUTCDate()).padStart(2, '0')}`
+  const toStr = dateStr
+
+  const data = await polyGet(
+    `/v2/aggs/ticker/${ticker}/range/1/day/${fromStr}/${toStr}?adjusted=true&sort=desc&limit=${period + 5}`,
+    apiKey,
+  )
+  const bars = data?.results ?? []
+  if (bars.length < period) return null
+
+  let sum = 0
+  for (let i = 0; i < period; i++) sum += bars[i].c
+  return sum / period
+}
+
+/** Compute simplified market regime for a given date: Bullish / Bearish / Chop */
+async function computeRegimeForDate(dateStr: string, apiKey: string): Promise<string> {
+  const indexes = ['SPY', 'QQQ', 'IWM', 'DIA']
+
+  // Fetch close price + SMAs for each index on this date
+  let aboveBoth = 0
+  let belowBoth = 0
+  let totalPct = 0
+  let validCount = 0
+
+  for (const ticker of indexes) {
+    try {
+      // Get bars around this date (just need close + prev close)
+      const data = await polyGet(
+        `/v2/aggs/ticker/${ticker}/range/1/day/${dateStr}/${dateStr}?adjusted=true&sort=asc&limit=1`,
+        apiKey,
+      )
+      const bars = data?.results ?? []
+      if (bars.length === 0) continue
+
+      const close = bars[0].c
+      const open = bars[0].o
+      const pct = ((close - open) / open) * 100
+
+      // Get 10 and 20 SMAs
+      const sma10 = await getSmaOnDate(ticker, dateStr, 10, apiKey)
+      const sma20 = await getSmaOnDate(ticker, dateStr, 20, apiKey)
+
+      if (sma10 !== null && sma20 !== null) {
+        if (close > sma10 && close > sma20) aboveBoth++
+        else if (close < sma10 && close < sma20) belowBoth++
+      }
+
+      totalPct += pct
+      validCount++
+    } catch (e: any) {
+      console.warn(`[regime] Failed to get data for ${ticker} on ${dateStr}: ${e.message}`)
+    }
+  }
+
+  if (validCount === 0) return 'Chop'
+
+  const avgPct = totalPct / validCount
+
+  // Simplified 3-bucket regime (matches overview.js logic, consolidated)
+  if (avgPct > 0.3 || aboveBoth >= 3) return 'Bullish'
+  if (avgPct < -0.3 || belowBoth >= 3) return 'Bearish'
+  return 'Chop'
+}
+
 // ── Main Handler ─────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
@@ -130,6 +204,53 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // ══════════════════════════════════════════════════
+    // BACKFILL MODE: Compute regime for all existing scanner_history rows
+    // Trigger with ?backfill=true
+    // ══════════════════════════════════════════════════
+    const backfillMode = urlCheck.searchParams.get('backfill') === 'true'
+    if (backfillMode) {
+      console.log('[backtest-scanner] BACKFILL MODE: Computing regime for all historical rows')
+
+      // Get all unique dates that have no regime set
+      const { data: histRows, error: histErr } = await supabase
+        .from('scanner_history')
+        .select('date')
+        .is('market_regime', null)
+        .order('date', { ascending: false })
+
+      if (histErr) throw new Error(`Failed to fetch history: ${histErr.message}`)
+
+      // Deduplicate dates
+      const uniqueDates = [...new Set((histRows || []).map((r: any) => r.date))]
+      console.log(`[backtest-scanner] Found ${uniqueDates.length} dates needing regime backfill`)
+
+      let updated = 0
+      for (const dateStr of uniqueDates) {
+        try {
+          const regime = await computeRegimeForDate(dateStr, polygonKey)
+          const { error: upErr } = await supabase
+            .from('scanner_history')
+            .update({ market_regime: regime })
+            .eq('date', dateStr)
+
+          if (!upErr) {
+            updated++
+            console.log(`[backtest-scanner] ${dateStr} → ${regime}`)
+          }
+          // Rate limit: 5 API calls per date (4 indexes × close + SMAs), wait between dates
+          await sleep(2000)
+        } catch (e: any) {
+          console.warn(`[backtest-scanner] Failed to compute regime for ${dateStr}: ${e.message}`)
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ message: 'Backfill complete', dates_processed: uniqueDates.length, dates_updated: updated }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     // ══════════════════════════════════════════════════
     // STEP 1: Get scan_results for the last 5 trading days
@@ -209,6 +330,23 @@ Deno.serve(async (req: Request) => {
     // Cap at 30 setups to stay within API/time limits
     const setupsToProcess = setups.slice(0, 30)
     console.log(`[backtest-scanner] Processing ${setupsToProcess.length} setups (of ${setups.length} total)`)
+
+    // ══════════════════════════════════════════════════
+    // STEP 2.5: Compute market regime for each unique setup date
+    // ══════════════════════════════════════════════════
+    const uniqueSetupDates = [...new Set(setupsToProcess.map(s => s.date))]
+    const regimeByDate: Record<string, string> = {}
+
+    for (const dateStr of uniqueSetupDates) {
+      try {
+        regimeByDate[dateStr] = await computeRegimeForDate(dateStr, polygonKey)
+        console.log(`[backtest-scanner] Regime for ${dateStr}: ${regimeByDate[dateStr]}`)
+        await sleep(1000) // Rate limit between dates
+      } catch (e: any) {
+        console.warn(`[backtest-scanner] Could not compute regime for ${dateStr}: ${e.message}`)
+        regimeByDate[dateStr] = 'Chop' // Default fallback
+      }
+    }
 
     // ══════════════════════════════════════════════════
     // STEP 3: Fetch daily bars for each setup (5 trading days after)
@@ -298,6 +436,7 @@ Deno.serve(async (req: Request) => {
           hit_target: hitTarget,
           hit_stop: hitStop,
           max_move_pct: Math.round(maxMovePct * 1000) / 1000,
+          market_regime: regimeByDate[setup.date] || null,
         })
 
         // Gentle rate limiting

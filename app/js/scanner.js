@@ -2432,45 +2432,124 @@ function getStratBg(strat) {
   return bgs[strat] || 'rgba(128,128,128,0.1)';
 }
 
+function calcEdgeStats(trades) {
+  // Calculate expectancy, profit factor, win rate for an array of backtest trades
+  var wins = 0, losses = 0, pending = 0, total = trades.length;
+  var winRSum = 0, lossRSum = 0;
+  var maxMoveSum = 0, maxMoveCount = 0;
+
+  for (var i = 0; i < trades.length; i++) {
+    var r = trades[i];
+    var isWin = r.hit_target && !r.hit_stop;
+    var isLoss = r.hit_stop;
+
+    if (r.max_move_pct != null) { maxMoveSum += r.max_move_pct; maxMoveCount++; }
+
+    if (!isWin && !isLoss) { pending++; continue; }
+
+    // Compute R-multiple for this trade
+    var entry = r.entry_price, target = r.target_price, stop = r.stop_price;
+    var risk = 0, reward = 0;
+    if (r.direction === 'SHORT') {
+      risk = Math.abs(stop - entry);
+      reward = Math.abs(entry - target);
+    } else {
+      risk = Math.abs(entry - stop);
+      reward = Math.abs(target - entry);
+    }
+    var rMultiple = risk > 0 ? reward / risk : 1;
+
+    if (isWin) { wins++; winRSum += rMultiple; }
+    else if (isLoss) { losses++; lossRSum += 1; } // Loss is always -1R
+  }
+
+  var decided = wins + losses;
+  var winRate = decided > 0 ? Math.round((wins / decided) * 100) : 0;
+  var avgWinR = wins > 0 ? winRSum / wins : 0;
+  var avgLossR = losses > 0 ? lossRSum / losses : 1;
+  // Expectancy = (Win% × AvgWinR) - (Loss% × AvgLossR)
+  var expectancy = decided > 0 ? ((wins / decided) * avgWinR) - ((losses / decided) * avgLossR) : 0;
+  var profitFactor = lossRSum > 0 ? winRSum / lossRSum : (winRSum > 0 ? 999 : 0);
+  var avgMove = maxMoveCount > 0 ? maxMoveSum / maxMoveCount : 0;
+
+  // Confidence based on decided trades
+  var confidence = decided >= 30 ? 'HIGH' : decided >= 15 ? 'MED' : 'LOW';
+
+  return {
+    wins: wins, losses: losses, pending: pending, total: total, decided: decided,
+    winRate: winRate, expectancy: expectancy, profitFactor: profitFactor,
+    avgMove: avgMove, confidence: confidence
+  };
+}
+
+function toggleRegimeBreakdown(stratIdx) {
+  var el = document.getElementById('regime-breakdown-' + stratIdx);
+  if (!el) return;
+  var arrow = document.getElementById('regime-arrow-' + stratIdx);
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    if (arrow) arrow.textContent = '▾';
+  } else {
+    el.style.display = 'none';
+    if (arrow) arrow.textContent = '▸';
+  }
+}
+
 function renderBacktestResults(data) {
-  // Calculate per-strategy stats
-  var stratStats = {};
+  // Group trades by strategy
+  var stratTrades = {};
   var totalWins = 0, totalLosses = 0, totalPending = 0;
-  var totalMaxMove = 0, maxMoveCount = 0;
 
   for (var i = 0; i < data.length; i++) {
     var r = data[i];
+    var strat = r.strategy || 'UNKNOWN';
+    if (!stratTrades[strat]) stratTrades[strat] = [];
+    stratTrades[strat].push(r);
+
     var isWin = r.hit_target && !r.hit_stop;
     var isLoss = r.hit_stop;
     if (isWin) totalWins++;
     else if (isLoss) totalLosses++;
     else totalPending++;
-
-    if (r.max_move_pct != null) { totalMaxMove += r.max_move_pct; maxMoveCount++; }
-
-    var strat = r.strategy || 'UNKNOWN';
-    if (!stratStats[strat]) stratStats[strat] = { wins: 0, losses: 0, pending: 0, total: 0, maxMoveSum: 0, maxMoveCount: 0 };
-    stratStats[strat].total++;
-    if (isWin) stratStats[strat].wins++;
-    else if (isLoss) stratStats[strat].losses++;
-    else stratStats[strat].pending++;
-    if (r.max_move_pct != null) { stratStats[strat].maxMoveSum += r.max_move_pct; stratStats[strat].maxMoveCount++; }
   }
 
-  // Build leaderboard array sorted by win rate
+  // Build leaderboard with edge stats
   var leaderboard = [];
-  for (var s in stratStats) {
-    var ss = stratStats[s];
-    var decided = ss.wins + ss.losses;
-    var wr = decided > 0 ? Math.round((ss.wins / decided) * 100) : 0;
-    var avgMove = ss.maxMoveCount > 0 ? (ss.maxMoveSum / ss.maxMoveCount) : 0;
+  for (var s in stratTrades) {
+    var stats = calcEdgeStats(stratTrades[s]);
     var status = 'OK';
-    if (ss.total < 5) status = 'NEW';
-    else if (wr >= 60) status = 'HOT';
-    else if (wr < 45) status = 'COLD';
-    leaderboard.push({ strategy: s, winRate: wr, wins: ss.wins, losses: ss.losses, pending: ss.pending, total: ss.total, avgMove: avgMove, status: status });
+    if (stats.decided < 5) status = 'NEW';
+    else if (stats.expectancy > 0 && stats.winRate >= 55) status = 'EDGE';
+    else if (stats.winRate >= 60) status = 'HOT';
+    else if (stats.winRate < 45) status = 'COLD';
+
+    // Regime breakdown
+    var regimeStats = {};
+    var hasRegime = false;
+    for (var ri = 0; ri < stratTrades[s].length; ri++) {
+      var regime = stratTrades[s][ri].market_regime;
+      if (regime) {
+        hasRegime = true;
+        if (!regimeStats[regime]) regimeStats[regime] = [];
+        regimeStats[regime].push(stratTrades[s][ri]);
+      }
+    }
+
+    leaderboard.push({
+      strategy: s, winRate: stats.winRate, wins: stats.wins, losses: stats.losses,
+      pending: stats.pending, total: stats.total, decided: stats.decided,
+      avgMove: stats.avgMove, status: status,
+      expectancy: stats.expectancy, profitFactor: stats.profitFactor,
+      confidence: stats.confidence, regimeStats: regimeStats, hasRegime: hasRegime
+    });
   }
-  leaderboard.sort(function(a, b) { return b.winRate - a.winRate; });
+  // Sort by expectancy (edge) first, then win rate
+  leaderboard.sort(function(a, b) {
+    if (a.decided < 3 && b.decided >= 3) return 1;
+    if (b.decided < 3 && a.decided >= 3) return -1;
+    if (Math.abs(b.expectancy - a.expectancy) > 0.01) return b.expectancy - a.expectancy;
+    return b.winRate - a.winRate;
+  });
 
   // Cache leaderboard for hot strategy banner
   try { localStorage.setItem('mac_strategy_leaderboard', JSON.stringify(leaderboard)); } catch(e) {}
@@ -2479,45 +2558,18 @@ function renderBacktestResults(data) {
   var decidedAll = totalWins + totalLosses;
   var overallWR = decidedAll > 0 ? Math.round((totalWins / decidedAll) * 100) : 0;
   var overallColor = overallWR >= 60 ? 'var(--green)' : overallWR >= 45 ? 'var(--amber)' : 'var(--red)';
+  var overallStats = calcEdgeStats(data);
 
   var html = '';
-
-  // ── Strategy Leaderboard ──
-  html += '<div style="margin-bottom:12px;">';
-  for (var k = 0; k < leaderboard.length; k++) {
-    var lb = leaderboard[k];
-    var lbColor = getStratColor(lb.strategy);
-    var lbBg = getStratBg(lb.strategy);
-    var statusBadge = '';
-    if (lb.status === 'HOT') statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(16,185,129,0.15);color:var(--green);">HOT</span>';
-    else if (lb.status === 'COLD') statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.15);color:var(--red);">COLD</span>';
-    else if (lb.status === 'NEW') statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(128,128,128,0.15);color:var(--text-muted);">NEW</span>';
-
-    var lbWrColor = lb.winRate >= 60 ? 'var(--green)' : lb.winRate >= 45 ? 'var(--amber)' : 'var(--red)';
-
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;margin-bottom:4px;background:' + (k === 0 ? 'var(--bg-secondary)' : 'transparent') + ';">';
-    // Rank
-    html += '<span style="font-size:12px;font-weight:900;color:var(--text-muted);width:16px;text-align:center;font-family:var(--font-mono);">' + (k + 1) + '</span>';
-    // Strategy badge
-    html += '<span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:' + lbBg + ';color:' + lbColor + ';min-width:110px;text-align:center;">' + getStratLabel(lb.strategy) + '</span>';
-    // Win rate
-    html += '<span style="font-size:14px;font-weight:900;color:' + lbWrColor + ';font-family:var(--font-mono);min-width:40px;text-align:right;">' + lb.winRate + '%</span>';
-    // Trade count
-    html += '<span style="font-size:11px;color:var(--text-muted);min-width:60px;">' + lb.total + ' trades</span>';
-    // Avg move
-    html += '<span style="font-size:11px;font-family:var(--font-mono);color:var(--green);min-width:50px;">+' + lb.avgMove.toFixed(1) + '%</span>';
-    // Status
-    html += statusBadge;
-    html += '</div>';
-  }
-  html += '</div>';
 
   // ── Overall stats bar ──
   html += '<div style="background:var(--bg-secondary);border-radius:8px;padding:10px 14px;margin-bottom:12px;">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px;">';
-  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += '<div style="display:flex;align-items:center;gap:10px;">';
   html += '<span style="font-size:11px;color:var(--text-muted);">Overall:</span>';
   html += '<span style="font-size:16px;font-weight:900;color:' + overallColor + ';font-family:var(--font-mono);">' + overallWR + '%</span>';
+  var expColor = overallStats.expectancy > 0 ? 'var(--green)' : overallStats.expectancy < 0 ? 'var(--red)' : 'var(--text-muted)';
+  html += '<span style="font-size:11px;color:var(--text-muted);">Exp:</span><span style="font-size:13px;font-weight:800;color:' + expColor + ';font-family:var(--font-mono);">' + (overallStats.expectancy >= 0 ? '+' : '') + overallStats.expectancy.toFixed(2) + 'R</span>';
   html += '</div>';
   html += '<div style="display:flex;align-items:center;gap:10px;font-size:11px;font-family:var(--font-mono);">';
   html += '<span style="color:var(--green);font-weight:700;">' + totalWins + 'W</span>';
@@ -2532,6 +2584,129 @@ function renderBacktestResults(data) {
     html += '<div style="width:' + (totalWins / decidedAll * 100) + '%;height:100%;background:' + overallColor + ';border-radius:3px;"></div>';
   }
   html += '</div>';
+  html += '</div>';
+
+  // ── Strategy Leaderboard ──
+  // Column headers
+  html += '<div style="display:flex;align-items:center;gap:6px;padding:4px 12px;margin-bottom:4px;">';
+  html += '<span style="width:16px;"></span>';
+  html += '<span style="font-size:9px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;min-width:110px;text-align:center;">Strategy</span>';
+  html += '<span style="font-size:9px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;min-width:40px;text-align:right;">Win%</span>';
+  html += '<span style="font-size:9px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;min-width:50px;text-align:right;">Expect</span>';
+  html += '<span style="font-size:9px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;min-width:40px;text-align:right;">PF</span>';
+  html += '<span style="font-size:9px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;min-width:55px;text-align:center;">Trades</span>';
+  html += '<span style="font-size:9px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;min-width:40px;text-align:center;">Conf</span>';
+  html += '</div>';
+
+  html += '<div style="margin-bottom:12px;">';
+  for (var k = 0; k < leaderboard.length; k++) {
+    var lb = leaderboard[k];
+    var lbColor = getStratColor(lb.strategy);
+    var lbBg = getStratBg(lb.strategy);
+
+    // Status badge
+    var statusBadge = '';
+    if (lb.status === 'EDGE') statusBadge = '<span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:rgba(16,185,129,0.15);color:var(--green);">EDGE</span>';
+    else if (lb.status === 'HOT') statusBadge = '<span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:rgba(16,185,129,0.15);color:var(--green);">HOT</span>';
+    else if (lb.status === 'COLD') statusBadge = '<span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:rgba(239,68,68,0.15);color:var(--red);">COLD</span>';
+    else if (lb.status === 'NEW') statusBadge = '<span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:rgba(128,128,128,0.15);color:var(--text-muted);">NEW</span>';
+
+    var lbWrColor = lb.winRate >= 60 ? 'var(--green)' : lb.winRate >= 45 ? 'var(--amber)' : 'var(--red)';
+    var lbExpColor = lb.expectancy > 0 ? 'var(--green)' : lb.expectancy < 0 ? 'var(--red)' : 'var(--text-muted)';
+    var lbPfColor = lb.profitFactor >= 1.5 ? 'var(--green)' : lb.profitFactor >= 1.0 ? 'var(--amber)' : 'var(--red)';
+    var confColor = lb.confidence === 'HIGH' ? 'var(--green)' : lb.confidence === 'MED' ? 'var(--amber)' : 'var(--text-muted)';
+    var confBg = lb.confidence === 'HIGH' ? 'rgba(16,185,129,0.1)' : lb.confidence === 'MED' ? 'rgba(245,158,11,0.1)' : 'rgba(128,128,128,0.1)';
+
+    // Regime expand arrow (only if data exists)
+    var regimeArrow = lb.hasRegime ? '<span id="regime-arrow-' + k + '" style="font-size:10px;color:var(--text-muted);cursor:pointer;">▸</span>' : '';
+
+    html += '<div style="border-radius:8px;margin-bottom:2px;background:' + (k === 0 ? 'var(--bg-secondary)' : 'transparent') + ';">';
+
+    // Main row — clickable if regime data exists
+    html += '<div onclick="' + (lb.hasRegime ? 'toggleRegimeBreakdown(' + k + ')' : '') + '" style="display:flex;align-items:center;gap:6px;padding:8px 12px;' + (lb.hasRegime ? 'cursor:pointer;' : '') + '">';
+    // Rank + regime arrow
+    html += '<span style="font-size:12px;font-weight:900;color:var(--text-muted);width:16px;text-align:center;font-family:var(--font-mono);display:flex;align-items:center;gap:2px;">' + regimeArrow + (k + 1) + '</span>';
+    // Strategy badge
+    html += '<span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:' + lbBg + ';color:' + lbColor + ';min-width:110px;text-align:center;">' + getStratLabel(lb.strategy) + '</span>';
+    // Win rate
+    html += '<span style="font-size:14px;font-weight:900;color:' + lbWrColor + ';font-family:var(--font-mono);min-width:40px;text-align:right;">' + lb.winRate + '%</span>';
+    // Expectancy
+    html += '<span style="font-size:12px;font-weight:800;color:' + lbExpColor + ';font-family:var(--font-mono);min-width:50px;text-align:right;">' + (lb.expectancy >= 0 ? '+' : '') + lb.expectancy.toFixed(2) + 'R</span>';
+    // Profit Factor
+    var pfDisplay = lb.profitFactor >= 999 ? '∞' : lb.profitFactor.toFixed(1);
+    html += '<span style="font-size:11px;font-weight:700;color:' + lbPfColor + ';font-family:var(--font-mono);min-width:40px;text-align:right;">' + pfDisplay + '</span>';
+    // Trade count
+    html += '<span style="font-size:11px;color:var(--text-muted);min-width:55px;text-align:center;">' + lb.decided + ' / ' + lb.total + '</span>';
+    // Confidence badge
+    html += '<span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:' + confBg + ';color:' + confColor + ';min-width:40px;text-align:center;">' + lb.confidence + '</span>';
+    // Status
+    html += statusBadge;
+    html += '</div>';
+
+    // Regime breakdown (hidden by default)
+    if (lb.hasRegime) {
+      html += '<div id="regime-breakdown-' + k + '" style="display:none;padding:0 12px 8px 40px;">';
+      var regimeOrder = ['Bullish', 'Chop', 'Bearish'];
+      var regimeColors = { 'Bullish': 'var(--green)', 'Chop': 'var(--amber)', 'Bearish': 'var(--red)' };
+      var regimeIcons = { 'Bullish': '↑', 'Chop': '↔', 'Bearish': '↓' };
+
+      // Find best regime by expectancy
+      var bestRegime = null, bestExp = -999;
+      for (var rr = 0; rr < regimeOrder.length; rr++) {
+        var rName = regimeOrder[rr];
+        if (lb.regimeStats[rName] && lb.regimeStats[rName].length >= 3) {
+          var rStats = calcEdgeStats(lb.regimeStats[rName]);
+          if (rStats.expectancy > bestExp) { bestExp = rStats.expectancy; bestRegime = rName; }
+        }
+      }
+
+      for (var rk = 0; rk < regimeOrder.length; rk++) {
+        var regime = regimeOrder[rk];
+        var rTrades = lb.regimeStats[regime];
+        if (!rTrades || rTrades.length === 0) continue;
+
+        var rEdge = calcEdgeStats(rTrades);
+        var rWrColor = rEdge.winRate >= 60 ? 'var(--green)' : rEdge.winRate >= 45 ? 'var(--amber)' : 'var(--red)';
+        var rExpColor = rEdge.expectancy > 0 ? 'var(--green)' : rEdge.expectancy < 0 ? 'var(--red)' : 'var(--text-muted)';
+        var isBest = regime === bestRegime;
+        var isInsufficient = rEdge.decided < 3;
+
+        var connector = rk === regimeOrder.length - 1 || (rk < regimeOrder.length - 1 && (!lb.regimeStats[regimeOrder[rk + 1]] || lb.regimeStats[regimeOrder[rk + 1]].length === 0)) ? '└' : '├';
+
+        html += '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:11px;' + (isInsufficient ? 'opacity:0.5;' : '') + '">';
+        html += '<span style="color:var(--text-muted);font-family:var(--font-mono);width:12px;">' + connector + '</span>';
+        html += '<span style="color:' + regimeColors[regime] + ';font-weight:700;min-width:70px;">' + regimeIcons[regime] + ' ' + regime + '</span>';
+
+        if (isInsufficient) {
+          html += '<span style="color:var(--text-muted);font-style:italic;">insufficient data (' + rEdge.decided + ' trades)</span>';
+        } else {
+          html += '<span style="font-weight:800;color:' + rWrColor + ';font-family:var(--font-mono);min-width:35px;text-align:right;">' + rEdge.winRate + '%</span>';
+          html += '<span style="color:var(--text-muted);margin:0 2px;">|</span>';
+          html += '<span style="font-weight:700;color:' + rExpColor + ';font-family:var(--font-mono);min-width:45px;text-align:right;">' + (rEdge.expectancy >= 0 ? '+' : '') + rEdge.expectancy.toFixed(2) + 'R</span>';
+          html += '<span style="color:var(--text-muted);margin:0 2px;">|</span>';
+          var rPfColor = rEdge.profitFactor >= 1.5 ? 'var(--green)' : rEdge.profitFactor >= 1.0 ? 'var(--amber)' : 'var(--red)';
+          var rPfDisplay = rEdge.profitFactor >= 999 ? '∞' : rEdge.profitFactor.toFixed(1);
+          html += '<span style="font-weight:600;color:' + rPfColor + ';font-family:var(--font-mono);min-width:30px;">PF ' + rPfDisplay + '</span>';
+          html += '<span style="color:var(--text-muted);margin:0 2px;">|</span>';
+          html += '<span style="color:var(--text-muted);">' + rEdge.decided + ' trades</span>';
+          if (isBest) html += '<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;background:rgba(16,185,129,0.12);color:var(--green);margin-left:4px;">BEST</span>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // ── Key for new metrics ──
+  html += '<div style="display:flex;flex-wrap:wrap;gap:12px;padding:6px 12px;margin-bottom:10px;font-size:10px;color:var(--text-muted);">';
+  html += '<span><strong>Win%</strong> = targets hit</span>';
+  html += '<span><strong>Expect</strong> = avg R per trade</span>';
+  html += '<span><strong>PF</strong> = profit factor</span>';
+  html += '<span><strong>Trades</strong> = decided/total</span>';
+  html += '<span><strong>Conf</strong> = sample confidence</span>';
   html += '</div>';
 
   // ── Results table (collapsible) ──
