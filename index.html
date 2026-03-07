@@ -369,6 +369,43 @@
       font-size: var(--text-xs);
       color: var(--color-text-faint);
     }
+
+    /* ── Dark Mode — Gold accent overrides ── */
+    [data-theme="dark"] .nav {
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom-color: rgba(255,255,255,0.06);
+    }
+    [data-theme="dark"] .nav-logo-mark {
+      background: #D4AF37;
+    }
+    [data-theme="dark"] .hero-overline {
+      color: #D4AF37;
+    }
+    [data-theme="dark"] .hero-headline em {
+      background: linear-gradient(135deg, #D4AF37, #F5D77A);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    [data-theme="dark"] .btn-primary {
+      background: #D4AF37;
+      border-color: #D4AF37;
+      color: #0A0F1E;
+    }
+    [data-theme="dark"] .btn-primary:hover {
+      background: #E5C453;
+      border-color: #E5C453;
+    }
+    [data-theme="dark"] .preview-label {
+      color: #D4AF37;
+    }
+    [data-theme="dark"] .preview-img-wrap {
+      border-color: #1E293B;
+    }
+    [data-theme="dark"] ::selection {
+      background: rgba(212,175,55,0.2);
+    }
   </style>
 </head>
 
