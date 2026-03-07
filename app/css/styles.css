@@ -236,21 +236,21 @@ body {
 
 /* Cards */
 .card {
-  background: var(--bg-card);
+  background: #F5F5F7;
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
   transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
-.card:hover { box-shadow: var(--shadow-md); }
+.card:hover { box-shadow: var(--shadow-sm); }
 
 /* Card headers: centered, larger (must be BEFORE media queries) */
 .card-header-bar {
   font-size: 22px;
   font-weight: 700;
   font-family: var(--font-display);
-  color: var(--text-secondary);
+  color: #1D1D1F;
   text-align: center;
   white-space: nowrap;
 }
