@@ -213,6 +213,27 @@ body {
   left: 158px;
 }
 
+/* Step preview — always-visible info below each step header */
+.step-preview {
+  text-align: center;
+  padding: 8px 20px 10px;
+}
+.step-preview-inner {
+  display: inline-block;
+  max-width: 600px;
+}
+.step-preview-label {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.step-preview-detail {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 /* Cards */
 .card {
   background: var(--bg-card);

@@ -1024,9 +1024,9 @@ async function renderOverview() {
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Today's Focus — ALWAYS visible, centered under header
-  html += '<div style="padding:0 16px 10px;text-align:center;"><div class="center-under-tagline" style="background:var(--bg-secondary);border:1px solid rgba(230,138,0,0.2);border-radius:6px;padding:10px 14px;display:inline-block;max-width:500px;">';
-  html += '<div style="font-size:12px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;">Today\'s Focus</div>';
-  html += '<div style="font-size:14px;font-weight:700;color:var(--text-primary);line-height:1.4;">'+dailyFocus+'</div>';
+  html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner">';
+  html += '<span class="step-preview-label" style="color:var(--amber);">Today\'s Focus</span>';
+  html += '<span class="step-preview-detail">'+dailyFocus+'</span>';
   html += '</div></div>';
   // Full rules — collapsible
   html += '<div id="mindset-body" style="'+(mindsetCollapsed?'display:none;':'')+'padding:0 16px 12px;">';
@@ -1132,10 +1132,9 @@ async function renderOverview() {
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Regime label — always visible, centered under header
-  html += '<div style="text-align:center;padding:10px 20px;border-bottom:1px solid var(--border);">';
-  html += '<div class="center-under-tagline" style="display:inline-block;max-width:600px;">';
-  html += '<div style="font-family:var(--font-display);font-size:28px;font-weight:700;color:'+regimeColor+';letter-spacing:0.02em;">'+regimeLabel+'</div>';
-  html += '<div style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-top:4px;">'+regimeAction+'</div>';
+  html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner">';
+  html += '<span class="step-preview-label" style="color:'+regimeColor+';">'+regimeLabel+'</span>';
+  html += '<span class="step-preview-detail">'+regimeAction+'</span>';
   html += '</div></div>';
   html += '<div id="regime-body" style="'+(regimeCollapsed?'display:none;':'')+'padding:14px 20px;">';
   // SMA Status grid
@@ -1209,9 +1208,9 @@ async function renderOverview() {
     html += '<span style="width:20px;"></span>';
     html += '</div>';
     // Breadth preview — always visible
-    html += '<div style="text-align:center;padding:6px 20px 8px;"><div class="center-under-tagline" style="display:inline-block;">';
-    html += '<span style="font-size:14px;font-weight:700;color:'+breadthColor+';">'+breadthLabel+'</span>';
-    html += '<span style="font-size:12px;color:var(--text-muted);margin-left:8px;">'+adBreadthPct+'% of stocks advancing</span>';
+    html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner">';
+    html += '<span class="step-preview-label" style="color:'+breadthColor+';">'+breadthLabel+'</span>';
+    html += '<span class="step-preview-detail">'+adBreadthPct+'% of stocks advancing</span>';
     html += '</div></div>';
     html += '<div id="breadth-content" style="'+(breadthCollapsed?'display:none;':'')+'padding:0 20px 12px;">';
     // Gauge bar
@@ -1249,11 +1248,11 @@ async function renderOverview() {
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Sector preview — always visible
-  html += '<div style="text-align:center;padding:6px 20px 8px;"><div class="center-under-tagline" style="display:inline-flex;flex-wrap:wrap;justify-content:center;">';
-  html += '<span style="font-size:12px;font-weight:700;color:#10B981;margin:0 6px;">'+_sqCount.leading+' Leading</span>';
-  html += '<span style="font-size:12px;font-weight:700;color:var(--blue);margin:0 6px;">'+_sqCount.improving+' Improving</span>';
-  html += '<span style="font-size:12px;font-weight:700;color:var(--amber);margin:0 6px;">'+_sqCount.weakening+' Weakening</span>';
-  html += '<span style="font-size:12px;font-weight:700;color:#EF4444;margin:0 6px;">'+_sqCount.lagging+' Lagging</span>';
+  html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner" style="display:inline-flex;flex-wrap:wrap;justify-content:center;">';
+  html += '<span class="step-preview-label" style="color:#10B981;margin:0 6px;">'+_sqCount.leading+' Leading</span>';
+  html += '<span class="step-preview-label" style="color:var(--blue);margin:0 6px;">'+_sqCount.improving+' Improving</span>';
+  html += '<span class="step-preview-label" style="color:var(--amber);margin:0 6px;">'+_sqCount.weakening+' Weakening</span>';
+  html += '<span class="step-preview-label" style="color:#EF4444;margin:0 6px;">'+_sqCount.lagging+' Lagging</span>';
   html += '</div></div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
 
@@ -1355,11 +1354,11 @@ async function renderOverview() {
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Catalysts preview — always visible
-  html += '<div style="text-align:center;padding:6px 20px 8px;"><div class="center-under-tagline" style="display:inline-flex;align-items:center;">';
-  if(hasHighImpactEvent) html += '<span style="font-size:12px;font-weight:700;color:var(--purple);margin-right:6px;">\u26a0 '+eventName+' Today</span>';
-  else html += '<span style="font-size:12px;color:var(--text-muted);margin-right:6px;">No high-impact events</span>';
-  html += '<span style="font-size:11px;color:var(--border2);margin-right:6px;">\u2022</span>';
-  html += '<span style="font-size:12px;color:var(--text-muted);">Themes: '+(_catHasThemes?'<span style="color:var(--green);font-weight:600;">Scanned</span>':'<span style="color:var(--text-muted);">Not yet</span>')+'</span>';
+  html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner" style="display:inline-flex;align-items:center;">';
+  if(hasHighImpactEvent) html += '<span class="step-preview-label" style="color:var(--purple);margin-right:6px;">\u26a0 '+eventName+' Today</span>';
+  else html += '<span class="step-preview-detail" style="margin-right:6px;">No high-impact events</span>';
+  html += '<span style="font-size:13px;color:var(--border2);margin-right:6px;">\u2022</span>';
+  html += '<span class="step-preview-detail">Themes: '+(_catHasThemes?'<span style="color:var(--green);font-weight:600;">Scanned</span>':'Not yet')+'</span>';
   html += '</div></div>';
   html += '<div id="catalysts-body" style="'+(catalystsCollapsed?'display:none;':'')+'">';
   // Econ calendar
@@ -1418,10 +1417,10 @@ async function renderOverview() {
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Ideas preview — always visible
-  html += '<div style="text-align:center;padding:6px 20px 8px;"><div class="center-under-tagline" style="display:inline-block;">';
-  if(_ideaCount > 0) html += '<span style="font-size:13px;font-weight:700;color:var(--green);">'+_ideaCount+' setup'+(_ideaCount!==1?'s':'')+' found</span>';
-  else if(isMarketOpen()) html += '<span style="font-size:12px;color:var(--text-muted);">Scanning for setups...</span>';
-  else html += '<span style="font-size:12px;color:var(--text-muted);">Available during market hours</span>';
+  html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner">';
+  if(_ideaCount > 0) html += '<span class="step-preview-label" style="color:var(--green);">'+_ideaCount+' setup'+(_ideaCount!==1?'s':'')+' found</span>';
+  else if(isMarketOpen()) html += '<span class="step-preview-detail">Scanning for setups...</span>';
+  else html += '<span class="step-preview-detail">Available during market hours</span>';
   html += '</div></div>';
   html += '<div id="ideas-body" style="'+(ideasCollapsed?'display:none;':'')+'">';
   html += '<div id="top-ideas-content" style="padding:12px 16px;">';
@@ -1459,9 +1458,9 @@ async function renderOverview() {
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Recap preview — always visible
-  html += '<div style="text-align:center;padding:6px 20px 8px;"><div class="center-under-tagline" style="display:inline-block;">';
-  if(cachedRecap) html += '<span style="font-size:13px;font-weight:700;color:var(--green);">'+recapDateLabel+' recap ready</span>';
-  else { var _etNow2=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})); var _isAfterClose2=_etNow2.getHours()>=16||_etNow2.getDay()===0||_etNow2.getDay()===6; html += '<span style="font-size:12px;color:var(--text-muted);">'+recapDateLabel+' \u2014 '+(_isAfterClose2?'Ready to generate':'Available after 4 PM ET')+'</span>'; }
+  html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner">';
+  if(cachedRecap) html += '<span class="step-preview-label" style="color:var(--green);">'+recapDateLabel+' recap ready</span>';
+  else { var _etNow2=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})); var _isAfterClose2=_etNow2.getHours()>=16||_etNow2.getDay()===0||_etNow2.getDay()===6; html += '<span class="step-preview-detail">'+recapDateLabel+' \u2014 '+(_isAfterClose2?'Ready to generate':'Available after 4 PM ET')+'</span>'; }
   html += '</div></div>';
   html += '<div id="recap-body" style="'+(recapCollapsed?'display:none;':'')+'padding:12px 16px;">';
   if (cachedRecap) {
