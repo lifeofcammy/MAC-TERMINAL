@@ -1298,7 +1298,7 @@ async function runDayTradeScan(statusFn) {
 function renderDayTradeCard(s, idx) {
   var detailId = 'dt-detail-' + idx;
   var sc = s.score >= 80 ? 'var(--green)' : s.score >= 60 ? 'var(--blue)' : s.score >= 40 ? 'var(--amber)' : 'var(--text-muted)';
-  var sbg = s.score >= 80 ? 'rgba(16,185,129,0.06)' : s.score >= 60 ? 'rgba(37,99,235,0.04)' : 'rgba(245,158,11,0.04)';
+  var sbg = s.score >= 80 ? 'rgba(16,185,129,0.06)' : s.score >= 60 ? 'rgba(79,70,229,0.04)' : 'rgba(245,158,11,0.04)';
   var dirColor = s.direction === 'LONG' ? 'var(--green)' : 'var(--red)';
   var dirBg = s.direction === 'LONG' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)';
 
@@ -1609,7 +1609,7 @@ function renderScanner() {
   });
 
   // ── BOX 5: Pullback Entry ──
-  html += renderStrategyBox({ id: 'pullback-entry', title: 'Pullback Entry', badge: 'Support', badgeColor: 'var(--blue)', badgeBg: 'rgba(37,99,235,0.1)', setups: pbSetups, scanData: scanResults, scanFn: 'runFullScanUI()', limit: 5,
+  html += renderStrategyBox({ id: 'pullback-entry', title: 'Pullback Entry', badge: 'Support', badgeColor: 'var(--blue)', badgeBg: 'rgba(79,70,229,0.1)', setups: pbSetups, scanData: scanResults, scanFn: 'runFullScanUI()', limit: 5,
     emptyText: 'Healthy pullbacks finding support on key SMAs. Scan to find setups.',
     infoHtml: '<b>Candidates:</b> Top 100 US stocks by dollar volume (price > $20, volume > 1M, no ETFs). Then filters for 3-18% pullback from high, price above 50 SMA, finding support at 10 or 20 SMA.<br><b>Strategy:</b> Buys the dip in uptrending stocks — waits for a pullback to land on a key moving average with declining volume (weak selling pressure), then enters for the bounce.<br><b>Risk mgmt:</b> Stop = 1 ATR below entry. Target = 2.5R. Move stop to break-even after 1-2 days or +5% move. Trail stop using 10 SMA — the trend should resume if the thesis is right.<br><b>Why it works:</b> In uptrends, pullbacks to moving averages are where institutional buyers reload. Low volume on the pullback confirms sellers are done. ATR-based stops give the trade room to breathe without excessive risk.<br><b>Best in:</b> Healthy bull markets with orderly corrections. Hold 2-10 days. Risk 0.25% of account per trade.'
   });
@@ -1790,7 +1790,7 @@ function renderSetupCard(s, idx, scanData) {
   var cat = s.category || '';
   var borderColor = cat ? getStratColor(cat) : (s.score >= 80 ? 'var(--green)' : s.score >= 60 ? 'var(--blue)' : s.score >= 40 ? 'var(--amber)' : 'var(--text-muted)');
   var sc = s.score >= 80 ? 'var(--green)' : s.score >= 60 ? 'var(--blue)' : s.score >= 40 ? 'var(--amber)' : 'var(--text-muted)';
-  var sbg = cat ? getStratBg(cat) : (s.score >= 80 ? 'rgba(16,185,129,0.06)' : s.score >= 60 ? 'rgba(37,99,235,0.04)' : 'rgba(245,158,11,0.04)');
+  var sbg = cat ? getStratBg(cat) : (s.score >= 80 ? 'rgba(16,185,129,0.06)' : s.score >= 60 ? 'rgba(79,70,229,0.04)' : 'rgba(245,158,11,0.04)');
 
   var html = '';
   html += '<div style="background:' + sbg + ';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px 16px;border-left:3px solid ' + borderColor + ';">';
@@ -2425,7 +2425,7 @@ function getStratColor(strat) {
 
 function getStratBg(strat) {
   var bgs = {
-    'EARLY BREAKOUT': 'rgba(16,185,129,0.1)', 'PULLBACK': 'rgba(37,99,235,0.1)',
+    'EARLY BREAKOUT': 'rgba(16,185,129,0.1)', 'PULLBACK': 'rgba(79,70,229,0.1)',
     'MEAN REVERSION': 'rgba(168,85,247,0.1)', 'MOMENTUM BREAKOUT': 'rgba(245,158,11,0.1)',
     'ORB_BREAKOUT': 'rgba(239,68,68,0.1)'
   };

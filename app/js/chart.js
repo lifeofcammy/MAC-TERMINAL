@@ -193,7 +193,7 @@ function renderTradePanel(panelEl, d) {
 
   // Source badge
   var sourceBadge = d.category
-    ? '<span style="font-size:11px;padding:2px 8px;border-radius:4px;background:rgba(37,99,235,0.1);color:var(--blue);font-weight:700;">' + escapeHtml(d.category) + '</span>'
+    ? '<span style="font-size:11px;padding:2px 8px;border-radius:4px;background:rgba(79,70,229,0.1);color:var(--blue);font-weight:700;">' + escapeHtml(d.category) + '</span>'
     : '<span style="font-size:11px;padding:2px 8px;border-radius:4px;background:var(--bg-secondary);color:var(--text-muted);font-weight:600;">ATR-based levels</span>';
 
   // Header

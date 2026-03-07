@@ -73,11 +73,11 @@
   --color-text-faint:   #94A3B8;
   --color-text-inverse: #FFFFFF;
 
-  /* Primary: Sophisticated Blue */
-  --color-primary:          #2563EB;
-  --color-primary-hover:    #1D4ED8;
-  --color-primary-active:   #1E40AF;
-  --color-primary-highlight:#DBEAFE;
+  /* Primary: Indigo */
+  --color-primary:          #4F46E5;
+  --color-primary-hover:    #4338CA;
+  --color-primary-active:   #3730A3;
+  --color-primary-highlight:#E0E7FF;
 
   /* Success green for trading */
   --color-success:          #16A34A;
@@ -122,11 +122,11 @@
   --color-text-faint:   #475569;
   --color-text-inverse: #0F172A;
 
-  /* Primary Blue (lighter for dark bg) */
-  --color-primary:          #3B82F6;
-  --color-primary-hover:    #60A5FA;
-  --color-primary-active:   #93C5FD;
-  --color-primary-highlight:#1E3A5F;
+  /* Primary Indigo (lighter for dark bg) */
+  --color-primary:          #818CF8;
+  --color-primary-hover:    #A5B4FC;
+  --color-primary-active:   #C7D2FE;
+  --color-primary-highlight:#1E1B4B;
 
   /* Success */
   --color-success:          #22C55E;
@@ -168,10 +168,10 @@
     --color-text-muted:   #94A3B8;
     --color-text-faint:   #475569;
     --color-text-inverse: #0F172A;
-    --color-primary:          #3B82F6;
-    --color-primary-hover:    #60A5FA;
-    --color-primary-active:   #93C5FD;
-    --color-primary-highlight:#1E3A5F;
+    --color-primary:          #818CF8;
+    --color-primary-hover:    #A5B4FC;
+    --color-primary-active:   #C7D2FE;
+    --color-primary-highlight:#1E1B4B;
     --color-success:          #22C55E;
     --color-success-hover:    #4ADE80;
     --color-success-active:   #86EFAC;

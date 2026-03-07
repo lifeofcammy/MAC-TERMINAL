@@ -333,7 +333,7 @@ function renderRRGCanvas(canvasId) {
   var qGreen = isDark ? 'rgba(52,211,153,0.10)' : 'rgba(52,211,153,0.12)';
   var qYellow = isDark ? 'rgba(245,158,11,0.10)' : 'rgba(245,158,11,0.12)';
   var qRed = isDark ? 'rgba(252,165,165,0.10)' : 'rgba(252,165,165,0.12)';
-  var qBlue = isDark ? 'rgba(37,99,235,0.10)' : 'rgba(37,99,235,0.12)';
+  var qBlue = isDark ? 'rgba(79,70,229,0.10)' : 'rgba(79,70,229,0.12)';
 
   // Padding for labels
   var pad = { top: 20, right: 20, bottom: 30, left: 40 };
@@ -407,7 +407,7 @@ function renderRRGCanvas(canvasId) {
   ctx.fillStyle = isDark ? 'rgba(252,165,165,1)' : 'rgba(239,68,68,1)';
   ctx.textAlign = 'left';
   ctx.fillText('Lagging', pad.left + 4, pad.top + plotH - 4);
-  ctx.fillStyle = isDark ? 'rgba(96,165,250,1)' : 'rgba(37,99,235,1)';
+  ctx.fillStyle = isDark ? 'rgba(96,165,250,1)' : 'rgba(79,70,229,1)';
   ctx.fillText('Improving', pad.left + 4, pad.top + 14);
   ctx.globalAlpha = 1;
 
@@ -1020,7 +1020,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;border-left:3px solid var(--amber);border-radius:14px;">';
   html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;gap:10px;">';
   html += '<span id="mindset-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:1px;">Step 1</div><div class="card-header-bar">Morning Mindset</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Set your mental game before the market opens</div></div></div>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 1</div><div class="card-header-bar">Morning Mindset</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Set your mental game before the market opens</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Today's Focus — ALWAYS visible, centered under header
@@ -1128,7 +1128,7 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'regime\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
   html += '<span id="regime-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(regimeCollapsed?'▶':'▼')+'</span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:1px;">Step 2</div><div class="card-header-bar">Market Outlook</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div></div>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 2</div><div class="card-header-bar">Market Outlook</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Regime label — always visible, centered under header
@@ -1205,9 +1205,14 @@ async function renderOverview() {
     html += '<div class="card" style="padding:0;margin-bottom:14px;overflow:hidden;">';
     html += '<div onclick="toggleBreadth()" style="display:flex;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;gap:10px;">';
     html += '<span id="breadth-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(breadthCollapsed?'\u25b6':'\u25bc')+'</span>';
-    html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:1px;">Step 3</div><div class="card-header-bar">Stock Breadth</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Is the move broad or narrow? Confirms if the regime call is real.</div></div></div>';
+    html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 3</div><div class="card-header-bar">Stock Breadth</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Is the move broad or narrow? Confirms if the regime call is real.</div></div></div>';
     html += '<span style="width:20px;"></span>';
     html += '</div>';
+    // Breadth preview — always visible
+    html += '<div style="text-align:center;padding:6px 20px 8px;"><div class="center-under-tagline" style="display:inline-block;">';
+    html += '<span style="font-size:14px;font-weight:700;color:'+breadthColor+';">'+breadthLabel+'</span>';
+    html += '<span style="font-size:12px;color:var(--text-muted);margin-left:8px;">'+adBreadthPct+'% of stocks advancing</span>';
+    html += '</div></div>';
     html += '<div id="breadth-content" style="'+(breadthCollapsed?'display:none;':'')+'padding:0 20px 12px;">';
     // Gauge bar
     html += '<div>';
@@ -1225,23 +1230,32 @@ async function renderOverview() {
   }
 
   // ════ 4. SECTOR ROTATION ════
-  var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')!=='false';
-  html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
-  html += '<div onclick="toggleHeatmap()" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
-  html += '<span id="heatmap-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:1px;">Step 4</div><div class="card-header-bar">Sector Rotation</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Where is money flowing? Click a sector for details.</div></div></div>';
-  html += '<span style="width:20px;"></span>';
-  html += '</div>';
-  html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
-  // Store maps globally for sector detail expansion
+  // Pre-compute RRG data for preview
   window._subsectorMap = subsectorMap;
   window._sectorStocks = sectorStocks;
-
-  // ── RELATIVE ROTATION GRAPH (RRG) ──
   var allRRGAssets = sectorETFs.map(function(s){ return {etf:s.etf, name:s.name, short:s.short, isAsset:false}; })
     .concat(rrgAssets.map(function(s){ return {etf:s.etf, name:s.name, short:s.short, isAsset:true}; }));
   var rrgData = calcRRGData(allRRGAssets, spyBars, _barsByTicker);
   window._rrgData = rrgData;
+  // Count quadrants for preview (sectors only, not asset classes)
+  var _sqCount = {leading:0, improving:0, weakening:0, lagging:0};
+  rrgData.forEach(function(d){ if(d.isAssetClass || d.trail.length===0) return; var last=d.trail[d.trail.length-1]; var r=last.ratio,m=last.momentum; var q=(r>=100&&m>=100)?'leading':(r>=100&&m<100)?'weakening':(r<100&&m>=100)?'improving':'lagging'; _sqCount[q]++; });
+
+  var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')!=='false';
+  html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
+  html += '<div onclick="toggleHeatmap()" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
+  html += '<span id="heatmap-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 4</div><div class="card-header-bar">Sector Rotation</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Where is money flowing? Click a sector for details.</div></div></div>';
+  html += '<span style="width:20px;"></span>';
+  html += '</div>';
+  // Sector preview — always visible
+  html += '<div style="text-align:center;padding:6px 20px 8px;"><div class="center-under-tagline" style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center;">';
+  html += '<span style="font-size:12px;font-weight:700;color:#10B981;">'+_sqCount.leading+' Leading</span>';
+  html += '<span style="font-size:12px;font-weight:700;color:var(--blue);">'+_sqCount.improving+' Improving</span>';
+  html += '<span style="font-size:12px;font-weight:700;color:var(--amber);">'+_sqCount.weakening+' Weakening</span>';
+  html += '<span style="font-size:12px;font-weight:700;color:#EF4444;">'+_sqCount.lagging+' Lagging</span>';
+  html += '</div></div>';
+  html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
 
   html += '<div style="padding:10px 8px;">';
   if(!isMarketOpen()){
@@ -1261,7 +1275,7 @@ async function renderOverview() {
     html += '</div>';
     // Sort by quadrant priority: Leading > Improving > Weakening > Lagging
     var qOrder = {leading:0, improving:1, weakening:2, lagging:3};
-    var qColors = {leading:'#10B981', improving:'#2563EB', weakening:'#F59E0B', lagging:'#EF4444'};
+    var qColors = {leading:'#10B981', improving:'#4F46E5', weakening:'#F59E0B', lagging:'#EF4444'};
     var qLabels = {leading:'Leading', improving:'Improving', weakening:'Weakening', lagging:'Lagging'};
     var tableRows = rrgData.map(function(d) {
       if(d.trail.length === 0) return null;
@@ -1308,7 +1322,7 @@ async function renderOverview() {
     html += '<div style="display:flex;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap;">';
     var qPillStyle = 'padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;user-select:none;';
     html += '<div onclick="showRRGQuadrant(\'leading\')" style="' + qPillStyle + 'background:rgba(16,185,129,0.1);color:rgba(16,185,129,0.85);border:1px solid rgba(16,185,129,0.2);" title="Click to see Leading sectors">Leading</div>';
-    html += '<div onclick="showRRGQuadrant(\'improving\')" style="' + qPillStyle + 'background:rgba(37,99,235,0.1);color:rgba(37,99,235,0.85);border:1px solid rgba(37,99,235,0.2);" title="Click to see Improving sectors">Improving</div>';
+    html += '<div onclick="showRRGQuadrant(\'improving\')" style="' + qPillStyle + 'background:rgba(79,70,229,0.1);color:rgba(79,70,229,0.85);border:1px solid rgba(79,70,229,0.2);" title="Click to see Improving sectors">Improving</div>';
     html += '<div onclick="showRRGQuadrant(\'weakening\')" style="' + qPillStyle + 'background:rgba(245,158,11,0.1);color:rgba(217,119,6,0.85);border:1px solid rgba(245,158,11,0.2);" title="Click to see Weakening sectors">Weakening</div>';
     html += '<div onclick="showRRGQuadrant(\'lagging\')" style="' + qPillStyle + 'background:rgba(239,68,68,0.1);color:rgba(239,68,68,0.85);border:1px solid rgba(239,68,68,0.2);" title="Click to see Lagging sectors">Lagging</div>';
     html += '</div>';
@@ -1331,12 +1345,22 @@ async function renderOverview() {
 
   // ════ 6. TODAY'S CATALYSTS + THEMES ════
   var catalystsCollapsed = localStorage.getItem('mac_catalysts_collapsed')!=='false';
+  // Check for cached themes for preview
+  var _catThemeKey='mac_themes_'+new Date().toISOString().split('T')[0];
+  var _catHasThemes=false; try{_catHasThemes=!!localStorage.getItem(_catThemeKey);}catch(e){}
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'catalysts\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
   html += '<span id="catalysts-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(catalystsCollapsed?'\u25b6':'\u25bc')+'</span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:1px;">Step 5</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">What events and narratives are driving today\'s price action?</div></div></div>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 5</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">What events and narratives are driving today\'s price action?</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
+  // Catalysts preview — always visible
+  html += '<div style="text-align:center;padding:6px 20px 8px;"><div class="center-under-tagline" style="display:inline-flex;gap:12px;align-items:center;">';
+  if(hasHighImpactEvent) html += '<span style="font-size:12px;font-weight:700;color:var(--purple);">\u26a0 '+eventName+' Today</span>';
+  else html += '<span style="font-size:12px;color:var(--text-muted);">No high-impact events</span>';
+  html += '<span style="font-size:11px;color:var(--border2);">\u2022</span>';
+  html += '<span style="font-size:12px;color:var(--text-muted);">Themes: '+(_catHasThemes?'<span style="color:var(--green);font-weight:600;">Scanned</span>':'<span style="color:var(--text-muted);">Not yet</span>')+'</span>';
+  html += '</div></div>';
   html += '<div id="catalysts-body" style="'+(catalystsCollapsed?'display:none;':'')+'">';
   // Econ calendar
   html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);">';
@@ -1384,16 +1408,23 @@ async function renderOverview() {
 
   // ════ 7. TOP IDEAS (from scanners) ════
   var ideasCollapsed = localStorage.getItem('mac_ideas_collapsed')!=='false';
+  var cachedIdeas=null;
+  try{var ideaKey='mac_top_ideas_'+new Date().toISOString().split('T')[0];var ideaData=localStorage.getItem(ideaKey);if(ideaData)cachedIdeas=JSON.parse(ideaData);}catch(e){}
+  var _ideaCount = (cachedIdeas&&cachedIdeas.ideas) ? cachedIdeas.ideas.length : 0;
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'ideas\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
   html += '<span id="ideas-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(ideasCollapsed?'\u25b6':'\u25bc')+'</span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:1px;">Step 6</div><div class="card-header-bar">Top Ideas</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div></div>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 6</div><div class="card-header-bar">Top Ideas</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
+  // Ideas preview — always visible
+  html += '<div style="text-align:center;padding:6px 20px 8px;"><div class="center-under-tagline" style="display:inline-block;">';
+  if(_ideaCount > 0) html += '<span style="font-size:13px;font-weight:700;color:var(--green);">'+_ideaCount+' setup'+(_ideaCount!==1?'s':'')+' found</span>';
+  else if(isMarketOpen()) html += '<span style="font-size:12px;color:var(--text-muted);">Scanning for setups...</span>';
+  else html += '<span style="font-size:12px;color:var(--text-muted);">Available during market hours</span>';
+  html += '</div></div>';
   html += '<div id="ideas-body" style="'+(ideasCollapsed?'display:none;':'')+'">';
   html += '<div id="top-ideas-content" style="padding:12px 16px;">';
-  var cachedIdeas=null;
-  try{var ideaKey='mac_top_ideas_'+new Date().toISOString().split('T')[0];var ideaData=localStorage.getItem(ideaKey);if(ideaData)cachedIdeas=JSON.parse(ideaData);}catch(e){}
   if(cachedIdeas&&cachedIdeas.ideas&&cachedIdeas.ideas.length>0){html+=renderTopIdeasHTML(cachedIdeas.ideas,cachedIdeas.ts);}
   else{
     if(isMarketOpen()){
@@ -1424,9 +1455,14 @@ async function renderOverview() {
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'recap\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
   html += '<span id="recap-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(recapCollapsed?'\u25b6':'\u25bc')+'</span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:1px;">Step 7</div><div class="card-header-bar">After the Bell</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">'+recapDateLabel+' \u2014 Session recap + tomorrow\'s watchlist.</div></div></div>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 7</div><div class="card-header-bar">After the Bell</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">'+recapDateLabel+' \u2014 Session recap + tomorrow\'s watchlist.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
+  // Recap preview — always visible
+  html += '<div style="text-align:center;padding:6px 20px 8px;"><div class="center-under-tagline" style="display:inline-block;">';
+  if(cachedRecap) html += '<span style="font-size:13px;font-weight:700;color:var(--green);">'+recapDateLabel+' recap ready</span>';
+  else { var _etNow2=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})); var _isAfterClose2=_etNow2.getHours()>=16||_etNow2.getDay()===0||_etNow2.getDay()===6; html += '<span style="font-size:12px;color:var(--text-muted);">'+recapDateLabel+' \u2014 '+(_isAfterClose2?'Ready to generate':'Available after 4 PM ET')+'</span>'; }
+  html += '</div></div>';
   html += '<div id="recap-body" style="'+(recapCollapsed?'display:none;':'')+'padding:12px 16px;">';
   if (cachedRecap) {
     html += renderRecapHTML(cachedRecap);
@@ -1672,7 +1708,7 @@ function showRRGQuadrant(quadrant) {
     if (quadrant === 'improving') return r < 100 && m >= 100;
     return false;
   });
-  var colors = { leading: '#10B981', weakening: '#F59E0B', lagging: '#EF4444', improving: '#2563EB' };
+  var colors = { leading: '#10B981', weakening: '#F59E0B', lagging: '#EF4444', improving: '#4F46E5' };
   var titles = { leading: 'Leading', weakening: 'Weakening', lagging: 'Lagging', improving: 'Improving' };
   var descs = { leading: 'Strong relative strength & rising momentum. These sectors are outperforming and accelerating.', weakening: 'Strong relative strength but momentum is fading. Watch for rotation out.', lagging: 'Weak relative strength & falling momentum. Underperformers to avoid.', improving: 'Weak relative strength but momentum is building. Early rotation candidates.' };
   var c = colors[quadrant];
@@ -1742,7 +1778,7 @@ async function showRRGSectorPopup(d) {
   var last = d.trail.length ? d.trail[d.trail.length-1] : null;
   var rs = last ? last.ratio : 0, mom = last ? last.momentum : 0;
   var q = (rs>=100&&mom>=100)?'Leading':(rs>=100&&mom<100)?'Weakening':(rs<100&&mom>=100)?'Improving':'Lagging';
-  var qc = q==='Leading'?'#10B981':q==='Improving'?'#2563EB':q==='Weakening'?'#F59E0B':'#EF4444';
+  var qc = q==='Leading'?'#10B981':q==='Improving'?'#4F46E5':q==='Weakening'?'#F59E0B':'#EF4444';
 
   var wrap = document.createElement('div');
   wrap.id = 'rrg-sector-popup';
@@ -2197,7 +2233,7 @@ function renderThemesHTML(data, cacheTs) {
     html += '<div style="font-size:12px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;margin-top:4px;">Key Themes</div>';
     html += '<div style="display:grid;gap:6px;">';
     data.themes.forEach(function(theme,i){
-      var colors=['var(--blue)','var(--purple)','var(--cyan)'];var bgs=['rgba(37,99,235,0.05)','rgba(124,58,237,0.05)','rgba(8,145,178,0.05)'];
+      var colors=['var(--blue)','var(--purple)','var(--cyan)'];var bgs=['rgba(79,70,229,0.05)','rgba(124,58,237,0.05)','rgba(8,145,178,0.05)'];
       var c=colors[i%colors.length],bg=bgs[i%bgs.length];
       html += '<div style="background:'+bg+';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);border-radius:10px;padding:10px 14px;border-left:3px solid '+c+'">';
       html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);">'+escapeHtml(theme.title||'')+'</div>';
@@ -2215,7 +2251,7 @@ function renderLegacyThemesHTML(themes, cacheTs) {
   html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Generated '+time+'</div>';
   html += '<div style="display:grid;gap:8px;">';
   themes.forEach(function(theme,i){
-    var colors=['var(--blue)','var(--purple)','var(--cyan)'];var bgs=['rgba(37,99,235,0.05)','rgba(124,58,237,0.05)','rgba(8,145,178,0.05)'];
+    var colors=['var(--blue)','var(--purple)','var(--cyan)'];var bgs=['rgba(79,70,229,0.05)','rgba(124,58,237,0.05)','rgba(8,145,178,0.05)'];
     var c=colors[i%colors.length],bg=bgs[i%bgs.length];
     html += '<div style="background:'+bg+';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);border-radius:12px;padding:12px 14px;border-left:3px solid '+c+'">';
     html += '<div style="font-size:14px;font-weight:800;color:var(--text-primary);margin-bottom:3px;">'+escapeHtml(theme.title||'Theme '+(i+1))+'</div>';
@@ -2237,7 +2273,7 @@ function renderTopIdeasHTML(ideas, cacheTs) {
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:8px;">';
   ideas.forEach(function(idea){
     var sc=idea.score>=80?'var(--green)':idea.score>=60?'var(--blue)':idea.score>=40?'var(--amber)':'var(--text-muted)';
-    var sbg=idea.score>=80?'rgba(16,185,129,0.06)':idea.score>=60?'rgba(37,99,235,0.04)':'rgba(245,158,11,0.04)';
+    var sbg=idea.score>=80?'rgba(16,185,129,0.06)':idea.score>=60?'rgba(79,70,229,0.04)':'rgba(245,158,11,0.04)';
     html += '<div style="background:'+sbg+';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px 16px;border-left:3px solid '+sc+'">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
     html += '<div style="display:flex;align-items:center;gap:6px;">';
