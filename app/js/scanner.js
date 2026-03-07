@@ -1313,7 +1313,7 @@ function renderDayTradeCard(s, idx) {
   html += '<span style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
   html += '</div>';
   // Score circle
-  html += '<div onclick="event.stopPropagation();var d=document.getElementById(\'' + detailId + '\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid ' + sc + ';font-size:12px;font-weight:900;color:' + sc + ';font-family:var(--font-mono);cursor:pointer;" title="Click for score breakdown">' + s.score + '</div>';
+  html += '<div class="score-circle" onclick="event.stopPropagation();var d=document.getElementById(\'' + detailId + '\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';" title="Click for score breakdown">' + s.score + '</div>';
   html += '</div>';
 
   // Gap + RVol row
@@ -1807,7 +1807,7 @@ function renderSetupCard(s, idx, scanData) {
   html += '<span style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
   html += '</div>';
   // Score circle
-  html += '<div onclick="event.stopPropagation();var d=document.getElementById(\'' + detailId + '\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid ' + sc + ';font-size:12px;font-weight:900;color:' + sc + ';font-family:var(--font-mono);cursor:pointer;" title="Click for score breakdown">' + s.score + '</div>';
+  html += '<div class="score-circle" onclick="event.stopPropagation();var d=document.getElementById(\'' + detailId + '\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';" title="Click for score breakdown">' + s.score + '</div>';
   html += '</div>';
 
   // Thesis / description

@@ -1025,7 +1025,7 @@ async function renderOverview() {
   html += '</div>';
   // Today's Focus — ALWAYS visible, centered under header
   html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner">';
-  html += '<span class="step-preview-label" style="color:var(--amber);">Today\'s Focus</span>';
+  html += '<span class="step-preview-label" style="color:var(--text-primary);">Today\'s Focus — </span>';
   html += '<span class="step-preview-detail">'+dailyFocus+'</span>';
   html += '</div></div>';
   // Full rules — collapsible
@@ -1133,7 +1133,7 @@ async function renderOverview() {
   html += '</div>';
   // Regime label — always visible, centered under header
   html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner">';
-  html += '<span class="step-preview-label" style="color:'+regimeColor+';">'+regimeLabel+'</span>';
+  html += '<span class="step-preview-label" style="color:var(--text-primary);">'+regimeLabel+' — </span>';
   html += '<span class="step-preview-detail">'+regimeAction+'</span>';
   html += '</div></div>';
   html += '<div id="regime-body" style="'+(regimeCollapsed?'display:none;':'')+'padding:14px 20px;">';
@@ -1209,7 +1209,7 @@ async function renderOverview() {
     html += '</div>';
     // Breadth preview — always visible
     html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner">';
-    html += '<span class="step-preview-label" style="color:'+breadthColor+';">'+breadthLabel+'</span>';
+    html += '<span class="step-preview-label" style="color:var(--text-primary);">'+breadthLabel+' — </span>';
     html += '<span class="step-preview-detail">'+adBreadthPct+'% of stocks advancing</span>';
     html += '</div></div>';
     html += '<div id="breadth-content" style="'+(breadthCollapsed?'display:none;':'')+'padding:0 20px 12px;">';
@@ -1249,10 +1249,10 @@ async function renderOverview() {
   html += '</div>';
   // Sector preview — always visible
   html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner" style="display:inline-flex;flex-wrap:wrap;justify-content:center;">';
-  html += '<span class="step-preview-label" style="color:#10B981;margin:0 6px;">'+_sqCount.leading+' Leading</span>';
-  html += '<span class="step-preview-label" style="color:var(--text-primary);margin:0 6px;">'+_sqCount.improving+' Improving</span>';
-  html += '<span class="step-preview-label" style="color:var(--amber);margin:0 6px;">'+_sqCount.weakening+' Weakening</span>';
-  html += '<span class="step-preview-label" style="color:#EF4444;margin:0 6px;">'+_sqCount.lagging+' Lagging</span>';
+  html += '<span class="step-preview-detail" style="margin:0 6px;">'+_sqCount.leading+' Leading</span>';
+  html += '<span class="step-preview-detail" style="margin:0 6px;">'+_sqCount.improving+' Improving</span>';
+  html += '<span class="step-preview-detail" style="margin:0 6px;">'+_sqCount.weakening+' Weakening</span>';
+  html += '<span class="step-preview-detail" style="margin:0 6px;">'+_sqCount.lagging+' Lagging</span>';
   html += '</div></div>';
   html += '<div id="heatmap-body" style="'+(heatmapCollapsed?'display:none;':'')+'">';
 
@@ -1355,10 +1355,10 @@ async function renderOverview() {
   html += '</div>';
   // Catalysts preview — always visible
   html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner" style="display:inline-flex;align-items:center;">';
-  if(hasHighImpactEvent) html += '<span class="step-preview-label" style="color:var(--purple);margin-right:6px;">\u26a0 '+eventName+' Today</span>';
+  if(hasHighImpactEvent) html += '<span class="step-preview-label" style="color:var(--text-primary);margin-right:6px;">\u26a0 '+eventName+' Today</span>';
   else html += '<span class="step-preview-detail" style="margin-right:6px;">No high-impact events</span>';
   html += '<span style="font-size:13px;color:var(--border2);margin-right:6px;">\u2022</span>';
-  html += '<span class="step-preview-detail">Themes: '+(_catHasThemes?'<span style="color:var(--green);font-weight:600;">Scanned</span>':'Not yet')+'</span>';
+  html += '<span class="step-preview-detail">Themes: '+(_catHasThemes?'<span style="font-weight:600;">Scanned</span>':'Not yet')+'</span>';
   html += '</div></div>';
   html += '<div id="catalysts-body" style="'+(catalystsCollapsed?'display:none;':'')+'">';
   // Econ calendar
@@ -1418,7 +1418,7 @@ async function renderOverview() {
   html += '</div>';
   // Ideas preview — always visible
   html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner">';
-  if(_ideaCount > 0) html += '<span class="step-preview-label" style="color:var(--green);">'+_ideaCount+' setup'+(_ideaCount!==1?'s':'')+' found</span>';
+  if(_ideaCount > 0) html += '<span class="step-preview-detail">'+_ideaCount+' setup'+(_ideaCount!==1?'s':'')+' found</span>';
   else if(isMarketOpen()) html += '<span class="step-preview-detail">Scanning for setups...</span>';
   else html += '<span class="step-preview-detail">Available during market hours</span>';
   html += '</div></div>';
@@ -1459,7 +1459,7 @@ async function renderOverview() {
   html += '</div>';
   // Recap preview — always visible
   html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner">';
-  if(cachedRecap) html += '<span class="step-preview-label" style="color:var(--green);">'+recapDateLabel+' recap ready</span>';
+  if(cachedRecap) html += '<span class="step-preview-detail">'+recapDateLabel+' recap ready</span>';
   else { var _etNow2=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})); var _isAfterClose2=_etNow2.getHours()>=16||_etNow2.getDay()===0||_etNow2.getDay()===6; html += '<span class="step-preview-detail">'+recapDateLabel+' \u2014 '+(_isAfterClose2?'Ready to generate':'Available after 4 PM ET')+'</span>'; }
   html += '</div></div>';
   html += '<div id="recap-body" style="'+(recapCollapsed?'display:none;':'')+'padding:12px 16px;">';
