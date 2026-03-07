@@ -498,7 +498,22 @@ async function runSetupScan(statusFn) {
     }
   });
 
-  // Now build setup cards (with additional filters + full data)
+  // RSI helper
+  function calcRSI(closes, period) {
+    period = period || 14;
+    if (closes.length < period + 1) return 50;
+    var gains = 0, losses = 0;
+    for (var ri = closes.length - period; ri < closes.length; ri++) {
+      var diff = closes[ri] - closes[ri - 1];
+      if (diff > 0) gains += diff; else losses -= diff;
+    }
+    var avgGain = gains / period, avgLoss = losses / period;
+    if (avgLoss === 0) return 100;
+    var rs = avgGain / avgLoss;
+    return 100 - (100 / (1 + rs));
+  }
+
+  // Now build setup cards — check ALL 4 strategies per ticker
   tickers.forEach(function(ticker) {
     var snap = allSnapshots[ticker];
     var bars = allBars[ticker];
@@ -521,87 +536,237 @@ async function runSetupScan(statusFn) {
     var highs = bars.map(function(b) { return b.h; });
     var lows = bars.map(function(b) { return b.l; });
     var volumes = bars.map(function(b) { return b.v; });
+    var len = closes.length;
 
     function sma(arr, period) {
       if (arr.length < period) return null;
       var s = 0; for (var i = arr.length - period; i < arr.length; i++) s += arr[i]; return s / period;
     }
+    function arrMax(arr, fromIdx) { var m = -Infinity; for (var i = fromIdx; i < arr.length; i++) if (arr[i] > m) m = arr[i]; return m; }
+    function arrMin(arr, fromIdx) { var m = Infinity; for (var i = fromIdx; i < arr.length; i++) if (arr[i] < m) m = arr[i]; return m; }
 
     var sma10 = sma(closes, 10), sma20 = sma(closes, 20), sma50 = sma(closes, 50);
     if (!sma20 || !sma10) return;
 
     var spread = Math.abs(sma10 - sma20) / curPrice * 100;
-    if (spread > 5) return;
-
     var ext = ((curPrice - sma20) / sma20) * 100;
-
-    var rvol = null;
-    var avgVol20 = sma(volumes, 20);
-    if (avgVol20 > 0 && curVol > 0) rvol = curVol / avgVol20;
-
-    var recent5H = Math.max.apply(null, highs.slice(-5));
-    var recent5L = Math.min.apply(null, lows.slice(-5));
+    var avgVol20val = sma(volumes, 20) || 1;
+    var avgVol5 = sma(volumes, 5) || avgVol20val;
+    var baseVolRatio = avgVol5 / avgVol20val;
+    var rvol = (curVol > 0) ? curVol / avgVol20val : 0;
+    var recent5H = arrMax(highs, Math.max(0, len - 5));
+    var recent5L = arrMin(lows, Math.max(0, len - 5));
     var range5 = ((recent5H - recent5L) / curPrice) * 100;
-
-    var score = allScores[ticker] || 0;
-    if (score < 30) return;
-
-    // SMA Alignment (for thesis + card data)
+    var recent10H = arrMax(highs, Math.max(0, len - 10));
+    var recent10L = arrMin(lows, Math.max(0, len - 10));
+    var range10 = ((recent10H - recent10L) / curPrice) * 100;
+    var high20 = arrMax(highs, Math.max(0, len - 20));
+    var recentHigh = arrMax(highs, Math.max(0, len - 20));
+    var pullbackDepth = recentHigh > 0 ? ((recentHigh - curPrice) / recentHigh) * 100 : 0;
     var aboveBoth = curPrice > sma10 && curPrice > sma20;
+    var aboveSma50 = !!(sma50 && curPrice > sma50);
+    var smaStacked = !!(sma10 > sma20 && sma50 && sma20 > sma50);
+    var aboveSMAsCount = (curPrice > sma10 ? 1 : 0) + (curPrice > sma20 ? 1 : 0) + (aboveSma50 ? 1 : 0);
+    var nearSma10 = sma10 && Math.abs(curPrice - sma10) / curPrice * 100 <= 2;
+    var nearSma20 = Math.abs(curPrice - sma20) / curPrice * 100 <= 2;
 
-    // Component scores (for card display — Top Ideas style, 5 factors)
-    var ptsCompress = spread <= 1 ? 30 : spread <= 2 ? 22 : spread <= 3 ? 15 : spread <= 5 ? 8 : 0;
-    var ptsAlign = 0;
-    if (aboveBoth) ptsAlign += 15;
-    if (sma50 && curPrice > sma50) ptsAlign += 10;
-    var ptsExt = ext <= 2 ? 25 : ext <= 4 ? 18 : ext <= 6 ? 10 : ext <= 8 ? 4 : -5;
-    var ptsVol = (rvol && rvol >= 2) ? 10 : (rvol && rvol >= 1.5) ? 7 : (rvol && rvol >= 1) ? 4 : 0;
-    var ptsMom = changePct > 1 ? 5 : changePct > 0 ? 2 : 0;
-
-    // ── THESIS ──
-    var thesis = '';
-    if (spread <= 2) thesis += 'Tight compression (' + spread.toFixed(1) + '%). ';
-    if (aboveBoth) thesis += 'Above 10/20 SMA. ';
-    if (ext <= 2) thesis += 'Near base (' + ext.toFixed(1) + '%). ';
-    else if (ext > 8) thesis += 'Extended (' + ext.toFixed(1) + '%). ';
-    if (rvol && rvol >= 1.5) thesis += rvol.toFixed(1) + 'x volume. ';
-    if (changePct > 1) thesis += 'Up ' + changePct.toFixed(1) + '% today. ';
-
-    // ── TRADE LEVELS ──
-    var stopPrice = sma20 * 0.98;
-    var targetPrice = curPrice + (curPrice - stopPrice) * 2;
-    var riskPct = curPrice > 0 ? ((curPrice - stopPrice) / curPrice) * 100 : 0;
-
-    setups.push({
-      ticker: ticker,
-      price: curPrice,
-      prevClose: prevClose,
-      changePct: Math.round(changePct * 100) / 100,
-      score: score,
-      thesis: thesis.trim(),
-      spread: Math.round(spread * 10) / 10,
-      ext: Math.round(ext * 10) / 10,
-      rvol: rvol ? Math.round(rvol * 10) / 10 : null,
-      range5: Math.round(range5 * 10) / 10,
-      aboveBoth: aboveBoth,
-      aboveSma50: !!(sma50 && curPrice > sma50),
-      entryPrice: curPrice,
-      stopPrice: stopPrice,
-      targetPrice: targetPrice,
-      riskPct: Math.round(riskPct * 10) / 10,
-      components: {
-        compression: ptsCompress,
-        alignment: ptsAlign,
-        extension: ptsExt,
-        volume: ptsVol,
-        momentum: ptsMom
+    // ════════════════════════════════════════════
+    // STRATEGY 1: EARLY BREAKOUT (Compression)
+    // ════════════════════════════════════════════
+    if (spread <= 5) {
+      var ebScore = allScores[ticker] || 0;
+      if (ebScore >= 30) {
+        var ptsCompress = spread <= 1 ? 30 : spread <= 2 ? 22 : spread <= 3 ? 15 : spread <= 5 ? 8 : 0;
+        var ptsAlign = 0;
+        if (aboveBoth) ptsAlign += 15;
+        if (aboveSma50) ptsAlign += 10;
+        var ptsExt = ext <= 2 ? 25 : ext <= 4 ? 18 : ext <= 6 ? 10 : ext <= 8 ? 4 : -5;
+        var ptsVol = (rvol >= 2) ? 10 : (rvol >= 1.5) ? 7 : (rvol >= 1) ? 4 : 0;
+        var ptsMom = changePct > 1 ? 5 : changePct > 0 ? 2 : 0;
+        var ebThesis = '';
+        if (spread <= 2) ebThesis += 'Tight compression (' + spread.toFixed(1) + '%). ';
+        if (aboveBoth) ebThesis += 'Above 10/20 SMA. ';
+        if (ext <= 2) ebThesis += 'Near base (' + ext.toFixed(1) + '%). ';
+        if (rvol >= 1.5) ebThesis += rvol.toFixed(1) + 'x volume. ';
+        if (changePct > 1) ebThesis += 'Up ' + changePct.toFixed(1) + '% today.';
+        var ebStop = sma20 * 0.98;
+        var ebTarget = curPrice + (curPrice - ebStop) * 2;
+        var ebRisk = curPrice > 0 ? ((curPrice - ebStop) / curPrice) * 100 : 0;
+        setups.push({
+          ticker: ticker, category: 'EARLY BREAKOUT', price: curPrice, prevClose: prevClose,
+          changePct: Math.round(changePct * 100) / 100, score: ebScore,
+          thesis: ebThesis.trim(), spread: Math.round(spread * 10) / 10,
+          ext: Math.round(ext * 10) / 10, rvol: rvol ? Math.round(rvol * 10) / 10 : null,
+          range5: Math.round(range5 * 10) / 10, aboveBoth: aboveBoth, aboveSma50: aboveSma50,
+          entryPrice: curPrice, stopPrice: ebStop, targetPrice: ebTarget,
+          riskPct: Math.round(ebRisk * 10) / 10,
+          components: { tightness: ptsCompress, volumeDryUp: ptsAlign, breakoutProximity: ptsExt, volumeSurge: ptsVol }
+        });
       }
-    });
+    }
+
+    // ════════════════════════════════════════════
+    // STRATEGY 2: PULLBACK ENTRY
+    // ════════════════════════════════════════════
+    if (pullbackDepth >= 3 && pullbackDepth <= 18 && aboveSma50) {
+      var pbSignals = [];
+      // Pullback quality (0-30)
+      var pbDepthPts = 0;
+      if (pullbackDepth >= 4 && pullbackDepth <= 8) { pbDepthPts = 30; pbSignals.push('Healthy pullback (' + pullbackDepth.toFixed(1) + '% from high)'); }
+      else if (pullbackDepth >= 3 && pullbackDepth <= 12) { pbDepthPts = 22; pbSignals.push('Pulling back (' + pullbackDepth.toFixed(1) + '%)'); }
+      else { pbDepthPts = 10; pbSignals.push('Deep pullback (' + pullbackDepth.toFixed(1) + '%)'); }
+      // Support level (0-25)
+      var pbSupport = 0;
+      if (nearSma10 && nearSma20) { pbSupport = 25; pbSignals.push('Holding 10 & 20 SMA'); }
+      else if (nearSma20) { pbSupport = 22; pbSignals.push('Holding 20 SMA ($' + sma20.toFixed(2) + ')'); }
+      else if (nearSma10) { pbSupport = 18; pbSignals.push('At 10 SMA'); }
+      else if (sma50 && Math.abs(curPrice - sma50) / curPrice * 100 <= 2) { pbSupport = 12; pbSignals.push('At 50 SMA'); }
+      // Volume decline (0-20)
+      var pbVolDry = 0;
+      if (baseVolRatio <= 0.5) { pbVolDry = 20; pbSignals.push('Vol fading (' + Math.round(baseVolRatio * 100) + '% avg)'); }
+      else if (baseVolRatio <= 0.7) { pbVolDry = 14; pbSignals.push('Volume declining'); }
+      else if (baseVolRatio <= 0.85) { pbVolDry = 6; }
+      // Trend intact (0-15)
+      var pbTrend = 0;
+      if (smaStacked) { pbTrend = 15; pbSignals.push('SMAs stacked bullish'); }
+      else if (aboveSMAsCount >= 2) { pbTrend = 10; }
+      else if (aboveSma50) { pbTrend = 5; }
+
+      var pbScore = Math.round(Math.max(0, pbDepthPts + pbSupport + pbVolDry + pbTrend));
+      if (pbScore >= 40 && pbSupport >= 12) {
+        var pbStop = arrMin(lows, Math.max(0, len - 5)) * 0.98;
+        var pbRisk = curPrice > 0 ? ((curPrice - pbStop) / curPrice) * 100 : 0;
+        var pbTarget = curPrice + (curPrice - pbStop) * 2;
+        setups.push({
+          ticker: ticker, category: 'PULLBACK', price: curPrice, prevClose: prevClose,
+          changePct: Math.round(changePct * 100) / 100, score: pbScore,
+          description: pbSignals.join(' \u00b7 '), pullbackDepth: Math.round(pullbackDepth * 10) / 10,
+          range5: Math.round(range5 * 10) / 10, rvol: rvol ? Math.round(rvol * 10) / 10 : null,
+          entryPrice: curPrice, stopPrice: pbStop, targetPrice: pbTarget,
+          riskPct: Math.round(pbRisk * 10) / 10,
+          components: { pullbackQuality: pbDepthPts, supportLevel: pbSupport, volumeDecline: pbVolDry, trendIntact: pbTrend }
+        });
+      }
+    }
+
+    // ════════════════════════════════════════════
+    // STRATEGY 3: MEAN REVERSION
+    // ════════════════════════════════════════════
+    var rsi14 = calcRSI(closes);
+    if (pullbackDepth >= 8 && pullbackDepth <= 25 && rsi14 <= 40 && sma50 && curPrice > sma50 * 0.95) {
+      var mrSignals = [];
+      // Oversold (0-30)
+      var mrOversold = 0;
+      if (rsi14 <= 25) { mrOversold = 30; mrSignals.push('RSI deeply oversold (' + Math.round(rsi14) + ')'); }
+      else if (rsi14 <= 30) { mrOversold = 25; mrSignals.push('RSI oversold (' + Math.round(rsi14) + ')'); }
+      else if (rsi14 <= 35) { mrOversold = 18; mrSignals.push('RSI approaching oversold (' + Math.round(rsi14) + ')'); }
+      else { mrOversold = 10; mrSignals.push('RSI weak (' + Math.round(rsi14) + ')'); }
+      // Pullback quality (0-30)
+      var mrDepthPts = 0;
+      if (pullbackDepth >= 10 && pullbackDepth <= 18) { mrDepthPts = 30; mrSignals.push('Healthy reversion zone (' + pullbackDepth.toFixed(1) + '% from high)'); }
+      else if (pullbackDepth >= 8 && pullbackDepth <= 22) { mrDepthPts = 22; mrSignals.push('Pulling into support (' + pullbackDepth.toFixed(1) + '%)'); }
+      else { mrDepthPts = 12; mrSignals.push('Deep selloff (' + pullbackDepth.toFixed(1) + '%)'); }
+      // Volume declining (0-20)
+      var mrVolDry = 0;
+      if (baseVolRatio <= 0.5) { mrVolDry = 20; mrSignals.push('Selling exhaustion (vol ' + Math.round(baseVolRatio * 100) + '% of avg)'); }
+      else if (baseVolRatio <= 0.7) { mrVolDry = 14; mrSignals.push('Volume fading'); }
+      else if (baseVolRatio <= 0.85) { mrVolDry = 6; }
+      // Trend intact (0-20)
+      var mrTrend = 0;
+      if (sma50 && curPrice > sma50) {
+        mrTrend += 10;
+        if (nearSma20) { mrTrend += 5; mrSignals.push('Holding 20 SMA'); }
+        else if (nearSma10) { mrTrend += 5; mrSignals.push('At 10 SMA'); }
+        if (sma50 && Math.abs(curPrice - sma50) / curPrice * 100 <= 2) { mrTrend += 5; mrSignals.push('At 50 SMA'); }
+      } else if (sma50 && curPrice > sma50 * 0.95) {
+        mrTrend += 5; mrSignals.push('Near 50 SMA support');
+      }
+
+      var mrScore = Math.round(Math.max(0, mrOversold + mrDepthPts + mrVolDry + mrTrend));
+      if (mrScore >= 40) {
+        var mrStop = arrMin(lows, Math.max(0, len - 5)) * 0.98;
+        var mrRisk = curPrice > 0 ? ((curPrice - mrStop) / curPrice) * 100 : 0;
+        var mrTarget = sma20; // mean reversion target
+        setups.push({
+          ticker: ticker, category: 'MEAN REVERSION', price: curPrice, prevClose: prevClose,
+          changePct: Math.round(changePct * 100) / 100, score: mrScore,
+          description: mrSignals.join(' \u00b7 '), rsi14: Math.round(rsi14),
+          pullbackDepth: Math.round(pullbackDepth * 10) / 10,
+          range5: Math.round(range5 * 10) / 10, relativeVol: Math.round(rvol * 10) / 10,
+          entryPrice: curPrice, stopPrice: mrStop, targetPrice: mrTarget,
+          riskPct: Math.round(mrRisk * 10) / 10,
+          components: { pullbackQuality: mrDepthPts, oversold: mrOversold, volumeDecline: mrVolDry, trendIntact: mrTrend }
+        });
+      }
+    }
+
+    // ════════════════════════════════════════════
+    // STRATEGY 4: MOMENTUM BREAKOUT
+    // ════════════════════════════════════════════
+    var breakoutPct = high20 > 0 ? ((curPrice - high20) / high20) * 100 : -99;
+    var lastBarVol = volumes[len - 1] || 0;
+    var rvolRatio = lastBarVol / avgVol20val;
+    if (breakoutPct >= -1 && smaStacked && rvolRatio >= 1.2) {
+      var mbSignals = [];
+      // Breakout strength (0-25)
+      var mbBreakStr = 0;
+      if (breakoutPct >= 3) { mbBreakStr = 25; mbSignals.push('Strong breakout (+' + breakoutPct.toFixed(1) + '% above 20d high)'); }
+      else if (breakoutPct >= 1) { mbBreakStr = 22; mbSignals.push('Breaking out (+' + breakoutPct.toFixed(1) + '% above 20d high)'); }
+      else if (breakoutPct >= 0) { mbBreakStr = 18; mbSignals.push('At 20d high ($' + high20.toFixed(2) + ')'); }
+      else { mbBreakStr = 12; mbSignals.push('Approaching 20d high (' + breakoutPct.toFixed(1) + '%)'); }
+      // Volume surge (0-25)
+      var mbVolSurge = 0;
+      if (rvolRatio >= 3.0) { mbVolSurge = 25; mbSignals.push('Volume exploding (' + rvolRatio.toFixed(1) + 'x avg)'); }
+      else if (rvolRatio >= 2.0) { mbVolSurge = 20; mbSignals.push('Strong volume (' + rvolRatio.toFixed(1) + 'x avg)'); }
+      else if (rvolRatio >= 1.5) { mbVolSurge = 15; mbSignals.push('Above-avg volume (' + rvolRatio.toFixed(1) + 'x)'); }
+      else { mbVolSurge = 8; }
+      // SMA alignment (0-20)
+      var mbSmaAlign = 15;
+      mbSignals.push('SMAs stacked bullish (10>20>50)');
+      if (sma50 && curPrice > sma50 * 1.05) mbSmaAlign = 20;
+      // Base tightness (0-20)
+      var mbTight = 0;
+      if (range5 <= 3) { mbTight = 20; mbSignals.push('Tight base (' + range5.toFixed(1) + '% 5d range)'); }
+      else if (range5 <= 5) { mbTight = 15; mbSignals.push('Compressed base (' + range5.toFixed(1) + '%)'); }
+      else if (range5 <= 8) { mbTight = 8; }
+      // Extension check (-10 to +10)
+      var mbExt = 0;
+      if (ext <= 3) mbExt = 10;
+      else if (ext <= 5) mbExt = 5;
+      else if (ext <= 8) mbExt = 0;
+      else if (ext <= 12) mbExt = -5;
+      else mbExt = -10;
+
+      var mbScore = Math.round(Math.max(0, mbBreakStr + mbVolSurge + mbSmaAlign + mbTight + mbExt));
+      if (mbScore >= 45) {
+        var mbStop = Math.max(arrMin(lows, Math.max(0, len - 3)), sma10 || sma20 * 0.98);
+        var mbRisk = curPrice > 0 ? ((curPrice - mbStop) / curPrice) * 100 : 0;
+        var mbTarget = curPrice + (curPrice - mbStop) * 2.5;
+        setups.push({
+          ticker: ticker, category: 'MOMENTUM BREAKOUT', price: curPrice, prevClose: prevClose,
+          changePct: Math.round(changePct * 100) / 100, score: mbScore,
+          description: mbSignals.join(' \u00b7 '),
+          range5: Math.round(range5 * 10) / 10, relativeVol: Math.round(rvolRatio * 10) / 10,
+          entryPrice: curPrice, stopPrice: mbStop, targetPrice: mbTarget,
+          riskPct: Math.round(mbRisk * 10) / 10,
+          components: { breakoutStrength: mbBreakStr, volumeSurge: mbVolSurge, smaAlignment: mbSmaAlign, baseTightness: mbTight }
+        });
+      }
+    }
   });
 
-  setups.sort(function(a, b) { return b.score - a.score; });
-
-  var topSetups = setups.slice(0, 20);
+  // Sort each strategy separately, take top 15 per strategy
+  var stratGroups = {};
+  setups.forEach(function(s) {
+    var cat = s.category || 'EARLY BREAKOUT';
+    if (!stratGroups[cat]) stratGroups[cat] = [];
+    stratGroups[cat].push(s);
+  });
+  var topSetups = [];
+  Object.keys(stratGroups).forEach(function(cat) {
+    stratGroups[cat].sort(function(a, b) { return b.score - a.score; });
+    topSetups = topSetups.concat(stratGroups[cat].slice(0, 15));
+  });
 
   var resultData = {
     date: localDateStr(),
@@ -1390,6 +1555,16 @@ function renderScanner() {
   html += '<div id="dt-phase-label" style="font-size:11px;margin-top:4px;"></div>';
   html += '<div id="dt-scanner-status" style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + (dtResults ? 'Cached' : '') + '</div>';
   html += '</div>';
+  // ORB Info
+  html += '<div onclick="toggleStratInfo(\'dt\')" style="padding:6px 16px;background:rgba(239,68,68,0.05);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;">';
+  html += '<span style="font-size:11px;color:var(--red);">&#9432;</span><span style="font-size:11px;color:var(--text-muted);font-weight:600;">How it works</span>';
+  html += '<span id="dt-info-arrow" style="margin-left:auto;font-size:10px;color:var(--text-muted);">\u25b6</span></div>';
+  html += '<div id="dt-info-body" style="display:none;padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary);line-height:1.5;">';
+  html += '<b>Candidates:</b> Stocks gapping 2%+ from yesterday with above-average pre-market volume and news catalysts.<br>';
+  html += '<b>Strategy:</b> Tracks the first 15 minutes of trading (9:30-9:45 AM) to establish the Opening Range. Buys breakouts above OR high, shorts breakdowns below OR low.<br>';
+  html += '<b>Why it works:</b> Big gaps with institutional volume signal a catalyst. The opening range is a key battleground — a clean break often leads to a sustained move.<br>';
+  html += '<b>Best in:</b> High-volatility, news-driven markets. Works best on earnings/catalyst days with clear direction.';
+  html += '</div>';
   html += '<div id="dt-scan-results" style="padding:12px;">';
   if (dtResults && dtResults.setups && dtResults.setups.length > 0) {
     html += renderDayTradeResults(dtResults);
@@ -1400,16 +1575,28 @@ function renderScanner() {
   html += '</div>';
 
   // ── BOX 2: Early Breakout ──
-  html += renderStrategyBox({ id: 'early-breakout', title: 'Early Breakout', badge: 'Compression', badgeColor: 'var(--green)', badgeBg: 'rgba(16,185,129,0.1)', setups: ebSetups, scanData: scanResults, emptyText: 'Tight range + volume dry-up near breakout levels. Scan to find setups.', scanFn: 'runFullScanUI()', limit: 5 });
+  html += renderStrategyBox({ id: 'early-breakout', title: 'Early Breakout', badge: 'Compression', badgeColor: 'var(--green)', badgeBg: 'rgba(16,185,129,0.1)', setups: ebSetups, scanData: scanResults, scanFn: 'runFullScanUI()', limit: 5,
+    emptyText: 'Tight range + volume dry-up near breakout levels. Scan to find setups.',
+    infoHtml: '<b>Candidates:</b> Top 100 US stocks by dollar volume. Filters for price > $20, volume > 1M, no ETFs.<br><b>Strategy:</b> Finds stocks where 10 & 20 SMA are squeezing together (compressing) with declining volume — a coiled spring ready to break. Scores based on tightness, SMA alignment, extension from base, and relative volume.<br><b>Why it works:</b> Compression = consolidation after a move. When a stock breaks out of a tight range on volume, the stored energy releases into a directional move. Think of it as a spring getting tighter.<br><b>Best in:</b> Any market. These are the bread-and-butter swing setups that work in trending or range-bound markets. Hold 2-10 days.'
+  });
 
   // ── BOX 3: Mean Reversion ──
-  html += renderStrategyBox({ id: 'mean-reversion', title: 'Mean Reversion', badge: 'Oversold', badgeColor: '#a855f7', badgeBg: 'rgba(168,85,247,0.1)', setups: mrSetups, scanData: scanResults, emptyText: 'RSI oversold + deep pullback with intact uptrend. Scan to find setups.', scanFn: 'runFullScanUI()', limit: 5 });
+  html += renderStrategyBox({ id: 'mean-reversion', title: 'Mean Reversion', badge: 'Oversold', badgeColor: '#a855f7', badgeBg: 'rgba(168,85,247,0.1)', setups: mrSetups, scanData: scanResults, scanFn: 'runFullScanUI()', limit: 5,
+    emptyText: 'RSI oversold + deep pullback with intact uptrend. Scan to find setups.',
+    infoHtml: '<b>Candidates:</b> Same universe. Filters for 8-25% pullback from recent high, RSI(14) \u2264 40, price still near 50 SMA.<br><b>Strategy:</b> Buys oversold bounces — stocks that pulled back hard but still have an intact uptrend. Entry at current price, target is the 20 SMA (the "mean"), stop below recent low.<br><b>Why it works:</b> Stocks in uptrends tend to revert to their moving average after pullbacks. RSI oversold + declining volume = sellers exhausted, buyers stepping in.<br><b>Best in:</b> Choppy, range-bound markets where stocks oscillate between support and resistance. These shine when breakouts keep failing.'
+  });
 
   // ── BOX 4: Momentum Breakout ──
-  html += renderStrategyBox({ id: 'momentum-breakout', title: 'Momentum BRK', badge: 'Trend', badgeColor: '#f59e0b', badgeBg: 'rgba(245,158,11,0.1)', setups: mbSetups, scanData: scanResults, emptyText: 'New highs on volume surge with stacked SMAs. Scan to find setups.', scanFn: 'runFullScanUI()', limit: 5 });
+  html += renderStrategyBox({ id: 'momentum-breakout', title: 'Momentum BRK', badge: 'Trend', badgeColor: '#f59e0b', badgeBg: 'rgba(245,158,11,0.1)', setups: mbSetups, scanData: scanResults, scanFn: 'runFullScanUI()', limit: 5,
+    emptyText: 'New highs on volume surge with stacked SMAs. Scan to find setups.',
+    infoHtml: '<b>Candidates:</b> Same universe. Filters for price at/above 20-day high, SMAs stacked bullish (10 > 20 > 50), relative volume \u2265 1.2x.<br><b>Strategy:</b> Rides the trend — buys stocks making new highs on strong volume with perfect trend alignment. Entry at current price, stop below recent swing low, target 2.5x risk.<br><b>Why it works:</b> Stocks making new highs on volume with stacked SMAs have maximum institutional support. The trend is your friend — momentum tends to persist.<br><b>Best in:</b> Strong trending markets where the indices are making new highs. These are the big winners in bull markets but get chopped up in ranges.'
+  });
 
   // ── BOX 5: Pullback Entry ──
-  html += renderStrategyBox({ id: 'pullback-entry', title: 'Pullback Entry', badge: 'Support', badgeColor: 'var(--blue)', badgeBg: 'rgba(37,99,235,0.1)', setups: pbSetups, scanData: scanResults, emptyText: 'Healthy pullbacks finding support on key SMAs. Scan to find setups.', scanFn: 'runFullScanUI()', limit: 5 });
+  html += renderStrategyBox({ id: 'pullback-entry', title: 'Pullback Entry', badge: 'Support', badgeColor: 'var(--blue)', badgeBg: 'rgba(37,99,235,0.1)', setups: pbSetups, scanData: scanResults, scanFn: 'runFullScanUI()', limit: 5,
+    emptyText: 'Healthy pullbacks finding support on key SMAs. Scan to find setups.',
+    infoHtml: '<b>Candidates:</b> Same universe. Filters for 3-18% pullback from high, price above 50 SMA, finding support at 10 or 20 SMA.<br><b>Strategy:</b> Buys the dip in uptrending stocks — waits for a pullback to land on a key moving average with declining volume (weak selling pressure), then enters for the bounce.<br><b>Why it works:</b> In uptrends, pullbacks to moving averages are where institutional buyers reload. Low volume on the pullback confirms sellers are done, and the trend is likely to resume.<br><b>Best in:</b> Healthy bull markets with normal pullbacks (not crashes). Works when the market has clear trends with orderly corrections.'
+  });
 
   // ── BOX 6: Social Arbitrage ──
   var socialCache = null;
@@ -1424,6 +1611,16 @@ function renderScanner() {
   html += '<button onclick="runSocialArbitrageScanUI()" class="refresh-btn" style="padding:5px 12px;font-size:12px;" id="social-arb-scan-btn">Scan</button>';
   html += '</div>';
   html += '<div id="social-arb-status" style="font-size:11px;color:var(--text-muted);margin-top:4px;">' + (socialCache ? 'Cached (' + (socialCache.picks || []).length + ' picks)' : '') + '</div>';
+  html += '</div>';
+  // Social Arb Info
+  html += '<div onclick="toggleStratInfo(\'social-arb\')" style="padding:6px 16px;background:rgba(168,85,247,0.05);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;">';
+  html += '<span style="font-size:11px;color:#a855f7;">&#9432;</span><span style="font-size:11px;color:var(--text-muted);font-weight:600;">How it works</span>';
+  html += '<span id="social-arb-info-arrow" style="margin-left:auto;font-size:10px;color:var(--text-muted);">\u25b6</span></div>';
+  html += '<div id="social-arb-info-body" style="display:none;padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary);line-height:1.5;">';
+  html += '<b>Candidates:</b> AI-driven scan of news headlines, Reddit discussions, and Google Trends for unusual buzz around consumer brands and products.<br>';
+  html += '<b>Strategy:</b> Spots consumer trends before Wall Street prices them in. Looks for "sold out", "going viral", "everyone is buying" signals. Scores based on news volume, Reddit mentions, Google trend spikes, and price/volume confirmation.<br>';
+  html += '<b>Why it works:</b> Retail consumers notice product trends weeks before analysts. Chris Camillo turned $20K into $42M using this edge. Social signals = real demand shifts.<br>';
+  html += '<b>Best in:</b> Consumer-driven markets. Works year-round but strongest around product launches, viral moments, and seasonal demand shifts.';
   html += '</div>';
   html += '<div id="social-arb-results" style="padding:12px 16px;">';
   if (socialCache && socialCache.picks && socialCache.picks.length > 0) {
@@ -1513,6 +1710,17 @@ function renderStrategyBox(cfg) {
   }
   html += '</div>';
   html += '</div>';
+  // Info section (collapsible)
+  if (cfg.infoHtml) {
+    html += '<div onclick="toggleStratInfo(\'' + cfg.id + '\')" style="padding:6px 16px;background:' + (cfg.badgeBg || 'rgba(128,128,128,0.05)') + ';border-bottom:1px solid var(--border);cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;">';
+    html += '<span style="font-size:11px;color:' + cfg.badgeColor + ';">&#9432;</span>';
+    html += '<span style="font-size:11px;color:var(--text-muted);font-weight:600;">How it works</span>';
+    html += '<span id="' + cfg.id + '-info-arrow" style="margin-left:auto;font-size:10px;color:var(--text-muted);">\u25b6</span>';
+    html += '</div>';
+    html += '<div id="' + cfg.id + '-info-body" style="display:none;padding:10px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary);line-height:1.5;">';
+    html += cfg.infoHtml;
+    html += '</div>';
+  }
   // Body
   var setups = cfg.setups || [];
   var limit = cfg.limit || 0;
@@ -2034,21 +2242,15 @@ function checkScannerAlerts(setups) {
 
 // ==================== TOGGLES ====================
 
-function toggleDTInfo() {
-  var body = document.getElementById('dt-info-body'), arrow = document.getElementById('dt-info-arrow');
+function toggleStratInfo(id) {
+  var body = document.getElementById(id + '-info-body'), arrow = document.getElementById(id + '-info-arrow');
   if (!body) return;
   var hidden = body.style.display === 'none';
   body.style.display = hidden ? '' : 'none';
   if (arrow) arrow.textContent = hidden ? '\u25bc' : '\u25b6';
 }
-
-function toggleSwingInfo() {
-  var body = document.getElementById('swing-info-body'), arrow = document.getElementById('swing-info-arrow');
-  if (!body) return;
-  var hidden = body.style.display === 'none';
-  body.style.display = hidden ? '' : 'none';
-  if (arrow) arrow.textContent = hidden ? '\u25bc' : '\u25b6';
-}
+function toggleDTInfo() { toggleStratInfo('dt'); }
+function toggleSwingInfo() { toggleStratInfo('swing'); }
 
 function toggleUniverse() {
   var body = document.getElementById('universe-body'), arrow = document.getElementById('universe-arrow');
