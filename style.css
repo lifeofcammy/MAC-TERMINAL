@@ -97,11 +97,11 @@
   --color-warning-active:   #92400E;
   --color-warning-highlight:#FEF3C7;
 
-  /* Shadows (blue-tinted for finance) */
-  --shadow-sm: 0 1px 2px oklch(0.2 0.05 250 / 0.06);
-  --shadow-md: 0 4px 12px oklch(0.2 0.05 250 / 0.08), 0 1px 3px oklch(0.2 0.05 250 / 0.05);
-  --shadow-lg: 0 12px 32px oklch(0.2 0.05 250 / 0.12), 0 4px 8px oklch(0.2 0.05 250 / 0.06);
-  --shadow-glow: 0 0 0 3px oklch(from var(--color-primary) l c h / 0.15);
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(15,23,42,0.06);
+  --shadow-md: 0 4px 12px rgba(15,23,42,0.08), 0 1px 3px rgba(15,23,42,0.05);
+  --shadow-lg: 0 12px 32px rgba(15,23,42,0.12), 0 4px 8px rgba(15,23,42,0.06);
+  --shadow-glow: 0 0 0 3px rgba(79,70,229,0.15);
 }
 
 /* === DARK MODE === */
@@ -146,11 +146,11 @@
   --color-warning-active:   #FDE68A;
   --color-warning-highlight:#451A03;
 
-  /* Shadows (darker on dark bg) */
-  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
-  --shadow-md: 0 4px 12px oklch(0 0 0 / 0.4), 0 1px 3px oklch(0 0 0 / 0.3);
-  --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.5), 0 4px 8px oklch(0 0 0 / 0.3);
-  --shadow-glow: 0 0 0 3px oklch(from var(--color-primary) l c h / 0.25);
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3);
+  --shadow-glow: 0 0 0 3px rgba(129,140,248,0.25);
 }
 
 /* System preference fallback */
@@ -184,10 +184,10 @@
     --color-warning-hover:    #FCD34D;
     --color-warning-active:   #FDE68A;
     --color-warning-highlight:#451A03;
-    --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
-    --shadow-md: 0 4px 12px oklch(0 0 0 / 0.4), 0 1px 3px oklch(0 0 0 / 0.3);
-    --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.5), 0 4px 8px oklch(0 0 0 / 0.3);
-    --shadow-glow: 0 0 0 3px oklch(from var(--color-primary) l c h / 0.25);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3);
+    --shadow-glow: 0 0 0 3px rgba(129,140,248,0.25);
   }
 }
 
@@ -241,7 +241,7 @@ p, li, figcaption {
 }
 
 ::selection {
-  background: oklch(from var(--color-primary) l c h / 0.2);
+  background: rgba(79,70,229,0.2);
   color: var(--color-text);
 }
 

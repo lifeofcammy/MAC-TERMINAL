@@ -133,7 +133,7 @@
       border-bottom: 1px solid var(--color-divider);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      background: oklch(from var(--color-bg) l c h / 0.92);
+      background: rgba(255,255,255,0.92);
     }
     .nav-inner {
       display: flex;
@@ -330,7 +330,7 @@
     .preview-img-wrap {
       border-radius: var(--radius-lg);
       overflow: hidden;
-      box-shadow: 0 4px 24px oklch(0 0 0 / 0.08), 0 1px 4px oklch(0 0 0 / 0.04);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
       border: 1px solid var(--color-border);
     }
     .preview-img-wrap img {
@@ -372,6 +372,7 @@
 
     /* ── Dark Mode — Gold accent overrides ── */
     [data-theme="dark"] .nav {
+      background: rgba(10,15,30,0.92);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-bottom-color: rgba(255,255,255,0.06);
