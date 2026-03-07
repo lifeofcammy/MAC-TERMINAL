@@ -1019,8 +1019,8 @@ async function renderOverview() {
 
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;gap:10px;">';
-  html += '<span id="mindset-arrow" style="flex-shrink:0;font-size:14px;color:var(--blue);display:flex;align-items:center;gap:4px;"><span style="font-size:18px;">'+(mindsetCollapsed?'▶':'▼')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(mindsetCollapsed?'Expand':'Collapse')+'</span></span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 1</div><div class="card-header-bar">Morning Mindset</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Set your mental game before the market opens</div></div></div>';
+  html += '<span id="mindset-arrow" style="flex-shrink:0;font-size:14px;color:var(--text-primary);display:flex;align-items:center;gap:4px;"><span style="font-size:18px;">'+(mindsetCollapsed?'▶':'▼')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(mindsetCollapsed?'Expand':'Collapse')+'</span></span>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--text-primary);letter-spacing:0.04em;margin-bottom:2px;">Step 1</div><div class="card-header-bar">Morning Mindset</div><div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-top:1px;">Set your mental game before the market opens</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Today's Focus — ALWAYS visible, centered under header
@@ -1127,8 +1127,8 @@ async function renderOverview() {
 
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'regime\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
-  html += '<span id="regime-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--blue);"><span style="font-size:18px;">'+(regimeCollapsed?'▶':'▼')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(regimeCollapsed?'Expand':'Collapse')+'</span></span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 2</div><div class="card-header-bar">Market Outlook</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div></div>';
+  html += '<span id="regime-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--text-muted);"><span style="font-size:18px;">'+(regimeCollapsed?'▶':'▼')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(regimeCollapsed?'Expand':'Collapse')+'</span></span>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--text-primary);letter-spacing:0.04em;margin-bottom:2px;">Step 2</div><div class="card-header-bar">Market Outlook</div><div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-top:1px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Regime label — always visible, centered under header
@@ -1203,8 +1203,8 @@ async function renderOverview() {
     var breadthCollapsed = localStorage.getItem('mac_breadth_collapsed')!=='false';
     html += '<div class="card" style="padding:0;margin-bottom:14px;overflow:hidden;">';
     html += '<div onclick="toggleBreadth()" style="display:flex;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;gap:10px;">';
-    html += '<span id="breadth-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--blue);"><span style="font-size:18px;">'+(breadthCollapsed?'\u25b6':'\u25bc')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(breadthCollapsed?'Expand':'Collapse')+'</span></span>';
-    html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 3</div><div class="card-header-bar">Stock Breadth</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Is the move broad or narrow? Confirms if the regime call is real.</div></div></div>';
+    html += '<span id="breadth-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--text-muted);"><span style="font-size:18px;">'+(breadthCollapsed?'\u25b6':'\u25bc')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(breadthCollapsed?'Expand':'Collapse')+'</span></span>';
+    html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--text-primary);letter-spacing:0.04em;margin-bottom:2px;">Step 3</div><div class="card-header-bar">Stock Breadth</div><div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-top:1px;">Is the move broad or narrow? Confirms if the regime call is real.</div></div></div>';
     html += '<span style="width:20px;"></span>';
     html += '</div>';
     // Breadth preview — always visible
@@ -1243,14 +1243,14 @@ async function renderOverview() {
   var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')!=='false';
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleHeatmap()" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
-  html += '<span id="heatmap-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--blue);"><span style="font-size:18px;">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(heatmapCollapsed?'Expand':'Collapse')+'</span></span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 4</div><div class="card-header-bar">Sector Rotation</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Where is money flowing? Click a sector for details.</div></div></div>';
+  html += '<span id="heatmap-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--text-muted);"><span style="font-size:18px;">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(heatmapCollapsed?'Expand':'Collapse')+'</span></span>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--text-primary);letter-spacing:0.04em;margin-bottom:2px;">Step 4</div><div class="card-header-bar">Sector Rotation</div><div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-top:1px;">Where is money flowing? Click a sector for details.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Sector preview — always visible
   html += '<div class="step-preview"><div class="center-under-tagline step-preview-inner" style="display:inline-flex;flex-wrap:wrap;justify-content:center;">';
   html += '<span class="step-preview-label" style="color:#10B981;margin:0 6px;">'+_sqCount.leading+' Leading</span>';
-  html += '<span class="step-preview-label" style="color:var(--blue);margin:0 6px;">'+_sqCount.improving+' Improving</span>';
+  html += '<span class="step-preview-label" style="color:var(--text-primary);margin:0 6px;">'+_sqCount.improving+' Improving</span>';
   html += '<span class="step-preview-label" style="color:var(--amber);margin:0 6px;">'+_sqCount.weakening+' Weakening</span>';
   html += '<span class="step-preview-label" style="color:#EF4444;margin:0 6px;">'+_sqCount.lagging+' Lagging</span>';
   html += '</div></div>';
@@ -1258,7 +1258,7 @@ async function renderOverview() {
 
   html += '<div style="padding:10px 8px;">';
   if(!isMarketOpen()){
-    html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(88,166,255,0.08);border:1px solid rgba(88,166,255,0.2);border-radius:8px;margin-bottom:10px;font-size:13px;color:var(--blue);">';
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(88,166,255,0.08);border:1px solid rgba(88,166,255,0.2);border-radius:8px;margin-bottom:10px;font-size:13px;color:var(--text-primary);">';
     html+='<span style="font-size:15px;flex-shrink:0;">&#128337;</span>';
     html+='<span>Showing last session\'s sector positioning. Live updates resume at market open.</span>';
     html+='</div>';
@@ -1349,8 +1349,8 @@ async function renderOverview() {
   var _catHasThemes=false; try{_catHasThemes=!!localStorage.getItem(_catThemeKey);}catch(e){}
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'catalysts\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
-  html += '<span id="catalysts-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--blue);"><span style="font-size:18px;">'+(catalystsCollapsed?'\u25b6':'\u25bc')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(catalystsCollapsed?'Expand':'Collapse')+'</span></span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 5</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">What events and narratives are driving today\'s price action?</div></div></div>';
+  html += '<span id="catalysts-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--text-muted);"><span style="font-size:18px;">'+(catalystsCollapsed?'\u25b6':'\u25bc')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(catalystsCollapsed?'Expand':'Collapse')+'</span></span>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--text-primary);letter-spacing:0.04em;margin-bottom:2px;">Step 5</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-top:1px;">What events and narratives are driving today\'s price action?</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Catalysts preview — always visible
@@ -1412,8 +1412,8 @@ async function renderOverview() {
   var _ideaCount = (cachedIdeas&&cachedIdeas.ideas) ? cachedIdeas.ideas.length : 0;
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'ideas\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
-  html += '<span id="ideas-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--blue);"><span style="font-size:18px;">'+(ideasCollapsed?'\u25b6':'\u25bc')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(ideasCollapsed?'Expand':'Collapse')+'</span></span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 6</div><div class="card-header-bar">Top Ideas</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div></div>';
+  html += '<span id="ideas-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--text-muted);"><span style="font-size:18px;">'+(ideasCollapsed?'\u25b6':'\u25bc')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(ideasCollapsed?'Expand':'Collapse')+'</span></span>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--text-primary);letter-spacing:0.04em;margin-bottom:2px;">Step 6</div><div class="card-header-bar">Top Ideas</div><div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-top:1px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Ideas preview — always visible
@@ -1453,8 +1453,8 @@ async function renderOverview() {
   try { var rr = localStorage.getItem('mac_recap_'+recapDateKey); if(rr) cachedRecap = JSON.parse(rr); } catch(e) {}
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'recap\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
-  html += '<span id="recap-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--blue);"><span style="font-size:18px;">'+(recapCollapsed?'\u25b6':'\u25bc')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(recapCollapsed?'Expand':'Collapse')+'</span></span>';
-  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 7</div><div class="card-header-bar">After the Bell</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">'+recapDateLabel+' \u2014 Session recap + tomorrow\'s watchlist.</div></div></div>';
+  html += '<span id="recap-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--text-muted);"><span style="font-size:18px;">'+(recapCollapsed?'\u25b6':'\u25bc')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(recapCollapsed?'Expand':'Collapse')+'</span></span>';
+  html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--text-primary);letter-spacing:0.04em;margin-bottom:2px;">Step 7</div><div class="card-header-bar">After the Bell</div><div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-top:1px;">'+recapDateLabel+' \u2014 Session recap + tomorrow\'s watchlist.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
   // Recap preview — always visible
@@ -1579,7 +1579,7 @@ function renderWatchlistSidebar() {
   // Account size box
   var savedAcct = localStorage.getItem('mac_account_size') || '';
   html += '<div style="display:flex;align-items:center;gap:8px;background:var(--bg-secondary);border:1.5px solid var(--blue);border-radius:10px;padding:8px 14px;margin-bottom:8px;">';
-  html += '<label style="font-size:14px;color:var(--blue);white-space:nowrap;font-weight:700;">Acct $</label>';
+  html += '<label style="font-size:14px;color:var(--text-primary);white-space:nowrap;font-weight:700;">Acct $</label>';
   html += '<input id="header-account-input" type="number" placeholder="Enter size" min="0" step="1000" value="' + (savedAcct ? savedAcct : '') + '"';
   html += ' style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:15px;text-align:right;-moz-appearance:textfield;box-sizing:border-box;"';
   html += ' title="Your account size — used for position sizing" onchange="saveHeaderAccount()" />';
@@ -1855,7 +1855,7 @@ async function showRRGSectorPopup(d) {
       var topLeaders = leaders.slice(0,8);
       if(topLeaders.length > 0) {
         bodyHtml += '<div>';
-        bodyHtml += '<div style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Top Stocks</div>';
+        bodyHtml += '<div style="font-size:12px;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Top Stocks</div>';
         bodyHtml += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:2px 10px;font-size:11px;font-weight:700;color:var(--text-muted);padding:0 10px 4px;text-transform:uppercase;">';
         bodyHtml += '<span>Ticker</span><span style="text-align:right;">Price</span><span style="text-align:right;">Day %</span><span style="text-align:right;">Vol</span></div>';
         topLeaders.forEach(function(l){
@@ -1983,7 +1983,7 @@ async function showRRGSectorDetail(sectorEtf) {
 
       if (topLeaders.length > 0) {
         html += '<div>';
-        html += '<div style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Trend Leaders</div>';
+        html += '<div style="font-size:12px;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Trend Leaders</div>';
         html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:2px 10px;font-size:12px;font-weight:700;color:var(--text-muted);padding:0 10px 3px;text-transform:uppercase;letter-spacing:.03em;">';
         html += '<span>Ticker</span><span style="text-align:right;">Price</span><span style="text-align:right;">Day %</span><span style="text-align:right;">Vol</span>';
         html += '</div>';
@@ -2094,7 +2094,7 @@ async function toggleSubsectors(sectorEtf) {
 
       if (topLeaders.length > 0) {
         html += '<div style="padding:6px 6px 4px;">';
-        html += '<div style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Trend Leaders</div>';
+        html += '<div style="font-size:12px;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Trend Leaders</div>';
         // Table header
         html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:2px 8px;font-size:12px;font-weight:700;color:var(--text-muted);padding:0 8px 2px;text-transform:uppercase;letter-spacing:.03em;">';
         html += '<span>Ticker</span><span style="text-align:right;">Price</span><span style="text-align:right;">Day %</span><span style="text-align:right;">Vol</span>';
