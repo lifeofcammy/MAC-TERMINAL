@@ -14,8 +14,7 @@ var SCANNER_RESULTS_KEY = 'mac_scan_results';
 var DAYTRADE_CACHE_KEY = 'mac_daytrade_results';
 var DAYTRADE_UNIVERSE_KEY = 'mac_daytrade_universe';
 
-// ORB timeframe preference — controls breakout confirmation candle size and target multiplier
-var _orbTimeframe = localStorage.getItem('mac_orb_timeframe') || '15min';
+// ORB uses 15-minute opening range exclusively
 
 // Known ETF tickers to exclude (common ones that sneak through)
 var KNOWN_ETFS = [
@@ -760,7 +759,7 @@ async function buildDayTradeUniverse(statusFn) {
 }
 
 // Calculate ORB (Opening Range Breakout) for a ticker
-// timeframe: '15min' or '1hr' — controls breakout confirmation candle size
+// Calculate 15-min ORB for a ticker
 async function calcORBForTicker(ticker, today, timeframe) {
   try {
     // Always use 1-min candles for precise OR calculation (9:30-9:45)
@@ -792,9 +791,8 @@ async function calcORBForTicker(ticker, today, timeframe) {
     var orRange = orHigh - orLow;
     var orRangePct = orHigh > 0 ? (orRange / orHigh) * 100 : 0;
 
-    // Fetch confirmation-timeframe candles for breakout detection
-    var confirmMult = timeframe === '1hr' ? 60 : 15;
-    var confirmData = await polyGetRetry('/v2/aggs/ticker/' + ticker + '/range/' + confirmMult + '/minute/' + today + '/' + today + '?adjusted=true&sort=asc&limit=100');
+    // Fetch 15-min candles for breakout detection
+    var confirmData = await polyGetRetry('/v2/aggs/ticker/' + ticker + '/range/15/minute/' + today + '/' + today + '?adjusted=true&sort=asc&limit=100');
     var confirmBars = (confirmData.results || []).filter(function(b) {
       var d = new Date(b.t);
       var etStr = d.toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: 'numeric', hour12: false });
@@ -847,7 +845,7 @@ async function calcORBForTicker(ticker, today, timeframe) {
 }
 
 // Score a day trade setup (max 100 pts)
-// timeframe: '15min' or '1hr' — adjusts OR tightness thresholds for longer holds
+// Score a day trade setup (max 100 pts)
 function scoreDayTrade(gapper, orb, timeframe) {
   var score = 0;
   var components = {};
@@ -873,14 +871,10 @@ function scoreDayTrade(gapper, orb, timeframe) {
   components.breakout = ptsBreakout;
   score += ptsBreakout;
 
-  // 4. OR Tightness (0-15) — wider thresholds for longer timeframes
+  // 4. OR Tightness (0-15)
   var ptsTight = 0;
   if (orb) {
-    if (timeframe === '1hr') {
-      ptsTight = orb.orRangePct < 2 ? 15 : orb.orRangePct < 3 ? 10 : orb.orRangePct < 4 ? 5 : 0;
-    } else {
-      ptsTight = orb.orRangePct < 1 ? 15 : orb.orRangePct < 2 ? 10 : orb.orRangePct < 3 ? 5 : 0;
-    }
+    ptsTight = orb.orRangePct < 1 ? 15 : orb.orRangePct < 2 ? 10 : orb.orRangePct < 3 ? 5 : 0;
   }
   components.tightness = ptsTight;
   score += ptsTight;
@@ -939,9 +933,8 @@ async function runDayTradeScan(statusFn) {
     var orbBatchSize = 5;
     for (var i = 0; i < gappers.length; i += orbBatchSize) {
       var batch = gappers.slice(i, i + orbBatchSize);
-      var tf = _orbTimeframe;
       var orbPromises = batch.map(function(g) {
-        return calcORBForTicker(g.ticker, today, tf).then(function(orb) {
+        return calcORBForTicker(g.ticker, today, '15min').then(function(orb) {
           return { gapper: g, orb: orb };
         });
       });
@@ -949,14 +942,14 @@ async function runDayTradeScan(statusFn) {
 
       orbResults.forEach(function(r) {
         if (!r.orb) return;
-        var scored = scoreDayTrade(r.gapper, r.orb, tf);
+        var scored = scoreDayTrade(r.gapper, r.orb, '15min');
         if (scored.score < 30) return;
 
         // Direction based on breakout, fallback to gap direction
         var direction = r.orb.breakoutType !== 'none' ? (r.orb.breakoutType === 'long' ? 'LONG' : 'SHORT') : r.gapper.direction;
 
-        // Trade levels — wider targets for longer timeframes
-        var targetMult = tf === '1hr' ? 2.5 : 2.0;
+        // Trade levels
+        var targetMult = 2.0;
         var entry = direction === 'LONG' ? r.orb.orHigh : r.orb.orLow;
         var stop = direction === 'LONG' ? r.orb.orLow : r.orb.orHigh;
         var risk = Math.abs(entry - stop);
@@ -1327,12 +1320,7 @@ function renderScanner() {
   html += '<div style="display:flex;align-items:center;gap:8px;">';
   html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Day Trade</span>';
   html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:var(--red);text-transform:uppercase;letter-spacing:.04em;">ORB</span>';
-  // Timeframe toggle
-  var tf15Active = _orbTimeframe === '15min';
-  html += '<div style="display:flex;background:var(--bg-secondary);border-radius:6px;padding:2px;gap:2px;margin-left:4px;">';
-  html += '<button onclick="setORBTimeframe(\'15min\')" style="padding:2px 8px;font-size:10px;font-weight:700;border:none;border-radius:4px;cursor:pointer;background:'+(tf15Active?'var(--red)':'transparent')+';color:'+(tf15Active?'#fff':'var(--text-muted)')+';transition:all 0.15s;">15m</button>';
-  html += '<button onclick="setORBTimeframe(\'1hr\')" style="padding:2px 8px;font-size:10px;font-weight:700;border:none;border-radius:4px;cursor:pointer;background:'+(!tf15Active?'var(--red)':'transparent')+';color:'+(!tf15Active?'#fff':'var(--text-muted)')+';transition:all 0.15s;">1hr</button>';
-  html += '</div>';
+  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.08);color:var(--text-muted);margin-left:4px;">15m</span>';
   html += '</div>';
   html += '<button onclick="runDayTradeScanUI()" class="refresh-btn" style="padding:5px 12px;font-size:12px;">Scan</button>';
   html += '</div>';
@@ -1914,18 +1902,6 @@ async function triggerServerScan() {
   }
 }
 
-
-// ==================== TIMEFRAME SELECTOR ====================
-
-function setORBTimeframe(tf) {
-  _orbTimeframe = tf;
-  try { localStorage.setItem('mac_orb_timeframe', tf); } catch(e) {}
-  try { localStorage.removeItem(DAYTRADE_CACHE_KEY); } catch(e) {}
-  // Re-render scanner to update toggle button styles
-  if (typeof renderScanner === 'function') renderScanner();
-  // Re-scan with new timeframe
-  setTimeout(function() { runDayTradeScanUI(); }, 300);
-}
 
 // ==================== SCANNER ALERTS ====================
 
