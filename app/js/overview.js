@@ -1017,9 +1017,9 @@ async function renderOverview() {
   var dailyFocus = mindsetRules[todayIdx];
   var mindsetCollapsed = localStorage.getItem('mcc_mindset_collapsed')!=='false';
 
-  html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;border-left:3px solid var(--amber);border-radius:14px;">';
+  html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;gap:10px;">';
-  html += '<span id="mindset-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(mindsetCollapsed?'▶':'▼')+'</span>';
+  html += '<span id="mindset-arrow" style="flex-shrink:0;font-size:14px;color:var(--blue);display:flex;align-items:center;gap:4px;"><span style="font-size:18px;">'+(mindsetCollapsed?'▶':'▼')+'</span><span style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(mindsetCollapsed?'Expand':'Collapse')+'</span></span>';
   html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 1</div><div class="card-header-bar">Morning Mindset</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Set your mental game before the market opens</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
@@ -1127,7 +1127,7 @@ async function renderOverview() {
 
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'regime\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
-  html += '<span id="regime-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(regimeCollapsed?'▶':'▼')+'</span>';
+  html += '<span id="regime-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--blue);"><span style="font-size:18px;">'+(regimeCollapsed?'▶':'▼')+'</span><span style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(regimeCollapsed?'Expand':'Collapse')+'</span></span>';
   html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 2</div><div class="card-header-bar">Market Outlook</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Is the market risk-on or risk-off? This sets your aggression level.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
@@ -1204,7 +1204,7 @@ async function renderOverview() {
     var breadthCollapsed = localStorage.getItem('mac_breadth_collapsed')!=='false';
     html += '<div class="card" style="padding:0;margin-bottom:14px;overflow:hidden;">';
     html += '<div onclick="toggleBreadth()" style="display:flex;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;gap:10px;">';
-    html += '<span id="breadth-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(breadthCollapsed?'\u25b6':'\u25bc')+'</span>';
+    html += '<span id="breadth-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--blue);"><span style="font-size:18px;">'+(breadthCollapsed?'\u25b6':'\u25bc')+'</span><span style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(breadthCollapsed?'Expand':'Collapse')+'</span></span>';
     html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 3</div><div class="card-header-bar">Stock Breadth</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Is the move broad or narrow? Confirms if the regime call is real.</div></div></div>';
     html += '<span style="width:20px;"></span>';
     html += '</div>';
@@ -1244,7 +1244,7 @@ async function renderOverview() {
   var heatmapCollapsed = localStorage.getItem('mac_heatmap_collapsed')!=='false';
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleHeatmap()" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
-  html += '<span id="heatmap-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span>';
+  html += '<span id="heatmap-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--blue);"><span style="font-size:18px;">'+(heatmapCollapsed?'\u25b6':'\u25bc')+'</span><span style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(heatmapCollapsed?'Expand':'Collapse')+'</span></span>';
   html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 4</div><div class="card-header-bar">Sector Rotation</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Where is money flowing? Click a sector for details.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
@@ -1350,7 +1350,7 @@ async function renderOverview() {
   var _catHasThemes=false; try{_catHasThemes=!!localStorage.getItem(_catThemeKey);}catch(e){}
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'catalysts\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
-  html += '<span id="catalysts-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(catalystsCollapsed?'\u25b6':'\u25bc')+'</span>';
+  html += '<span id="catalysts-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--blue);"><span style="font-size:18px;">'+(catalystsCollapsed?'\u25b6':'\u25bc')+'</span><span style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(catalystsCollapsed?'Expand':'Collapse')+'</span></span>';
   html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 5</div><div class="card-header-bar">Catalysts & Themes</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">What events and narratives are driving today\'s price action?</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
@@ -1413,7 +1413,7 @@ async function renderOverview() {
   var _ideaCount = (cachedIdeas&&cachedIdeas.ideas) ? cachedIdeas.ideas.length : 0;
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'ideas\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
-  html += '<span id="ideas-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(ideasCollapsed?'\u25b6':'\u25bc')+'</span>';
+  html += '<span id="ideas-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--blue);"><span style="font-size:18px;">'+(ideasCollapsed?'\u25b6':'\u25bc')+'</span><span style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(ideasCollapsed?'Expand':'Collapse')+'</span></span>';
   html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 6</div><div class="card-header-bar">Top Ideas</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">Highest-scored setups from today\'s scan. Your shortlist.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
@@ -1454,7 +1454,7 @@ async function renderOverview() {
   try { var rr = localStorage.getItem('mac_recap_'+recapDateKey); if(rr) cachedRecap = JSON.parse(rr); } catch(e) {}
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleCard(\'recap\')" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;cursor:pointer;user-select:none;gap:10px;">';
-  html += '<span id="recap-arrow" style="flex-shrink:0;font-size:18px;color:var(--blue);">'+(recapCollapsed?'\u25b6':'\u25bc')+'</span>';
+  html += '<span id="recap-arrow" style="flex-shrink:0;display:flex;align-items:center;gap:4px;color:var(--blue);"><span style="font-size:18px;">'+(recapCollapsed?'\u25b6':'\u25bc')+'</span><span style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(recapCollapsed?'Expand':'Collapse')+'</span></span>';
   html += '<div style="flex:1;text-align:center;"><div class="step-header-box"><div style="font-size:14px;font-weight:800;color:var(--blue);letter-spacing:0.04em;margin-bottom:2px;">Step 7</div><div class="card-header-bar">After the Bell</div><div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;">'+recapDateLabel+' \u2014 Session recap + tomorrow\'s watchlist.</div></div></div>';
   html += '<span style="width:20px;"></span>';
   html += '</div>';
@@ -1673,7 +1673,7 @@ function toggleCard(name) {
   if(!body)return;var h=body.style.display==='none';
   var dt=_cardDisplayType[name]||'block';
   body.style.display=h?dt:'none';
-  if(arrow)arrow.textContent=h?'▼':'▶';
+  if(arrow)arrow.innerHTML='<span style="font-size:18px;">'+(h?'▼':'▶')+'</span><span style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(h?'Collapse':'Expand')+'</span>';
   try{localStorage.setItem('mac_'+name+'_collapsed',h?'false':'true');}catch(e){}
 }
 function toggleHeatmap(){
@@ -2126,14 +2126,14 @@ async function toggleSubsectors(sectorEtf) {
 function toggleBreadth(){
   var body=document.getElementById('breadth-content'),arrow=document.getElementById('breadth-arrow');
   if(!body)return;var h=body.style.display==='none';body.style.display=h?'':'none';
-  if(arrow)arrow.textContent=h?'\u25bc':'\u25b6';
+  if(arrow)arrow.innerHTML='<span style="font-size:18px;">'+(h?'\u25bc':'\u25b6')+'</span><span style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(h?'Collapse':'Expand')+'</span>';
   try{localStorage.setItem('mac_breadth_collapsed',h?'false':'true');}catch(e){}
 }
 
 function toggleMindset(){
   var body=document.getElementById('mindset-body'),arrow=document.getElementById('mindset-arrow');
   if(!body)return;var h=body.style.display==='none';body.style.display=h?'':'none';
-  if(arrow)arrow.textContent=h?'▼':'▶';
+  if(arrow)arrow.innerHTML='<span style="font-size:18px;">'+(h?'▼':'▶')+'</span><span style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(h?'Collapse':'Expand')+'</span>';
   try{localStorage.setItem('mcc_mindset_collapsed',h?'false':'true');}catch(e){}
 }
 
