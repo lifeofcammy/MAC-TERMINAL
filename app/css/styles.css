@@ -7,33 +7,33 @@
   --font-mono:    'JetBrains Mono', monospace;
 }
 
-/* === LIGHT MODE === */
+/* === LIGHT MODE — Apple-inspired === */
 :root, [data-theme="light"] {
-  --bg-primary: #F8FAFC;
-  --bg-secondary: #F1F5F9;
+  --bg-primary: #F5F5F7;
+  --bg-secondary: #F5F5F7;
   --bg-card: #FFFFFF;
-  --border: #E2E8F0;
-  --border2: #CBD5E1;
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
-  --text-muted: #94A3B8;
-  --shadow-sm: 0 1px 3px rgba(15,23,42,0.04), 0 1px 2px rgba(15,23,42,0.02);
-  --shadow-md: 0 4px 16px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.04);
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.12);
+  --text-primary: #1D1D1F;
+  --text-secondary: #6E6E73;
+  --text-muted: #86868B;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 12px rgba(0,0,0,0.08);
   --green: #34D399;
   --green-bg: rgba(52,211,153,0.1);
   --red: #FCA5A5;
   --red-dim: #F87171;
   --red-bg: rgba(252,165,165,0.08);
-  --blue: #4F46E5;
-  --blue-bg: rgba(79,70,229,0.07);
+  --blue: #0071E3;
+  --blue-bg: rgba(0,113,227,0.06);
   --amber: #F59E0B;
   --amber-bg: rgba(245,158,11,0.08);
   --purple: #7C3AED;
   --purple-bg: rgba(124,58,237,0.08);
   --cyan: #0891b2;
   --cyan-bg: rgba(8,145,178,0.08);
-  --accent: #4F46E5;
-  --accent-bg: rgba(79,70,229,0.07);
+  --accent: #1D1D1F;
+  --accent-bg: rgba(29,29,31,0.05);
 }
 
 /* === DARK MODE — Navy slate + gold premium === */
@@ -85,13 +85,13 @@ body {
   padding: 0 32px;
   height: 56px;
   border-bottom: 1px solid var(--border);
-  background: rgba(248,250,252,0.85);
+  background: rgba(245,245,247,0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 .header-left {
@@ -138,7 +138,7 @@ body {
   align-items: center;
   gap: 6px;
   padding: 10px 32px;
-  background: rgba(248,250,252,0.80);
+  background: rgba(245,245,247,0.80);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
@@ -201,9 +201,9 @@ body {
 /* Step Header / Sidebar Centering — must be BEFORE media queries */
 .step-header-box {
   text-align: center;
-  border: 2px solid var(--border);
-  border-radius: 10px;
-  padding: 6px 16px;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 12px;
+  padding: 8px 20px;
   display: inline-block;
   position: relative;
   left: 158px; /* offset half of sidebar(300)+gap(16) to center under tagline */

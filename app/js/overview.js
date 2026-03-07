@@ -1578,7 +1578,7 @@ function renderWatchlistSidebar() {
   var html = '';
   // Account size box
   var savedAcct = localStorage.getItem('mac_account_size') || '';
-  html += '<div style="display:flex;align-items:center;gap:8px;background:var(--bg-secondary);border:1.5px solid var(--blue);border-radius:10px;padding:8px 14px;margin-bottom:8px;">';
+  html += '<div style="display:flex;align-items:center;gap:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:8px 14px;margin-bottom:8px;">';
   html += '<label style="font-size:14px;color:var(--text-primary);white-space:nowrap;font-weight:700;">Acct $</label>';
   html += '<input id="header-account-input" type="number" placeholder="Enter size" min="0" step="1000" value="' + (savedAcct ? savedAcct : '') + '"';
   html += ' style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:15px;text-align:right;-moz-appearance:textfield;box-sizing:border-box;"';
@@ -1592,7 +1592,7 @@ function renderWatchlistSidebar() {
   // Add form (vertical for narrow sidebar)
   html += '<div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px;">';
   html += '<div style="display:flex;gap:6px;">';
-  html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="flex:1;min-width:0;background:var(--bg-secondary);border:1.5px solid var(--blue);border-radius:5px;padding:6px 8px;font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--text-primary);text-transform:uppercase;box-sizing:border-box;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
+  html += '<input type="text" id="wl-ticker-input" placeholder="TICKER" maxlength="5" style="flex:1;min-width:0;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--text-primary);text-transform:uppercase;box-sizing:border-box;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
   html += '<button onclick="addToWatchlist();refreshWatchlistUI();" class="refresh-btn" style="padding:6px 10px;font-size:12px;">+</button>';
   html += '</div>';
   html += '<input type="text" id="wl-note-input" placeholder="Notes..." style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:13px;color:var(--text-primary);box-sizing:border-box;" onkeydown="if(event.key===\'Enter\'){addToWatchlist();refreshWatchlistUI();}" />';
@@ -1617,7 +1617,7 @@ function _renderWatchlistItems(wList) {
   }
   var html = '<div style="display:flex;flex-direction:column;gap:6px;">';
   wList.forEach(function(item){
-    html += '<div class="wl-card-'+item.ticker+'" style="background:var(--bg-secondary);border-radius:8px;padding:10px 12px;border-left:3px solid var(--blue);position:relative;">';
+    html += '<div class="wl-card-'+item.ticker+'" style="background:var(--bg-secondary);border-radius:8px;padding:10px 12px;border-left:3px solid var(--border2);position:relative;">';
     html += '<button onclick="removeFromWatchlist(\''+item.ticker+'\');refreshWatchlistUI();" style="position:absolute;top:4px;right:6px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;">\u00d7</button>';
     html += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;flex-wrap:wrap;">';
     html += '<span class="ticker-link" style="font-size:13px;" title="Click for chart" onclick="event.stopPropagation();openTVChart(\''+item.ticker+'\');">'+item.ticker+'</span>';
@@ -2143,7 +2143,7 @@ function renderThemesHTML(data, cacheTs) {
 
   // Market narrative (if present)
   if(data.narrative){
-    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:6px;border-left:3px solid var(--blue);">' + escapeHtml(data.narrative) + '</div>';
+    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:6px;border-left:3px solid var(--border2);">' + escapeHtml(data.narrative) + '</div>';
   }
 
   // ── INDUSTRY HEAT CHECK (show first for quick scan) ──
