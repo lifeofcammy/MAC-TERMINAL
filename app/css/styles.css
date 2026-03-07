@@ -159,17 +159,17 @@ body {
 }
 .tab:hover {
   color: var(--text-primary);
-  background: rgba(37,99,235,0.06);
-  border-color: rgba(37,99,235,0.12);
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.06);
 }
 .tab:active {
   transform: scale(0.97);
 }
 .tab.active {
-  color: var(--blue);
-  background: rgba(37,99,235,0.08);
-  border-color: rgba(37,99,235,0.25);
-  box-shadow: 0 0 12px rgba(37,99,235,0.12);
+  color: var(--text-primary);
+  background: #fff;
+  border-color: rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
   font-weight: 600;
 }
 
