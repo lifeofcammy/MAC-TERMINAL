@@ -589,9 +589,11 @@ async function runSetupScan(statusFn) {
         if (ext <= 2) ebThesis += 'Near base (' + ext.toFixed(1) + '%). ';
         if (rvol >= 1.5) ebThesis += rvol.toFixed(1) + 'x volume. ';
         if (changePct > 1) ebThesis += 'Up ' + changePct.toFixed(1) + '% today.';
-        var ebStop = sma20 * 0.98;
-        var ebTarget = curPrice + (curPrice - ebStop) * 2;
-        var ebRisk = curPrice > 0 ? ((curPrice - ebStop) / curPrice) * 100 : 0;
+        var ebAtr = allAtr[ticker] || (curPrice * 0.02);
+        var ebStop = curPrice - ebAtr; // 1 ATR stop
+        var ebRiskAmt = curPrice - ebStop;
+        var ebTarget = curPrice + ebRiskAmt * 2.5; // 2.5R first target
+        var ebRisk = curPrice > 0 ? (ebRiskAmt / curPrice) * 100 : 0;
         setups.push({
           ticker: ticker, category: 'EARLY BREAKOUT', price: curPrice, prevClose: prevClose,
           changePct: Math.round(changePct * 100) / 100, score: ebScore,
@@ -599,7 +601,9 @@ async function runSetupScan(statusFn) {
           ext: Math.round(ext * 10) / 10, rvol: rvol ? Math.round(rvol * 10) / 10 : null,
           range5: Math.round(range5 * 10) / 10, aboveBoth: aboveBoth, aboveSma50: aboveSma50,
           entryPrice: curPrice, stopPrice: ebStop, targetPrice: ebTarget,
-          riskPct: Math.round(ebRisk * 10) / 10,
+          riskPct: Math.round(ebRisk * 10) / 10, atr: ebAtr,
+          rMultiple: 2.5,
+          mgmt: 'Move stop to break-even after 1-2 days or +5% move. Trail stop, don\'t sell into strength.',
           components: { tightness: ptsCompress, volumeDryUp: ptsAlign, breakoutProximity: ptsExt, volumeSurge: ptsVol }
         });
       }
@@ -634,16 +638,20 @@ async function runSetupScan(statusFn) {
 
       var pbScore = Math.round(Math.max(0, pbDepthPts + pbSupport + pbVolDry + pbTrend));
       if (pbScore >= 40 && pbSupport >= 12) {
-        var pbStop = arrMin(lows, Math.max(0, len - 5)) * 0.98;
-        var pbRisk = curPrice > 0 ? ((curPrice - pbStop) / curPrice) * 100 : 0;
-        var pbTarget = curPrice + (curPrice - pbStop) * 2;
+        var pbAtr = allAtr[ticker] || (curPrice * 0.02);
+        var pbStop = curPrice - pbAtr; // 1 ATR stop
+        var pbRiskAmt = curPrice - pbStop;
+        var pbTarget = curPrice + pbRiskAmt * 2.5; // 2.5R first target
+        var pbRisk = curPrice > 0 ? (pbRiskAmt / curPrice) * 100 : 0;
         setups.push({
           ticker: ticker, category: 'PULLBACK', price: curPrice, prevClose: prevClose,
           changePct: Math.round(changePct * 100) / 100, score: pbScore,
           description: pbSignals.join(' \u00b7 '), pullbackDepth: Math.round(pullbackDepth * 10) / 10,
           range5: Math.round(range5 * 10) / 10, rvol: rvol ? Math.round(rvol * 10) / 10 : null,
           entryPrice: curPrice, stopPrice: pbStop, targetPrice: pbTarget,
-          riskPct: Math.round(pbRisk * 10) / 10,
+          riskPct: Math.round(pbRisk * 10) / 10, atr: pbAtr,
+          rMultiple: 2.5,
+          mgmt: 'Move stop to break-even after 1-2 days or +5% move. Trail stop using 10 SMA.',
           components: { pullbackQuality: pbDepthPts, supportLevel: pbSupport, volumeDecline: pbVolDry, trendIntact: pbTrend }
         });
       }
@@ -684,9 +692,11 @@ async function runSetupScan(statusFn) {
 
       var mrScore = Math.round(Math.max(0, mrOversold + mrDepthPts + mrVolDry + mrTrend));
       if (mrScore >= 40) {
-        var mrStop = arrMin(lows, Math.max(0, len - 5)) * 0.98;
-        var mrRisk = curPrice > 0 ? ((curPrice - mrStop) / curPrice) * 100 : 0;
-        var mrTarget = sma20; // mean reversion target
+        var mrAtr = allAtr[ticker] || (curPrice * 0.02);
+        var mrStop = curPrice - mrAtr * 0.75; // 0.75 ATR (tighter — mean reversion snaps back fast)
+        var mrRiskAmt = curPrice - mrStop;
+        var mrTarget = Math.max(sma20, curPrice + mrRiskAmt * 2); // 20 SMA or 2R, whichever is higher
+        var mrRisk = curPrice > 0 ? (mrRiskAmt / curPrice) * 100 : 0;
         setups.push({
           ticker: ticker, category: 'MEAN REVERSION', price: curPrice, prevClose: prevClose,
           changePct: Math.round(changePct * 100) / 100, score: mrScore,
@@ -694,7 +704,9 @@ async function runSetupScan(statusFn) {
           pullbackDepth: Math.round(pullbackDepth * 10) / 10,
           range5: Math.round(range5 * 10) / 10, relativeVol: Math.round(rvol * 10) / 10,
           entryPrice: curPrice, stopPrice: mrStop, targetPrice: mrTarget,
-          riskPct: Math.round(mrRisk * 10) / 10,
+          riskPct: Math.round(mrRisk * 10) / 10, atr: mrAtr,
+          rMultiple: 2,
+          mgmt: 'Quick trade — take profit at 20 SMA. If it gaps up, sell into the move.',
           components: { pullbackQuality: mrDepthPts, oversold: mrOversold, volumeDecline: mrVolDry, trendIntact: mrTrend }
         });
       }
@@ -739,16 +751,20 @@ async function runSetupScan(statusFn) {
 
       var mbScore = Math.round(Math.max(0, mbBreakStr + mbVolSurge + mbSmaAlign + mbTight + mbExt));
       if (mbScore >= 45) {
-        var mbStop = Math.max(arrMin(lows, Math.max(0, len - 3)), sma10 || sma20 * 0.98);
-        var mbRisk = curPrice > 0 ? ((curPrice - mbStop) / curPrice) * 100 : 0;
-        var mbTarget = curPrice + (curPrice - mbStop) * 2.5;
+        var mbAtr = allAtr[ticker] || (curPrice * 0.02);
+        var mbStop = curPrice - mbAtr * 0.75; // 0.75 ATR (tight — momentum should hold)
+        var mbRiskAmt = curPrice - mbStop;
+        var mbTarget = curPrice + mbRiskAmt * 3; // 3R — momentum trades aim for outliers
+        var mbRisk = curPrice > 0 ? (mbRiskAmt / curPrice) * 100 : 0;
         setups.push({
           ticker: ticker, category: 'MOMENTUM BREAKOUT', price: curPrice, prevClose: prevClose,
           changePct: Math.round(changePct * 100) / 100, score: mbScore,
           description: mbSignals.join(' \u00b7 '),
           range5: Math.round(range5 * 10) / 10, relativeVol: Math.round(rvolRatio * 10) / 10,
           entryPrice: curPrice, stopPrice: mbStop, targetPrice: mbTarget,
-          riskPct: Math.round(mbRisk * 10) / 10,
+          riskPct: Math.round(mbRisk * 10) / 10, atr: mbAtr,
+          rMultiple: 3,
+          mgmt: 'Move stop to break-even after +5%. Trail using 10 SMA — let outliers run 20-30R.',
           components: { breakoutStrength: mbBreakStr, volumeSurge: mbVolSurge, smaAlignment: mbSmaAlign, baseTightness: mbTight }
         });
       }
@@ -1577,25 +1593,25 @@ function renderScanner() {
   // ── BOX 2: Early Breakout ──
   html += renderStrategyBox({ id: 'early-breakout', title: 'Early Breakout', badge: 'Compression', badgeColor: 'var(--green)', badgeBg: 'rgba(16,185,129,0.1)', setups: ebSetups, scanData: scanResults, scanFn: 'runFullScanUI()', limit: 5,
     emptyText: 'Tight range + volume dry-up near breakout levels. Scan to find setups.',
-    infoHtml: '<b>Candidates:</b> Top 100 US stocks by dollar volume. Filters for price > $20, volume > 1M, no ETFs.<br><b>Strategy:</b> Finds stocks where 10 & 20 SMA are squeezing together (compressing) with declining volume — a coiled spring ready to break. Scores based on tightness, SMA alignment, extension from base, and relative volume.<br><b>Why it works:</b> Compression = consolidation after a move. When a stock breaks out of a tight range on volume, the stored energy releases into a directional move. Think of it as a spring getting tighter.<br><b>Best in:</b> Any market. These are the bread-and-butter swing setups that work in trending or range-bound markets. Hold 2-10 days.'
+    infoHtml: '<b>Candidates:</b> Top 100 US stocks by dollar volume. Filters for price > $20, volume > 1M, no ETFs.<br><b>Strategy:</b> Finds stocks where 10 & 20 SMA are squeezing together (compressing) with declining volume — a coiled spring ready to break. Scores based on tightness, SMA alignment, extension from base, and relative volume.<br><b>Risk mgmt:</b> Stop = 1 ATR below entry. Target = 2.5R. Move stop to break-even after 1-2 days or +5% move. Trail stop using 10 SMA — don\'t sell into strength, let winners run.<br><b>Why it works:</b> Compression = consolidation after a move. Tight ATR-based stops keep risk small while allowing the position room to breathe. Research shows halving stop width only drops win rate by ~1/3, roughly doubling expectancy.<br><b>Best in:</b> Any market. Hold 2-10 days. Risk 0.25% of account per trade.'
   });
 
   // ── BOX 3: Mean Reversion ──
   html += renderStrategyBox({ id: 'mean-reversion', title: 'Mean Reversion', badge: 'Oversold', badgeColor: '#a855f7', badgeBg: 'rgba(168,85,247,0.1)', setups: mrSetups, scanData: scanResults, scanFn: 'runFullScanUI()', limit: 5,
     emptyText: 'RSI oversold + deep pullback with intact uptrend. Scan to find setups.',
-    infoHtml: '<b>Candidates:</b> Same universe. Filters for 8-25% pullback from recent high, RSI(14) \u2264 40, price still near 50 SMA.<br><b>Strategy:</b> Buys oversold bounces — stocks that pulled back hard but still have an intact uptrend. Entry at current price, target is the 20 SMA (the "mean"), stop below recent low.<br><b>Why it works:</b> Stocks in uptrends tend to revert to their moving average after pullbacks. RSI oversold + declining volume = sellers exhausted, buyers stepping in.<br><b>Best in:</b> Choppy, range-bound markets where stocks oscillate between support and resistance. These shine when breakouts keep failing.'
+    infoHtml: '<b>Candidates:</b> Top 100 US stocks by dollar volume (price > $20, volume > 1M, no ETFs). Then filters for 8-25% pullback from recent high, RSI(14) \u2264 40, price still near 50 SMA.<br><b>Strategy:</b> Buys oversold bounces — stocks that pulled back hard but still have an intact uptrend. Entry at current price, target is 20 SMA or 2R (whichever is higher).<br><b>Risk mgmt:</b> Stop = 0.75 ATR below entry (tighter — mean reversion snaps back fast or it fails). Quick trade — take profit at 20 SMA. If it gaps up, sell into the move.<br><b>Why it works:</b> Stocks in uptrends revert to their moving average after pullbacks. RSI oversold + declining volume = sellers exhausted. Tight stops work here because if the bounce doesn\'t happen quickly, the thesis is wrong.<br><b>Best in:</b> Choppy, range-bound markets. Hold 1-5 days. Risk 0.25% of account per trade.'
   });
 
   // ── BOX 4: Momentum Breakout ──
   html += renderStrategyBox({ id: 'momentum-breakout', title: 'Momentum BRK', badge: 'Trend', badgeColor: '#f59e0b', badgeBg: 'rgba(245,158,11,0.1)', setups: mbSetups, scanData: scanResults, scanFn: 'runFullScanUI()', limit: 5,
     emptyText: 'New highs on volume surge with stacked SMAs. Scan to find setups.',
-    infoHtml: '<b>Candidates:</b> Same universe. Filters for price at/above 20-day high, SMAs stacked bullish (10 > 20 > 50), relative volume \u2265 1.2x.<br><b>Strategy:</b> Rides the trend — buys stocks making new highs on strong volume with perfect trend alignment. Entry at current price, stop below recent swing low, target 2.5x risk.<br><b>Why it works:</b> Stocks making new highs on volume with stacked SMAs have maximum institutional support. The trend is your friend — momentum tends to persist.<br><b>Best in:</b> Strong trending markets where the indices are making new highs. These are the big winners in bull markets but get chopped up in ranges.'
+    infoHtml: '<b>Candidates:</b> Top 100 US stocks by dollar volume (price > $20, volume > 1M, no ETFs). Then filters for price at/above 20-day high, SMAs stacked bullish (10 > 20 > 50), relative volume \u2265 1.2x.<br><b>Strategy:</b> Rides the trend — buys stocks making new highs on strong volume with perfect trend alignment. Entry at current price, target 3R (outlier potential).<br><b>Risk mgmt:</b> Stop = 0.75 ATR below entry (tight — momentum should hold immediately). Move to break-even after +5%. Trail using 10 SMA and let outliers run 20-30R. These are the trades that make the year.<br><b>Why it works:</b> Stocks making new highs on volume with stacked SMAs have maximum institutional support. Tight stops with high R-targets mean you only need 30-40% win rate to be very profitable.<br><b>Best in:</b> Strong trending/bull markets. Hold 3-20+ days. Risk 0.2% of account — position for outliers.'
   });
 
   // ── BOX 5: Pullback Entry ──
   html += renderStrategyBox({ id: 'pullback-entry', title: 'Pullback Entry', badge: 'Support', badgeColor: 'var(--blue)', badgeBg: 'rgba(37,99,235,0.1)', setups: pbSetups, scanData: scanResults, scanFn: 'runFullScanUI()', limit: 5,
     emptyText: 'Healthy pullbacks finding support on key SMAs. Scan to find setups.',
-    infoHtml: '<b>Candidates:</b> Same universe. Filters for 3-18% pullback from high, price above 50 SMA, finding support at 10 or 20 SMA.<br><b>Strategy:</b> Buys the dip in uptrending stocks — waits for a pullback to land on a key moving average with declining volume (weak selling pressure), then enters for the bounce.<br><b>Why it works:</b> In uptrends, pullbacks to moving averages are where institutional buyers reload. Low volume on the pullback confirms sellers are done, and the trend is likely to resume.<br><b>Best in:</b> Healthy bull markets with normal pullbacks (not crashes). Works when the market has clear trends with orderly corrections.'
+    infoHtml: '<b>Candidates:</b> Top 100 US stocks by dollar volume (price > $20, volume > 1M, no ETFs). Then filters for 3-18% pullback from high, price above 50 SMA, finding support at 10 or 20 SMA.<br><b>Strategy:</b> Buys the dip in uptrending stocks — waits for a pullback to land on a key moving average with declining volume (weak selling pressure), then enters for the bounce.<br><b>Risk mgmt:</b> Stop = 1 ATR below entry. Target = 2.5R. Move stop to break-even after 1-2 days or +5% move. Trail stop using 10 SMA — the trend should resume if the thesis is right.<br><b>Why it works:</b> In uptrends, pullbacks to moving averages are where institutional buyers reload. Low volume on the pullback confirms sellers are done. ATR-based stops give the trade room to breathe without excessive risk.<br><b>Best in:</b> Healthy bull markets with orderly corrections. Hold 2-10 days. Risk 0.25% of account per trade.'
   });
 
   // ── BOX 6: Social Arbitrage ──
@@ -1861,10 +1877,24 @@ function renderSetupCard(s, idx, scanData) {
 
   // Trade levels (if available)
   if (s.entryPrice && s.stopPrice && s.targetPrice) {
-    html += '<div style="display:flex;gap:12px;margin-top:6px;font-size:11px;font-family:var(--font-mono);">';
+    var riskAmt = s.entryPrice - s.stopPrice;
+    var rewardAmt = s.targetPrice - s.entryPrice;
+    var rrRatio = riskAmt > 0 ? (rewardAmt / riskAmt).toFixed(1) : '—';
+    html += '<div style="margin-top:8px;padding:8px 10px;background:var(--bg-secondary);border-radius:6px;border:1px solid var(--border);">';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;font-family:var(--font-mono);align-items:center;">';
     html += '<span style="color:var(--text-muted);">Entry <span style="color:var(--text-secondary);font-weight:700;">$' + s.entryPrice.toFixed(2) + '</span></span>';
     html += '<span style="color:var(--text-muted);">Stop <span style="color:var(--red);font-weight:700;">$' + s.stopPrice.toFixed(2) + '</span></span>';
     html += '<span style="color:var(--text-muted);">Target <span style="color:var(--green);font-weight:700;">$' + s.targetPrice.toFixed(2) + '</span></span>';
+    if (s.riskPct) html += '<span style="color:var(--text-muted);">Risk <span style="color:var(--amber);font-weight:700;">' + s.riskPct + '%</span></span>';
+    html += '<span style="color:var(--text-muted);">R:R <span style="color:var(--blue);font-weight:700;">' + rrRatio + ':1</span></span>';
+    if (s.atr) html += '<span style="color:var(--text-muted);">ATR <span style="font-weight:700;">$' + s.atr.toFixed(2) + '</span></span>';
+    html += '</div>';
+    // Trade management tip
+    if (s.mgmt) {
+      html += '<div style="margin-top:5px;font-size:10px;color:var(--text-muted);line-height:1.4;border-top:1px solid var(--border);padding-top:5px;">';
+      html += '<span style="color:var(--amber);font-weight:600;">MGMT</span> ' + s.mgmt;
+      html += '</div>';
+    }
     html += '</div>';
   }
 

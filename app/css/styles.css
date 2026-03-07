@@ -127,15 +127,16 @@ body {
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-/* Tabs */
+/* Tabs — Premium glass pill bar */
 .tabs {
   display: flex;
   justify-content: center;
-  gap: 0;
-  padding: 0 32px;
-  background: color-mix(in srgb, var(--bg-primary) 85%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  align-items: center;
+  gap: 6px;
+  padding: 10px 32px;
+  background: color-mix(in srgb, var(--bg-primary) 80%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 56px;
@@ -143,27 +144,33 @@ body {
 }
 
 .tab {
-  padding: 14px 20px;
-  font-size: 20px;
-  font-family: var(--font-display);
-  font-weight: 400;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  letter-spacing: 0.01em;
   color: var(--text-muted);
   cursor: pointer;
-  border-bottom: 1.5px solid transparent;
-  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
   position: relative;
 }
 .tab:hover {
   color: var(--text-primary);
-  background: rgba(37,99,235,0.04);
+  background: rgba(37,99,235,0.06);
+  border-color: rgba(37,99,235,0.12);
 }
 .tab:active {
-  background: rgba(37,99,235,0.06);
+  transform: scale(0.97);
 }
 .tab.active {
   color: var(--blue);
-  border-bottom-color: var(--blue);
+  background: rgba(37,99,235,0.08);
+  border-color: rgba(37,99,235,0.25);
+  box-shadow: 0 0 12px rgba(37,99,235,0.12);
+  font-weight: 600;
 }
 
 
@@ -340,10 +347,14 @@ input:focus, textarea:focus, select:focus {
   border-bottom-color: var(--border2);
 }
 [data-theme="dark"] .tab:hover {
-  background: rgba(59,130,246,0.08);
+  background: rgba(59,130,246,0.1);
+  border-color: rgba(59,130,246,0.2);
 }
-[data-theme="dark"] .tab:active {
-  background: rgba(59,130,246,0.12);
+[data-theme="dark"] .tab.active {
+  color: #fff;
+  background: var(--blue);
+  border-color: rgba(59,130,246,0.6);
+  box-shadow: 0 0 20px rgba(59,130,246,0.4), 0 0 40px rgba(59,130,246,0.15);
 }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #475569; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #64748B; }
@@ -444,8 +455,8 @@ input:focus, textarea:focus, select:focus {
   #user-email { display: none; }
 
   /* Tabs — below header (52px) + tagline bar (~28px) */
-  .tabs { padding: 0 8px; top: 80px; }
-  .tab { padding: 10px 12px; font-size: 14px; }
+  .tabs { padding: 6px 8px; top: 80px; gap: 4px; }
+  .tab { padding: 8px 14px; font-size: 13px; border-radius: 10px; }
 
   .main { padding: 14px 10px; }
 
@@ -512,8 +523,8 @@ input:focus, textarea:focus, select:focus {
   .header-title { font-size: 14px; }
 
   /* Tabs: smaller, equal-width — below header (48px) + tagline bar (~26px) */
-  .tabs { padding: 0 4px; gap: 0; top: 74px; }
-  .tab { padding: 10px 6px; font-size: 12px; flex: 1; text-align: center; }
+  .tabs { padding: 4px; gap: 3px; top: 74px; }
+  .tab { padding: 8px 10px; font-size: 12px; flex: 1; text-align: center; border-radius: 8px; }
 
   .main { padding: 10px 8px; }
 
