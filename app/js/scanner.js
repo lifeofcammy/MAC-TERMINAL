@@ -1334,105 +1334,107 @@ function renderScanner() {
   html += '<div id="scanner-progress-bar" style="width:0%;height:100%;background:var(--blue);border-radius:2px;transition:width 0.3s ease;"></div>';
   html += '</div></div>';
 
-  // ═══ TWO-COLUMN GRID ═══
-  html += '<div class="scanner-dual-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">';
+  // ═══ SCREENING FUNNEL STATS ═══
+  var allSetups = (scanResults && scanResults.setups) ? scanResults.setups : [];
+  var ebSetups = allSetups.filter(function(s) { return s.category === 'EARLY BREAKOUT'; });
+  var pbSetups = allSetups.filter(function(s) { return s.category === 'PULLBACK'; });
+  var mrSetups = allSetups.filter(function(s) { return s.category === 'MEAN REVERSION'; });
+  var mbSetups = allSetups.filter(function(s) { return s.category === 'MOMENTUM BREAKOUT'; });
+  var uncatSetups = allSetups.filter(function(s) { return !s.category; });
+  // If no categorized setups, treat all as early breakout (legacy client-side scan)
+  if (ebSetups.length === 0 && uncatSetups.length > 0) ebSetups = uncatSetups;
 
-  // ── LEFT COLUMN: Day Trade Scanner ──
+  var scanMode = isScannerMarketHours() && isMomentumCacheFresh() ? 'live' : 'eod';
+  var scanStatusHtml = '';
+  if (scanMode === 'live') {
+    scanStatusHtml = '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;"></span>Live</span> ';
+  }
+  scanStatusHtml += '<span style="font-size:11px;color:var(--text-muted);">' + dataFreshness + '</span>';
+
+  html += '<div id="scanner-status-idle" style="margin-bottom:12px;">';
+  if (cache) {
+    html += '<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);flex-wrap:wrap;">';
+    html += scanStatusHtml + ' <span style="color:var(--text-muted);margin:0 4px;">&middot;</span> ';
+    if (cache.totalScanned) {
+      html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.totalScanned.toLocaleString() + '</span> scanned';
+      html += '<span style="font-size:10px;margin:0 2px;">\u2192</span>';
+    }
+    html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.count + '</span> candidates';
+    if (allSetups.length > 0) {
+      html += '<span style="font-size:10px;margin:0 2px;">\u2192</span>';
+      html += '<span style="font-family:var(--font-mono);font-weight:700;color:var(--blue);">' + allSetups.length + '</span> <span style="font-weight:600;color:var(--blue);">setups</span>';
+      var breakdownParts = [];
+      if (ebSetups.length) breakdownParts.push(ebSetups.length + ' EB');
+      if (pbSetups.length) breakdownParts.push(pbSetups.length + ' PB');
+      if (mrSetups.length) breakdownParts.push(mrSetups.length + ' MR');
+      if (mbSetups.length) breakdownParts.push(mbSetups.length + ' MB');
+      if (breakdownParts.length > 0) html += ' <span style="color:var(--text-muted);">(' + breakdownParts.join(', ') + ')</span>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // ═══ 6-BOX STRATEGY GRID ═══
+  html += '<div class="scanner-strategy-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px;margin-bottom:16px;">';
+
+  // ── BOX 1: Day Trade (ORB) ──
   html += '<div class="card" style="padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
   html += '<div style="display:flex;align-items:center;gap:8px;">';
-  html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Day Trade</span>';
-  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:var(--red);text-transform:uppercase;letter-spacing:.04em;">ORB</span>';
-  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.08);color:var(--text-muted);margin-left:4px;">15m</span>';
+  html += '<span style="font-size:15px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Day Trade</span>';
+  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:var(--red);text-transform:uppercase;letter-spacing:.04em;">ORB 15m</span>';
   html += '</div>';
   html += '<button onclick="runDayTradeScanUI()" class="refresh-btn" style="padding:5px 12px;font-size:12px;">Scan</button>';
   html += '</div>';
   html += '<div id="dt-phase-label" style="font-size:11px;margin-top:4px;"></div>';
-  html += '<div id="dt-scanner-status" style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + (dtResults ? 'Cached' : 'Click Scan or wait for auto-scan') + '</div>';
-  html += '</div>';
-  // Info banner
-  html += '<div onclick="toggleDTInfo()" style="padding:8px 16px;background:rgba(239,68,68,0.05);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;">';
-  html += '<span style="font-size:12px;color:var(--red);">&#9432;</span>';
-  html += '<span style="font-size:11px;color:var(--text-muted);font-weight:600;">How does this work?</span>';
-  html += '<span id="dt-info-arrow" style="margin-left:auto;font-size:10px;color:var(--text-muted);">\u25b6</span>';
-  html += '</div>';
-  html += '<div id="dt-info-body" style="display:none;padding:12px 16px;background:rgba(239,68,68,0.03);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary);line-height:1.6;">';
-  html += '<div style="font-weight:700;margin-bottom:6px;color:var(--text-primary);">Opening Range Breakout (ORB)</div>';
-  html += '<div style="margin-bottom:8px;"><strong>What it shows:</strong> Stocks that gapped 2%+ from yesterday\'s close with unusual volume. After 9:45 AM, it tracks whether they break above or below their first 15-minute trading range.</div>';
-  html += '<div style="margin-bottom:8px;"><strong>Why it works:</strong> Big gaps with high volume signal institutional interest or a major catalyst. The opening range (9:30\u20139:45) establishes the battleground \u2014 a clean break above or below it often leads to a sustained move in that direction.</div>';
-  html += '<div><strong>How to use it:</strong> Look for setups with high scores (60+). Entry is at the OR break level, stop is the opposite side of the range, target is 1.5\u00d7 the range. Higher RVol (2x+) and a tight OR range (&lt;2%) are the strongest signals.</div>';
+  html += '<div id="dt-scanner-status" style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + (dtResults ? 'Cached' : '') + '</div>';
   html += '</div>';
   html += '<div id="dt-scan-results" style="padding:12px;">';
   if (dtResults && dtResults.setups && dtResults.setups.length > 0) {
     html += renderDayTradeResults(dtResults);
   } else {
-    html += '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">15-min ORB strategy. Finds gappers with volume + news catalysts, then tracks opening range breakouts.</div>';
+    html += '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">Finds gappers with volume + catalysts, then tracks 15-min opening range breakouts.</div>';
   }
   html += '</div>';
   html += '</div>';
 
-  // ── RIGHT COLUMN: Swing Scanner ──
+  // ── BOX 2: Early Breakout ──
+  html += renderStrategyBox({ id: 'early-breakout', title: 'Early Breakout', badge: 'Compression', badgeColor: 'var(--green)', badgeBg: 'rgba(16,185,129,0.1)', setups: ebSetups, scanData: scanResults, emptyText: 'Tight range + volume dry-up near breakout levels. Scan to find setups.', scanFn: 'runFullScanUI()', limit: 5 });
+
+  // ── BOX 3: Mean Reversion ──
+  html += renderStrategyBox({ id: 'mean-reversion', title: 'Mean Reversion', badge: 'Oversold', badgeColor: '#a855f7', badgeBg: 'rgba(168,85,247,0.1)', setups: mrSetups, scanData: scanResults, emptyText: 'RSI oversold + deep pullback with intact uptrend. Scan to find setups.', scanFn: 'runFullScanUI()', limit: 5 });
+
+  // ── BOX 4: Momentum Breakout ──
+  html += renderStrategyBox({ id: 'momentum-breakout', title: 'Momentum BRK', badge: 'Trend', badgeColor: '#f59e0b', badgeBg: 'rgba(245,158,11,0.1)', setups: mbSetups, scanData: scanResults, emptyText: 'New highs on volume surge with stacked SMAs. Scan to find setups.', scanFn: 'runFullScanUI()', limit: 5 });
+
+  // ── BOX 5: Pullback Entry ──
+  html += renderStrategyBox({ id: 'pullback-entry', title: 'Pullback Entry', badge: 'Support', badgeColor: 'var(--blue)', badgeBg: 'rgba(37,99,235,0.1)', setups: pbSetups, scanData: scanResults, emptyText: 'Healthy pullbacks finding support on key SMAs. Scan to find setups.', scanFn: 'runFullScanUI()', limit: 5 });
+
+  // ── BOX 6: Social Arbitrage ──
+  var socialCache = null;
+  try { var sc2 = localStorage.getItem('mac_social_arb_results'); if (sc2) socialCache = JSON.parse(sc2); } catch(e) {}
   html += '<div class="card" style="padding:0;overflow:hidden;">';
   html += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
   html += '<div style="display:flex;align-items:center;gap:8px;">';
-  html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Swing Setups</span>';
-  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(37,99,235,0.1);color:var(--blue);text-transform:uppercase;letter-spacing:.04em;">Compression</span>';
-  html += '<span id="swing-win-rate-badge"></span>';
+  html += '<span style="font-size:15px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Social Arbitrage</span>';
+  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(168,85,247,0.1);color:#a855f7;text-transform:uppercase;letter-spacing:.04em;">Beta</span>';
   html += '</div>';
-  html += '<button onclick="runFullScanUI()" id="scan-btn" class="refresh-btn" style="padding:5px 12px;font-size:12px;">Scan</button>';
+  html += '<button onclick="runSocialArbitrageScanUI()" class="refresh-btn" style="padding:5px 12px;font-size:12px;" id="social-arb-scan-btn">Scan</button>';
   html += '</div>';
-  var scanMode = isScannerMarketHours() && isMomentumCacheFresh() ? 'live' : 'eod';
-  html += '<div style="display:flex;align-items:center;gap:6px;margin-top:4px;">';
-  if (scanMode === 'live') {
-    html += '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;"></span>Live</span>';
-  }
-  html += '<span style="font-size:11px;color:var(--text-muted);">' + dataFreshness + '</span>';
+  html += '<div id="social-arb-status" style="font-size:11px;color:var(--text-muted);margin-top:4px;">' + (socialCache ? 'Cached (' + (socialCache.picks || []).length + ' picks)' : '') + '</div>';
   html += '</div>';
-  html += '</div>';
-
-  // Info banner
-  html += '<div onclick="toggleSwingInfo()" style="padding:8px 16px;background:rgba(37,99,235,0.05);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;">';
-  html += '<span style="font-size:12px;color:var(--blue);">&#9432;</span>';
-  html += '<span style="font-size:11px;color:var(--text-muted);font-weight:600;">How does this work?</span>';
-  html += '<span id="swing-info-arrow" style="margin-left:auto;font-size:10px;color:var(--text-muted);">\u25b6</span>';
-  html += '</div>';
-  html += '<div id="swing-info-body" style="display:none;padding:12px 16px;background:rgba(37,99,235,0.03);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary);line-height:1.6;">';
-  html += '<div style="font-weight:700;margin-bottom:6px;color:var(--text-primary);">SMA Compression Scanner</div>';
-  html += '<div style="margin-bottom:8px;"><strong>What it shows:</strong> Stocks where the 10-day and 20-day moving averages are squeezing together (compressing). It scans the top 100 US stocks by dollar volume and scores them on compression, trend alignment, extension, relative volume, and momentum.</div>';
-  html += '<div style="margin-bottom:8px;"><strong>Why it works:</strong> When moving averages compress, it means the stock is consolidating after a move. This builds energy \u2014 like a coiled spring. When the stock breaks out of compression with volume, it often leads to a strong directional move. The best setups are above all key SMAs (aligned uptrend) with low extension (not overextended).</div>';
-  html += '<div><strong>How to use it:</strong> Look for scores of 50+ with tight SMA spread (&lt;2%). Stocks above their 10, 20, and 50 SMA with rising relative volume are the highest-probability swing trades. These are multi-day holds (2\u201310 days), not day trades.</div>';
-  html += '</div>';
-  // Screening funnel
-  html += '<div id="scanner-status-idle" style="padding:6px 16px;min-height:16px;">';
-  if (cache) {
-    var setupCount = (scanResults && scanResults.setups) ? scanResults.setups.length : 0;
-    html += '<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);flex-wrap:wrap;">';
-    if (cache.totalScanned) {
-      html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.totalScanned.toLocaleString() + '</span> scanned';
-      html += '<span style="font-size:10px;">\u2192</span>';
-    }
-    html += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.count + '</span> candidates';
-    if (setupCount > 0) {
-      html += '<span style="font-size:10px;">\u2192</span>';
-      html += '<span style="font-family:var(--font-mono);font-weight:700;color:var(--blue);">' + setupCount + '</span> <span style="font-weight:600;color:var(--blue);">setups</span>';
-    }
-    html += '</div>';
+  html += '<div id="social-arb-results" style="padding:12px 16px;">';
+  if (socialCache && socialCache.picks && socialCache.picks.length > 0) {
+    html += renderSocialArbResults(socialCache);
   } else {
-    html += '<div style="font-size:11px;color:var(--text-muted);">Click Scan to find setups.</div>';
-  }
-  html += '</div>';
-
-  // Swing results (top 5)
-  html += '<div id="scan-results" style="padding:0 12px 12px;">';
-  if (scanResults && scanResults.setups && scanResults.setups.length > 0) {
-    html += renderSetupResults(scanResults, 5);
+    html += '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">Scans news, Reddit, and social buzz to spot consumer trends before Wall Street.</div>';
   }
   html += '</div>';
   html += '</div>';
 
-  html += '</div>'; // close scanner-dual-grid
+  html += '</div>'; // close scanner-strategy-grid
 
   // ── BACKTEST RESULTS CARD (full-width) ──
   var btCollapsed = localStorage.getItem('mac_backtest_collapsed') === 'true';
@@ -1452,50 +1454,6 @@ function renderScanner() {
   html += '</div>';
   html += '<div id="backtest-results" style="' + (btCollapsed ? 'display:none;' : '') + 'padding:12px 16px;">';
   html += '<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:16px 0;">Loading backtest data...</div>';
-  html += '</div>';
-  html += '</div>';
-
-  // ── SOCIAL ARBITRAGE CARD (full-width) ──
-  var socialCache = null;
-  try { var sc = localStorage.getItem('mac_social_arb_results'); if (sc) socialCache = JSON.parse(sc); } catch(e) {}
-  var socialCollapsed = localStorage.getItem('mac_social_arb_collapsed') === 'true';
-
-  html += '<div class="card" style="margin-bottom:16px;padding:0;overflow:hidden;">';
-  html += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);">';
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
-  html += '<div style="display:flex;align-items:center;gap:8px;">';
-  html += '<span style="font-size:16px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">Social Arbitrage</span>';
-  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(168,85,247,0.1);color:#a855f7;text-transform:uppercase;letter-spacing:.04em;">Beta</span>';
-  html += '</div>';
-  html += '<div style="display:flex;align-items:center;gap:8px;">';
-  html += '<button onclick="toggleSocialArbCollapse()" style="padding:3px 8px;font-size:11px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;" id="social-arb-toggle">' + (socialCollapsed ? 'Show' : 'Hide') + '</button>';
-  html += '<button onclick="runSocialArbitrageScanUI()" class="refresh-btn" style="padding:5px 12px;font-size:12px;" id="social-arb-scan-btn">Scan</button>';
-  html += '</div>';
-  html += '</div>';
-  html += '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Spotting consumer trends before Wall Street &mdash; inspired by Chris Camillo\'s social arbitrage method</div>';
-  html += '<div id="social-arb-status" style="font-size:11px;color:var(--text-muted);margin-top:4px;">' + (socialCache ? 'Cached results (' + (socialCache.picks || []).length + ' picks)' : 'Click Scan to find social signals') + '</div>';
-  html += '</div>';
-
-  // Info banner
-  html += '<div onclick="toggleSocialArbInfo()" style="padding:8px 16px;background:rgba(168,85,247,0.05);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;">';
-  html += '<span style="font-size:12px;color:#a855f7;">&#9432;</span>';
-  html += '<span style="font-size:11px;color:var(--text-muted);font-weight:600;">How does this work?</span>';
-  html += '<span id="social-arb-info-arrow" style="margin-left:auto;font-size:10px;color:var(--text-muted);">\u25b6</span>';
-  html += '</div>';
-  html += '<div id="social-arb-info-body" style="display:none;padding:12px 16px;background:rgba(168,85,247,0.03);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary);line-height:1.6;">';
-  html += '<div style="font-weight:700;margin-bottom:6px;color:var(--text-primary);">Chris Camillo\'s Social Arbitrage</div>';
-  html += '<div style="margin-bottom:8px;"><strong>What it shows:</strong> Stocks with unusual social buzz — spiking news volume, Reddit mentions, and consumer trend signals that institutional investors haven\'t priced in yet.</div>';
-  html += '<div style="margin-bottom:8px;"><strong>Why it works:</strong> Retail consumers spot product trends (viral products, sold-out items, brand switches) weeks before Wall Street analysts. Camillo turned $20K into $42M using this edge.</div>';
-  html += '<div><strong>Trigger phrases:</strong> "sold out", "out of stock", "going viral", "everyone is buying", "switched to", "game changer" — these signal real demand shifts that move stock prices.</div>';
-  html += '</div>';
-
-  // Results body
-  html += '<div id="social-arb-results" style="' + (socialCollapsed ? 'display:none;' : '') + 'padding:12px 16px;">';
-  if (socialCache && socialCache.picks && socialCache.picks.length > 0) {
-    html += renderSocialArbResults(socialCache);
-  } else {
-    html += '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">Scans news volume, Reddit mentions, and social buzz to find consumer trends before they hit Wall Street.</div>';
-  }
   html += '</div>';
   html += '</div>';
 
@@ -1538,41 +1496,65 @@ function loadWinRateBadge() {
 }
 
 
-// ==================== RENDER: SETUP RESULTS ====================
+// ==================== RENDER: STRATEGY BOX ====================
 
-function renderSetupResults(data, limit) {
-  var setups = data.setups || [];
+function renderStrategyBox(cfg) {
   var html = '';
-
-  if (setups.length === 0) {
-    html += '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">No compression setups found right now. Check back later.</div>';
-    return html;
-  }
-
-  var displaySetups = limit ? setups.slice(0, limit) : setups;
-  var hasMore = limit && setups.length > limit;
-
-  html += '<div style="display:flex;flex-direction:column;gap:8px;">';
-  displaySetups.forEach(function(s, idx) {
-    html += renderSetupCard(s, idx, data);
-  });
+  html += '<div class="card" style="padding:0;overflow:hidden;">';
+  // Header
+  html += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += '<span style="font-size:15px;font-weight:700;font-family:var(--font-display);color:var(--text-primary);">' + cfg.title + '</span>';
+  html += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:' + cfg.badgeBg + ';color:' + cfg.badgeColor + ';text-transform:uppercase;letter-spacing:.04em;">' + cfg.badge + '</span>';
   html += '</div>';
-
-  if (hasMore) {
-    html += '<div id="swing-view-all-wrap" style="text-align:center;margin-top:8px;">';
-    html += '<button onclick="expandSwingResults()" class="refresh-btn" style="padding:6px 16px;font-size:12px;">View All ' + setups.length + ' Setups</button>';
-    html += '</div>';
+  if (cfg.scanFn) {
+    html += '<button onclick="' + cfg.scanFn + '" class="refresh-btn" style="padding:5px 12px;font-size:12px;">Scan</button>';
   }
-
+  html += '</div>';
+  html += '</div>';
+  // Body
+  var setups = cfg.setups || [];
+  var limit = cfg.limit || 0;
+  var displaySetups = limit && setups.length > limit ? setups.slice(0, limit) : setups;
+  html += '<div id="' + cfg.id + '-results" style="padding:12px;">';
+  if (displaySetups.length > 0) {
+    html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+    displaySetups.forEach(function(s, idx) {
+      html += renderSetupCard(s, cfg.id + '-' + idx, cfg.scanData);
+    });
+    html += '</div>';
+    if (limit && setups.length > limit) {
+      html += '<div style="text-align:center;margin-top:8px;">';
+      html += '<button onclick="expandStrategyResults(\'' + cfg.id + '\')" class="refresh-btn" style="padding:6px 16px;font-size:12px;">View All ' + setups.length + ' Setups</button>';
+      html += '</div>';
+    }
+  } else {
+    html += '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">' + cfg.emptyText + '</div>';
+  }
+  html += '</div>';
+  html += '</div>';
   return html;
 }
 
-function expandSwingResults() {
+function expandStrategyResults(boxId) {
   var scanResults = null;
   try { var sr = localStorage.getItem(SCANNER_RESULTS_KEY); if (sr) scanResults = JSON.parse(sr); } catch(e) {}
   if (!scanResults) return;
-  var resultsEl = document.getElementById('scan-results');
-  if (resultsEl) resultsEl.innerHTML = renderSetupResults(scanResults);
+  var catMap = { 'early-breakout': 'EARLY BREAKOUT', 'pullback-entry': 'PULLBACK', 'mean-reversion': 'MEAN REVERSION', 'momentum-breakout': 'MOMENTUM BREAKOUT' };
+  var category = catMap[boxId];
+  if (!category) return;
+  var setups = (scanResults.setups || []).filter(function(s) { return s.category === category; });
+  // Fallback for uncategorized setups in early-breakout box
+  if (setups.length === 0 && boxId === 'early-breakout') {
+    setups = (scanResults.setups || []).filter(function(s) { return !s.category; });
+  }
+  var el = document.getElementById(boxId + '-results');
+  if (!el) return;
+  var html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+  setups.forEach(function(s, idx) { html += renderSetupCard(s, boxId + '-' + idx, scanResults); });
+  html += '</div>';
+  el.innerHTML = html;
 }
 
 
@@ -1581,11 +1563,13 @@ function expandSwingResults() {
 
 function renderSetupCard(s, idx, scanData) {
   var detailId = 'score-detail-' + idx;
+  var cat = s.category || '';
+  var borderColor = cat ? getStratColor(cat) : (s.score >= 80 ? 'var(--green)' : s.score >= 60 ? 'var(--blue)' : s.score >= 40 ? 'var(--amber)' : 'var(--text-muted)');
   var sc = s.score >= 80 ? 'var(--green)' : s.score >= 60 ? 'var(--blue)' : s.score >= 40 ? 'var(--amber)' : 'var(--text-muted)';
-  var sbg = s.score >= 80 ? 'rgba(16,185,129,0.06)' : s.score >= 60 ? 'rgba(37,99,235,0.04)' : 'rgba(245,158,11,0.04)';
+  var sbg = cat ? getStratBg(cat) : (s.score >= 80 ? 'rgba(16,185,129,0.06)' : s.score >= 60 ? 'rgba(37,99,235,0.04)' : 'rgba(245,158,11,0.04)');
 
   var html = '';
-  html += '<div style="background:' + sbg + ';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px 16px;border-left:3px solid ' + sc + ';">';
+  html += '<div style="background:' + sbg + ';box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border-radius:12px;padding:14px 16px;border-left:3px solid ' + borderColor + ';">';
 
   // Header: ticker, price, score circle
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
@@ -1598,48 +1582,83 @@ function renderSetupCard(s, idx, scanData) {
   html += '<span style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;background:' + _typeBg + ';color:' + _typeColor + ';">' + _typeLabel + '</span>';
   html += '<span style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--text-secondary);">$' + s.price.toFixed(2) + '</span>';
   html += '</div>';
-  // Score circle — clickable to expand details
+  // Score circle
   html += '<div onclick="event.stopPropagation();var d=document.getElementById(\'' + detailId + '\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid ' + sc + ';font-size:12px;font-weight:900;color:' + sc + ';font-family:var(--font-mono);cursor:pointer;" title="Click for score breakdown">' + s.score + '</div>';
   html += '</div>';
 
-  // Thesis
-  if (s.thesis) {
-    html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.4;margin-bottom:6px;">' + s.thesis + '</div>';
+  // Thesis / description
+  var thesis = s.thesis || s.description || '';
+  if (thesis) {
+    html += '<div style="font-size:13px;color:var(--text-secondary);line-height:1.4;margin-bottom:6px;">' + thesis + '</div>';
   }
 
   // Info row: Industry, ATR, Market Cap
   var _ind = (scanData && scanData.allIndust && scanData.allIndust[s.ticker]) || '';
   var _atr = (scanData && scanData.allAtr && scanData.allAtr[s.ticker]) || null;
   var _mc = (scanData && scanData.allMcap && scanData.allMcap[s.ticker]) || null;
-  html += '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px;padding:4px 6px;background:var(--bg-secondary);border-radius:3px;">';
-  if (_ind) html += '<span style="color:var(--text-muted);">' + _ind + '</span>';
-  if (_atr) html += '<span style="color:var(--text-muted);">ATR <span style="font-family:var(--font-mono);font-weight:700;color:var(--text-secondary);padding:1px 5px;border:1px solid var(--border);border-radius:3px;">$' + _atr.toFixed(2) + '</span></span>';
-  if (_mc) html += '<span style="color:var(--text-muted);">Mkt Cap <span style="font-family:var(--font-mono);font-weight:700;color:var(--text-secondary);padding:1px 5px;border:1px solid var(--border);border-radius:3px;">' + _fmtMcap(_mc) + '</span></span>';
-  html += '</div>';
+  if (_ind || _atr || _mc) {
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px;padding:4px 6px;background:var(--bg-secondary);border-radius:3px;">';
+    if (_ind) html += '<span style="color:var(--text-muted);">' + _ind + '</span>';
+    if (_atr) html += '<span style="color:var(--text-muted);">ATR <span style="font-family:var(--font-mono);font-weight:700;color:var(--text-secondary);padding:1px 5px;border:1px solid var(--border);border-radius:3px;">$' + _atr.toFixed(2) + '</span></span>';
+    if (_mc) html += '<span style="color:var(--text-muted);">Mkt Cap <span style="font-family:var(--font-mono);font-weight:700;color:var(--text-secondary);padding:1px 5px;border:1px solid var(--border);border-radius:3px;">' + _fmtMcap(_mc) + '</span></span>';
+    html += '</div>';
+  }
 
   // ── Expandable detail (hidden, shown on score click) ──
   var comps = s.components || {};
   html += '<div id="' + detailId + '" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">';
 
-  // Component bars
+  // Strategy-specific component bars
   html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Score Breakdown</div>';
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:12px;margin-bottom:8px;">';
-  html += renderComponentBar('Compression', comps.compression || 0, 30, 'var(--blue)');
-  html += renderComponentBar('Alignment', comps.alignment || 0, 25, 'var(--blue)');
-  var extLabel = (comps.extension || 0) >= 0 ? 'Near Base' : 'Extension';
-  html += renderComponentBar(extLabel, Math.max(0, comps.extension || 0), 25, 'var(--blue)');
-  html += renderComponentBar('Volume', comps.volume || 0, 10, 'var(--blue)');
-  html += renderComponentBar('Momentum', comps.momentum || 0, 5, 'var(--blue)');
+  var barColor = cat ? getStratColor(cat) : 'var(--blue)';
+  if (cat === 'PULLBACK') {
+    html += renderComponentBar('Pullback Quality', comps.pullbackQuality || 0, 30, barColor);
+    html += renderComponentBar('Support Level', comps.supportLevel || 0, 25, barColor);
+    html += renderComponentBar('Vol Decline', comps.volumeDecline || 0, 20, barColor);
+    html += renderComponentBar('Trend Intact', comps.trendIntact || 0, 15, barColor);
+  } else if (cat === 'MEAN REVERSION') {
+    html += renderComponentBar('Pullback Quality', comps.pullbackQuality || 0, 30, barColor);
+    html += renderComponentBar('Oversold', comps.oversold || 0, 30, barColor);
+    html += renderComponentBar('Vol Decline', comps.volumeDecline || 0, 20, barColor);
+    html += renderComponentBar('Trend Intact', comps.trendIntact || 0, 20, barColor);
+  } else if (cat === 'MOMENTUM BREAKOUT') {
+    html += renderComponentBar('Breakout Str', comps.breakoutStrength || 0, 25, barColor);
+    html += renderComponentBar('Vol Surge', comps.volumeSurge || 0, 25, barColor);
+    html += renderComponentBar('SMA Align', comps.smaAlignment || 0, 20, barColor);
+    html += renderComponentBar('Base Tight', comps.baseTightness || 0, 20, barColor);
+  } else {
+    // EARLY BREAKOUT or legacy compression
+    html += renderComponentBar('Tightness', comps.tightness || comps.compression || 0, comps.tightness ? 35 : 30, barColor);
+    html += renderComponentBar('Vol Dry-Up', comps.volumeDryUp || comps.alignment || 0, comps.volumeDryUp ? 20 : 25, barColor);
+    html += renderComponentBar('Breakout Prox', comps.breakoutProximity || Math.max(0, comps.extension || 0), comps.breakoutProximity ? 25 : 25, barColor);
+    html += renderComponentBar('Volume', comps.volumeSurge || comps.volume || 0, comps.volumeSurge ? 20 : 10, barColor);
+  }
   html += '</div>';
 
-  // Quick stats
-  html += '<div style="display:flex;flex-wrap:wrap;gap:4px;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);">';
-  html += '<span>Spread ' + s.spread + '%</span><span>\u00b7</span>';
-  html += '<span>Ext ' + (s.ext >= 0 ? '+' : '') + s.ext + '%</span><span>\u00b7</span>';
-  html += '<span>RVol ' + (s.rvol ? s.rvol + 'x' : '\u2014') + '</span><span>\u00b7</span>';
-  html += '<span>5d ' + s.range5 + '%</span><span>\u00b7</span>';
-  html += '<span>Risk ' + s.riskPct + '%</span>';
-  html += '</div>';
+  // Quick stats (show what's available)
+  var statsHtml = '';
+  if (s.spread != null) statsHtml += '<span>Spread ' + s.spread + '%</span>';
+  if (s.ext != null) statsHtml += (statsHtml ? '<span>\u00b7</span>' : '') + '<span>Ext ' + (s.ext >= 0 ? '+' : '') + s.ext + '%</span>';
+  if (s.rvol || s.relativeVol) statsHtml += (statsHtml ? '<span>\u00b7</span>' : '') + '<span>RVol ' + ((s.rvol || s.relativeVol || 0).toFixed ? (s.rvol || s.relativeVol).toFixed(1) : (s.rvol || s.relativeVol)) + 'x</span>';
+  if (s.range5 != null) statsHtml += (statsHtml ? '<span>\u00b7</span>' : '') + '<span>5d ' + s.range5 + '%</span>';
+  if (s.riskPct != null) statsHtml += (statsHtml ? '<span>\u00b7</span>' : '') + '<span>Risk ' + s.riskPct + '%</span>';
+  if (s.rsi14) statsHtml += (statsHtml ? '<span>\u00b7</span>' : '') + '<span>RSI ' + Math.round(s.rsi14) + '</span>';
+  if (s.pullbackDepth) statsHtml += (statsHtml ? '<span>\u00b7</span>' : '') + '<span>Pullback ' + s.pullbackDepth.toFixed(1) + '%</span>';
+  if (statsHtml) {
+    html += '<div style="display:flex;flex-wrap:wrap;gap:4px;font-size:11px;font-family:var(--font-mono);color:var(--text-muted);">';
+    html += statsHtml;
+    html += '</div>';
+  }
+
+  // Trade levels (if available)
+  if (s.entryPrice && s.stopPrice && s.targetPrice) {
+    html += '<div style="display:flex;gap:12px;margin-top:6px;font-size:11px;font-family:var(--font-mono);">';
+    html += '<span style="color:var(--text-muted);">Entry <span style="color:var(--text-secondary);font-weight:700;">$' + s.entryPrice.toFixed(2) + '</span></span>';
+    html += '<span style="color:var(--text-muted);">Stop <span style="color:var(--red);font-weight:700;">$' + s.stopPrice.toFixed(2) + '</span></span>';
+    html += '<span style="color:var(--text-muted);">Target <span style="color:var(--green);font-weight:700;">$' + s.targetPrice.toFixed(2) + '</span></span>';
+    html += '</div>';
+  }
 
   html += '</div>'; // close detail
   html += '</div>'; // close card
@@ -1826,15 +1845,14 @@ function renderUniverseList(tickers) {
 // ==================== SINGLE SCAN BUTTON ====================
 
 async function runFullScanUI() {
-  var btn = document.getElementById('scan-btn');
+  // Disable all scan buttons in strategy boxes during scan
+  var scanBtns = document.querySelectorAll('.scanner-strategy-grid .refresh-btn');
   var statusEl = document.getElementById('scanner-status');
   var pctEl = document.getElementById('scanner-pct');
   var barEl = document.getElementById('scanner-progress-bar');
   var progressWrap = document.getElementById('scanner-progress-wrap');
   var idleStatus = document.getElementById('scanner-status-idle');
-  var resultsEl = document.getElementById('scan-results');
-
-  if (btn) { btn.disabled = true; btn.textContent = 'Scanning...'; }
+  scanBtns.forEach(function(b) { b.disabled = true; });
   if (progressWrap) progressWrap.style.display = 'block';
   if (idleStatus) idleStatus.style.display = 'none';
   if (barEl) { barEl.style.background = 'var(--blue)'; }
@@ -1892,20 +1910,53 @@ async function runFullScanUI() {
     });
 
     updateProgress('Done!', 100);
-    if (resultsEl) resultsEl.innerHTML = renderSetupResults(results, 5);
+    // Update all 4 strategy boxes with filtered results
+    var allSetups = results.setups || [];
+    var boxMap = {
+      'early-breakout': allSetups.filter(function(s) { return s.category === 'EARLY BREAKOUT' || !s.category; }),
+      'pullback-entry': allSetups.filter(function(s) { return s.category === 'PULLBACK'; }),
+      'mean-reversion': allSetups.filter(function(s) { return s.category === 'MEAN REVERSION'; }),
+      'momentum-breakout': allSetups.filter(function(s) { return s.category === 'MOMENTUM BREAKOUT'; })
+    };
+    Object.keys(boxMap).forEach(function(boxId) {
+      var el = document.getElementById(boxId + '-results');
+      if (!el) return;
+      var setups = boxMap[boxId];
+      if (setups.length > 0) {
+        var html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+        setups.slice(0, 5).forEach(function(s, idx) { html += renderSetupCard(s, boxId + '-' + idx, results); });
+        html += '</div>';
+        if (setups.length > 5) {
+          html += '<div style="text-align:center;margin-top:8px;">';
+          html += '<button onclick="expandStrategyResults(\'' + boxId + '\')" class="refresh-btn" style="padding:6px 16px;font-size:12px;">View All ' + setups.length + ' Setups</button>';
+          html += '</div>';
+        }
+        el.innerHTML = html;
+      } else {
+        el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">No setups found for this strategy.</div>';
+      }
+    });
 
     setTimeout(function() {
       if (progressWrap) progressWrap.style.display = 'none';
       if (idleStatus) {
-        var setupCount = (results.setups || []).length;
+        var setupCount = allSetups.length;
         var funnelHtml = '<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);flex-wrap:wrap;">';
         if (cache.totalScanned) {
           funnelHtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.totalScanned.toLocaleString() + '</span> scanned';
-          funnelHtml += '<span style="font-size:10px;">\u2192</span>';
+          funnelHtml += '<span style="font-size:10px;margin:0 2px;">\u2192</span>';
         }
         funnelHtml += '<span style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">' + cache.count + '</span> candidates';
-        funnelHtml += '<span style="font-size:10px;">\u2192</span>';
-        funnelHtml += '<span style="font-family:var(--font-mono);font-weight:700;color:var(--blue);">' + setupCount + '</span> <span style="font-weight:600;color:var(--blue);">setups</span>';
+        if (setupCount > 0) {
+          funnelHtml += '<span style="font-size:10px;margin:0 2px;">\u2192</span>';
+          funnelHtml += '<span style="font-family:var(--font-mono);font-weight:700;color:var(--blue);">' + setupCount + '</span> <span style="font-weight:600;color:var(--blue);">setups</span>';
+          var parts = [];
+          if (boxMap['early-breakout'].length) parts.push(boxMap['early-breakout'].length + ' EB');
+          if (boxMap['pullback-entry'].length) parts.push(boxMap['pullback-entry'].length + ' PB');
+          if (boxMap['mean-reversion'].length) parts.push(boxMap['mean-reversion'].length + ' MR');
+          if (boxMap['momentum-breakout'].length) parts.push(boxMap['momentum-breakout'].length + ' MB');
+          if (parts.length) funnelHtml += ' <span style="color:var(--text-muted);">(' + parts.join(', ') + ')</span>';
+        }
         funnelHtml += '</div>';
         idleStatus.innerHTML = funnelHtml;
         idleStatus.style.display = 'block';
@@ -1918,7 +1969,7 @@ async function runFullScanUI() {
     if (statusEl) statusEl.style.color = 'var(--red)';
   }
 
-  if (btn) { btn.disabled = false; btn.textContent = 'Scan'; }
+  scanBtns.forEach(function(b) { b.disabled = false; });
 }
 
 
