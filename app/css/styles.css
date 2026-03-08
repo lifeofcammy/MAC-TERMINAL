@@ -575,6 +575,8 @@ input:focus, textarea:focus, select:focus {
   /* Keep Sign Out visible */
   .header-right .refresh-btn[onclick="logoutUser()"] { font-size: 12px; padding: 8px 12px; }
   #user-email { display: none; }
+  #header-acct-box label { display: none; }
+  #header-acct-box input { width: 80px; font-size: 12px; padding: 4px 6px; }
 
   /* Tabs — below header (52px) + tagline bar (~28px) */
   .tabs { padding: 6px 8px; top: 80px; gap: 4px; }
