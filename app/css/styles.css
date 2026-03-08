@@ -183,16 +183,12 @@ body {
 
 .tab-content { display: none; }
 .tab-content.active { display: block; }
-#tab-overview.active { display: flex; gap: 16px; }
-#overview-main { flex: 1; min-width: 0; }
+#tab-overview.active { display: block; }
+#overview-main { width: 100%; }
 #watchlist-sidebar {
-  width: 300px;
-  flex-shrink: 0;
-  position: sticky;
-  top: 80px;
-  align-self: flex-start;
-  max-height: calc(100vh - 100px);
-  overflow-y: auto;
+  width: 100%;
+  max-width: 600px;
+  margin: 16px auto 0;
 }
 /* Hide number input spinners in header account box */
 #header-account-input::-webkit-outer-spin-button,
@@ -521,7 +517,7 @@ input:focus, textarea:focus, select:focus {
 /* --- 1024px: Tablet landscape --- */
 @media (max-width: 1024px) {
   #tab-overview.active { flex-direction: column; }
-  #watchlist-sidebar { width: 100%; position: static; max-height: none; overflow-y: visible; }
+  #watchlist-sidebar { max-width: 100%; }
   #account-box { display: none !important; }
   .main { padding: 20px 16px; }
   .step-header-box { left: 0 !important; }

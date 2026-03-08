@@ -1015,6 +1015,10 @@ async function renderOverview() {
   var dailyFocus = mindsetRules[todayIdx];
   var mindsetCollapsed = localStorage.getItem('mcc_mindset_collapsed')!=='false';
 
+  html += '<div style="text-align:center;margin-bottom:12px;padding:8px 0;">';
+  html += '<div style="font-size:15px;font-weight:600;color:var(--text-secondary);letter-spacing:0.01em;">Let\'s go through the steps of the day</div>';
+  html += '</div>';
+
   html += '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;">';
   html += '<div onclick="toggleMindset()" style="display:flex;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;gap:10px;">';
   html += '<span id="mindset-arrow" style="flex-shrink:0;font-size:14px;color:var(--text-primary);display:flex;align-items:center;gap:4px;"><span style="font-size:18px;">'+(mindsetCollapsed?'▶':'▼')+'</span><span class="toggle-label" style="font-size:11px;font-weight:600;color:var(--text-muted);">'+(mindsetCollapsed?'Expand':'Collapse')+'</span></span>';
