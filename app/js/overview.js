@@ -1152,8 +1152,8 @@ async function renderOverview() {
       var both = idx.a10 && idx.a20;
       var neither = !idx.a10 && !idx.a20;
       var smaColor = both ? 'var(--green)' : neither ? 'var(--red)' : 'var(--amber)';
-      var smaBg = both ? 'rgba(63,185,80,0.06)' : neither ? 'rgba(239,68,68,0.06)' : 'rgba(210,153,34,0.06)';
-      var smaBorder = both ? 'rgba(63,185,80,0.15)' : neither ? 'rgba(239,68,68,0.15)' : 'rgba(210,153,34,0.15)';
+      var smaBg = 'var(--bg-card)';
+      var smaBorder = 'var(--border2)';
       var smaLabel = both ? 'Above Both' : neither ? 'Below Both' : 'Mixed';
       html += '<div style="background:'+smaBg+';border:1px solid '+smaBorder+';border-radius:8px;padding:8px 10px;text-align:center;">';
       html += '<div style="font-size:13px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);">'+idx.name+'</div>';
